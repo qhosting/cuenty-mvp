@@ -1,94 +1,572 @@
 
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CUENTY - Tu Streaming Favorito</title>
+    <title>CUENTY - Cuentas de Streaming Premium</title>
+    <meta name="description" content="La mejor plataforma para obtener cuentas de streaming premium como Netflix, Disney+, HBO Max y más. Precios accesibles y entrega inmediata.">
+    <meta name="keywords" content="streaming, Netflix, Disney+, HBO Max, cuentas premium, CUENTY, México">
     <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://unpkg.com/framer-motion@11/dist/framer-motion.min.js"></script>
 </head>
 <body>
     <!-- Header -->
     <header class="header">
         <div class="container">
-            <div class="logo">
-                <h1>🎬 CUENTY</h1>
-                <p class="tagline">Tu streaming favorito al mejor precio</p>
+            <div class="header-content">
+                <div class="logo">
+                    <img src="/images/CUENTY.png" alt="CUENTY Logo" class="logo-img">
+                </div>
+                <nav class="nav" id="navigation">
+                    <a href="#productos" class="nav-link">Productos</a>
+                    <a href="#caracteristicas" class="nav-link">Características</a>
+                    <a href="#como-funciona" class="nav-link">Cómo Funciona</a>
+                    <a href="#faq" class="nav-link">FAQ</a>
+                    <a href="#contacto" class="nav-link">Contacto</a>
+                </nav>
+                <div class="auth-buttons">
+                    <button class="btn btn-secondary" onclick="mostrarLogin()">
+                        <i data-lucide="log-in"></i>
+                        Ingresar
+                    </button>
+                    <button class="btn btn-primary" onclick="mostrarRegistro()">
+                        <i data-lucide="user-plus"></i>
+                        Registro
+                    </button>
+                </div>
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i data-lucide="menu"></i>
+                </button>
             </div>
-            <nav class="nav">
-                <a href="#servicios" class="nav-link">Servicios</a>
-                <a href="#mis-cuentas" class="nav-link">Mis Cuentas</a>
-                <a href="#soporte" class="nav-link">Soporte</a>
-            </nav>
         </div>
     </header>
 
     <!-- Hero Section -->
     <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-orbs">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+        </div>
         <div class="container">
-            <h2 class="hero-title">Accede a tus plataformas favoritas</h2>
-            <p class="hero-subtitle">Netflix, Disney+, HBO Max, Prime Video y más<br>Sin compromiso mensual • Activación inmediata • Soporte 24/7</p>
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i data-lucide="star"></i>
+                    <span>Plataforma #1 en México</span>
+                </div>
+                <h1 class="hero-title">
+                    Accede a tus<br>
+                    <span class="gradient-text">Plataformas Favoritas</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Obtén cuentas premium de Netflix, Disney+, HBO Max, Prime Video y más.<br>
+                    <strong>Entrega inmediata</strong> y <strong>soporte 24/7</strong>.
+                </p>
+                <div class="hero-features">
+                    <div class="feature-pill">
+                        <i data-lucide="shield"></i>
+                        <span>100% Seguro</span>
+                    </div>
+                    <div class="feature-pill">
+                        <i data-lucide="zap"></i>
+                        <span>Entrega Inmediata</span>
+                    </div>
+                    <div class="feature-pill">
+                        <i data-lucide="play"></i>
+                        <span>Todas las Plataformas</span>
+                    </div>
+                </div>
+                <div class="hero-cta">
+                    <a href="#productos" class="btn btn-primary btn-large">
+                        Ver Productos
+                    </a>
+                    <a href="#como-funciona" class="btn btn-secondary btn-large">
+                        Cómo Funciona
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <div class="stat-number" data-count="10000">0</div>
+                        <div class="stat-label">Clientes Satisfechos</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" data-count="15">0</div>
+                        <div class="stat-label">Plataformas</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" data-count="99.9">0</div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Soporte</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <div class="scroll-mouse"></div>
         </div>
     </section>
 
-    <!-- Servicios Section -->
-    <section id="servicios" class="section">
+    <!-- Productos Section -->
+    <section id="productos" class="section products-section">
         <div class="container">
-            <h2 class="section-title">🎯 Servicios Disponibles</h2>
+            <div class="section-header">
+                <h2 class="section-title">
+                    Nuestros <span class="gradient-text">Productos</span>
+                </h2>
+                <p class="section-subtitle">
+                    Accede a las mejores plataformas de streaming y entretenimiento con cuentas premium a precios increíbles.
+                </p>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="category-filter">
+                <button class="filter-btn active" data-category="all">
+                    <i data-lucide="sparkles"></i>
+                    Todos
+                </button>
+                <button class="filter-btn" data-category="streaming">
+                    <i data-lucide="play"></i>
+                    Streaming
+                </button>
+                <button class="filter-btn" data-category="music">
+                    <i data-lucide="crown"></i>
+                    Música
+                </button>
+            </div>
+
             <div id="productos-container" class="productos-grid">
-                <div class="loading">Cargando servicios...</div>
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span>Cargando productos...</span>
+                </div>
+            </div>
+
+            <div class="section-cta">
+                <div class="cta-card">
+                    <h3>¿No encuentras lo que buscas?</h3>
+                    <p>Contáctanos y te ayudaremos a encontrar la cuenta perfecta para ti.</p>
+                    <button class="btn btn-primary" onclick="abrirWhatsApp()">
+                        Contactar Soporte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Características Section -->
+    <section id="caracteristicas" class="section features-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    ¿Por qué elegir <span class="gradient-text">CUENTY</span>?
+                </h2>
+                <p class="section-subtitle">
+                    Somos la plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento.
+                </p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon blue">
+                        <i data-lucide="shield"></i>
+                    </div>
+                    <h3>100% Seguro</h3>
+                    <p>Todas nuestras cuentas son verificadas y cuentan con garantía de funcionamiento.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon yellow">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h3>Entrega Inmediata</h3>
+                    <p>Recibe tus credenciales al instante después de confirmar tu pago.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon green">
+                        <i data-lucide="clock"></i>
+                    </div>
+                    <h3>Disponible 24/7</h3>
+                    <p>Nuestro servicio está disponible las 24 horas del día, todos los días del año.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon purple">
+                        <i data-lucide="headphones"></i>
+                    </div>
+                    <h3>Soporte Técnico</h3>
+                    <p>Equipo de soporte especializado listo para ayudarte cuando lo necesites.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon red">
+                        <i data-lucide="credit-card"></i>
+                    </div>
+                    <h3>Pagos Seguros</h3>
+                    <p>Múltiples métodos de pago seguros y encriptación de datos.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon cyan">
+                        <i data-lucide="check-circle"></i>
+                    </div>
+                    <h3>Garantía Total</h3>
+                    <p>Si algo no funciona, te devolvemos tu dinero sin preguntas.</p>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="stats-card">
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number">99.9%</div>
+                        <div class="stat-label">Uptime garantizado</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">10,000+</div>
+                        <div class="stat-label">Clientes satisfechos</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">15+</div>
+                        <div class="stat-label">Plataformas disponibles</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Soporte técnico</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cómo Funciona Section -->
+    <section id="como-funciona" class="section how-it-works-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    ¿Cómo <span class="gradient-text">Funciona</span>?
+                </h2>
+                <p class="section-subtitle">
+                    Obtener tu cuenta premium es muy fácil. Solo sigue estos 4 simples pasos y estarás disfrutando en minutos.
+                </p>
+            </div>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <div class="step-number">01</div>
+                    <div class="step-icon blue">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <h3>Elige tu servicio</h3>
+                    <p>Explora nuestro catálogo y selecciona la plataforma que más te guste.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">02</div>
+                    <div class="step-icon purple">
+                        <i data-lucide="credit-card"></i>
+                    </div>
+                    <h3>Realiza el pago</h3>
+                    <p>Completa tu compra de forma segura con nuestros métodos de pago disponibles.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">03</div>
+                    <div class="step-icon green">
+                        <i data-lucide="message-square"></i>
+                    </div>
+                    <h3>Recibe tus datos</h3>
+                    <p>Te enviaremos las credenciales de acceso por WhatsApp al instante.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-number">04</div>
+                    <div class="step-icon red">
+                        <i data-lucide="play"></i>
+                    </div>
+                    <h3>¡Disfruta!</h3>
+                    <p>Accede a tu plataforma favorita y disfruta de todo el contenido premium.</p>
+                </div>
+            </div>
+            
+            <div class="section-cta">
+                <div class="cta-card">
+                    <h3>¿Listo para empezar?</h3>
+                    <p>Únete a miles de usuarios que ya disfrutan de sus plataformas favoritas con CUENTY.</p>
+                    <div class="cta-buttons">
+                        <a href="#productos" class="btn btn-primary">Explorar Productos</a>
+                        <button class="btn btn-secondary" onclick="abrirWhatsApp()">Hablar con Soporte</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="section faq-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">
+                    Preguntas <span class="gradient-text">Frecuentes</span>
+                </h2>
+                <p class="section-subtitle">
+                    Resolvemos las dudas más comunes sobre nuestro servicio. Si tienes otra pregunta, no dudes en contactarnos.
+                </p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Cómo funciona el servicio de CUENTY?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>CUENTY te proporciona acceso a cuentas premium verificadas de las principales plataformas de streaming. Una vez realices tu compra, recibirás las credenciales por WhatsApp para acceder inmediatamente a tu servicio elegido.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Las cuentas son seguras y legales?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sí, todas nuestras cuentas son completamente legales y seguras. Trabajamos directamente con proveedores autorizados y todas las cuentas están verificadas antes de ser entregadas a nuestros clientes.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Cuánto tiempo tarda la entrega?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>La entrega es inmediata. Una vez confirmes tu pago, recibirás las credenciales por WhatsApp en cuestión de minutos. Nuestro sistema automatizado procesa las órdenes las 24 horas del día.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Qué pasa si la cuenta deja de funcionar?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Ofrecemos garantía total en todas nuestras cuentas. Si experimentas algún problema, contáctanos inmediatamente y te proporcionaremos una cuenta de reemplazo o te devolveremos tu dinero.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Qué métodos de pago aceptan?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Aceptamos transferencias bancarias, SPEI, Oxxo Pay, y otros métodos de pago locales. El proceso es completamente seguro y encriptado para proteger tu información.</p>
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question">
+                        <h3>¿Hay soporte técnico disponible?</h3>
+                        <i data-lucide="chevron-down"></i>
+                    </div>
+                    <div class="faq-answer">
+                        <p>Sí, ofrecemos soporte técnico 24/7 a través de WhatsApp. Nuestro equipo está siempre listo para ayudarte con cualquier duda o problema que puedas tener.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section-cta">
+                <div class="cta-card">
+                    <h3>¿Tienes más preguntas?</h3>
+                    <p>Nuestro equipo de soporte está listo para ayudarte con cualquier duda.</p>
+                    <button class="btn btn-primary" onclick="abrirWhatsApp()">
+                        Contactar Soporte
+                    </button>
+                </div>
             </div>
         </div>
     </section>
 
     <!-- Mis Cuentas Section -->
-    <section id="mis-cuentas" class="section bg-light">
+    <section id="mis-cuentas" class="section my-accounts-section">
         <div class="container">
-            <h2 class="section-title">📱 Mis Cuentas</h2>
+            <div class="section-header">
+                <h2 class="section-title">📱 Mis Cuentas</h2>
+                <p class="section-subtitle">Consulta el estado de tus cuentas activas</p>
+            </div>
             <div class="consulta-form">
-                <input type="tel" id="celular-consulta" placeholder="Ingresa tu número de celular (ej: +525512345678)" class="input">
-                <button onclick="consultarMisCuentas()" class="btn btn-primary">Consultar</button>
+                <div class="form-group">
+                    <i data-lucide="phone" class="input-icon"></i>
+                    <input type="tel" id="celular-consulta" placeholder="Ingresa tu número de celular (ej: +525512345678)" class="input">
+                </div>
+                <button onclick="consultarMisCuentas()" class="btn btn-primary">
+                    <i data-lucide="search"></i>
+                    Consultar
+                </button>
             </div>
-            <div id="mis-ordenes-container"></div>
-        </div>
-    </section>
-
-    <!-- Soporte Section -->
-    <section id="soporte" class="section">
-        <div class="container">
-            <h2 class="section-title">💬 Soporte al Cliente</h2>
-            <div class="soporte-info">
-                <p>¿Tienes algún problema con tu cuenta? Contáctanos por WhatsApp y te ayudaremos inmediatamente.</p>
-                <a href="https://wa.me/5215512345678" target="_blank" class="btn btn-whatsapp">
-                    <span class="whatsapp-icon">📱</span> Contactar por WhatsApp
-                </a>
-            </div>
+            <div id="cuentas-resultado" class="cuentas-resultado"></div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer id="contacto" class="footer">
         <div class="container">
-            <p>&copy; 2025 CUENTY. Todos los derechos reservados.</p>
-            <p>Horario de atención: 9:00 AM - 10:00 PM</p>
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="/images/CUENTY.png" alt="CUENTY Logo" class="footer-logo">
+                    <p class="footer-description">
+                        La plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento. 
+                        Acceso inmediato, precios justos, soporte 24/7.
+                    </p>
+                    <div class="footer-contact">
+                        <div class="contact-item">
+                            <i data-lucide="mail"></i>
+                            <span>soporte@cuenty.com</span>
+                        </div>
+                        <div class="contact-item">
+                            <i data-lucide="phone"></i>
+                            <span>WhatsApp: +52 55 1234 5678</span>
+                        </div>
+                        <div class="contact-item">
+                            <i data-lucide="map-pin"></i>
+                            <span>Ciudad de México, México</span>
+                        </div>
+                        <div class="contact-item">
+                            <i data-lucide="clock"></i>
+                            <span>Atención 24/7</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="footer-services">
+                    <h3>Servicios</h3>
+                    <ul>
+                        <li><a href="#productos">Netflix Premium</a></li>
+                        <li><a href="#productos">Disney+ Premium</a></li>
+                        <li><a href="#productos">HBO Max</a></li>
+                        <li><a href="#productos">Prime Video</a></li>
+                        <li><a href="#productos">Spotify Premium</a></li>
+                        <li><a href="#productos">YouTube Premium</a></li>
+                        <li><a href="#productos">Apple TV+</a></li>
+                        <li><a href="#productos">Crunchyroll</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-support">
+                    <h3>Soporte</h3>
+                    <ul>
+                        <li><a href="#faq">Centro de Ayuda</a></li>
+                        <li><a href="#como-funciona">Cómo Funciona</a></li>
+                        <li><a href="#caracteristicas">Garantías</a></li>
+                        <li><a href="#contacto">Contacto</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Contact Form -->
+            <div class="contact-form-section">
+                <div class="contact-form-card">
+                    <h3>¿Necesitas ayuda?</h3>
+                    <form class="contact-form" onsubmit="enviarContacto(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" name="name" placeholder="Tu nombre" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="email" name="email" placeholder="Tu email" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="subject" placeholder="Asunto" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea name="message" placeholder="Tu mensaje..." rows="4" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i data-lucide="send"></i>
+                            Enviar Mensaje
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <div class="footer-copyright">
+                    <p>&copy; 2025 CUENTY. Todos los derechos reservados.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Términos de Servicio</a>
+                    <a href="#">Política de Privacidad</a>
+                </div>
+            </div>
         </div>
     </footer>
 
-    <!-- Modal de Compra -->
-    <div id="modal-compra" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="cerrarModal()">&times;</span>
-            <h3 class="modal-title">Realizar Compra</h3>
-            <div id="modal-body"></div>
-        </div>
+    <!-- WhatsApp Button -->
+    <div class="whatsapp-button" onclick="abrirWhatsApp()">
+        <div class="whatsapp-pulse"></div>
+        <i data-lucide="message-circle"></i>
+        <div class="whatsapp-tooltip">¡Chatea con nosotros!</div>
     </div>
 
-    <!-- Modal de Cuenta -->
-    <div id="modal-cuenta" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="cerrarModalCuenta()">&times;</span>
-            <h3 class="modal-title">Detalles de tu Cuenta</h3>
-            <div id="modal-cuenta-body"></div>
+    <!-- Modals -->
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal" id="login-modal">
+            <div class="modal-header">
+                <h3>Iniciar Sesión</h3>
+                <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <i data-lucide="mail" class="input-icon"></i>
+                        <input type="email" name="email" placeholder="Tu email" required>
+                    </div>
+                    <div class="form-group">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" name="password" placeholder="Tu contraseña" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i data-lucide="log-in"></i>
+                        Iniciar Sesión
+                    </button>
+                </form>
+                <p class="modal-footer-text">
+                    ¿No tienes cuenta? <a href="#" onclick="mostrarRegistro()">Regístrate</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="modal" id="register-modal">
+            <div class="modal-header">
+                <h3>Crear Cuenta</h3>
+                <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <i data-lucide="user" class="input-icon"></i>
+                        <input type="text" name="fullName" placeholder="Tu nombre completo" required>
+                    </div>
+                    <div class="form-group">
+                        <i data-lucide="mail" class="input-icon"></i>
+                        <input type="email" name="email" placeholder="Tu email" required>
+                    </div>
+                    <div class="form-group">
+                        <i data-lucide="phone" class="input-icon"></i>
+                        <input type="tel" name="phone" placeholder="Tu teléfono (opcional)">
+                    </div>
+                    <div class="form-group">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" name="password" placeholder="Tu contraseña" required>
+                    </div>
+                    <div class="form-group">
+                        <i data-lucide="lock" class="input-icon"></i>
+                        <input type="password" name="confirmPassword" placeholder="Confirma tu contraseña" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i data-lucide="user-plus"></i>
+                        Crear Cuenta
+                    </button>
+                </form>
+                <p class="modal-footer-text">
+                    ¿Ya tienes cuenta? <a href="#" onclick="mostrarLogin()">Inicia sesión</a>
+                </p>
+            </div>
         </div>
     </div>
 

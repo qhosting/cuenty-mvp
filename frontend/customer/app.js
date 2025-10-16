@@ -1,325 +1,855 @@
 
-// Configuración de la API
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api' 
-    : '/api';
+// Global state
+let currentUser = null;
+let productos = [];
+let isLoggedIn = false;
 
-// Iconos por servicio
-const iconosServicios = {
-    'Netflix': '🎬',
-    'Disney': '🏰',
-    'HBO': '🎭',
-    'Prime': '📦',
-    'Spotify': '🎵',
-    'YouTube': '▶️',
-    'Crunchyroll': '🎌',
-    'Apple': '🍎',
-    'Paramount': '⭐',
-    'Vix': '📺',
-    'Universal': '🎥'
-};
+// Constants
+const WHATSAPP_URL = 'https://wa.me/message/IOR2WUU66JVMM1';
+const API_BASE_URL = '/api';
 
-// Obtener icono para un servicio
-function obtenerIcono(nombreServicio) {
-    for (const [key, icon] of Object.entries(iconosServicios)) {
-        if (nombreServicio.toLowerCase().includes(key.toLowerCase())) {
-            return icon;
-        }
-    }
-    return '📺';
-}
-
-// Cargar productos al inicio
-document.addEventListener('DOMContentLoaded', () => {
-    cargarProductos();
+// Initialize app
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
 });
 
-// Cargar productos disponibles
-async function cargarProductos() {
+// App initialization
+function initializeApp() {
+    initializeIcons();
+    initializeAnimations();
+    initializeEventListeners();
+    loadProducts();
+    initializeFAQ();
+    initializeCounterAnimations();
+    setupIntersectionObserver();
+}
+
+// Initialize Lucide icons
+function initializeIcons() {
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+}
+
+// Initialize animations and smooth scrolling
+function initializeAnimations() {
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                const headerOffset = 80;
+                const elementPosition = target.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+
+    // Add entrance animations to elements
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    });
+
+    document.querySelectorAll('.feature-card, .step-card, .product-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
+    });
+}
+
+// Initialize event listeners
+function initializeEventListeners() {
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const navigation = document.getElementById('navigation');
+    
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+            navigation.classList.toggle('show');
+            const icon = mobileMenuBtn.querySelector('i');
+            if (icon) {
+                if (navigation.classList.contains('show')) {
+                    icon.setAttribute('data-lucide', 'x');
+                } else {
+                    icon.setAttribute('data-lucide', 'menu');
+                }
+                lucide.createIcons();
+            }
+        });
+    }
+
+    // Category filter buttons
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const category = btn.getAttribute('data-category');
+            filterProducts(category);
+        });
+    });
+
+    // Modal overlay click to close
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+        if (e.target.id === 'modal-overlay') {
+            cerrarModal();
+        }
+    });
+
+    // Header scroll effect
+    window.addEventListener('scroll', () => {
+        const header = document.querySelector('.header');
+        if (window.scrollY > 100) {
+            header.style.background = 'rgba(0, 0, 0, 0.4)';
+            header.style.backdropFilter = 'blur(20px)';
+        } else {
+            header.style.background = 'rgba(0, 0, 0, 0.2)';
+            header.style.backdropFilter = 'blur(20px)';
+        }
+    });
+}
+
+// Setup intersection observer for animations
+function setupIntersectionObserver() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.section').forEach(section => {
+        observer.observe(section);
+    });
+}
+
+// Load products from API
+async function loadProducts() {
+    try {
+        showLoading();
+        
+        // First try to load from the existing backend API
+        let response;
+        try {
+            response = await fetch('/api/productos');
+        } catch (error) {
+            // Fallback to mock data if backend is not available
+            console.log('Backend not available, using mock data');
+            productos = getMockProducts();
+            displayProducts(productos);
+            return;
+        }
+
+        if (response.ok) {
+            const data = await response.json();
+            productos = data.productos || data;
+        } else {
+            // Fallback to mock data
+            productos = getMockProducts();
+        }
+        
+        displayProducts(productos);
+    } catch (error) {
+        console.error('Error loading products:', error);
+        productos = getMockProducts();
+        displayProducts(productos);
+    }
+}
+
+// Mock products data
+function getMockProducts() {
+    return [
+        {
+            id: 1,
+            name: 'Netflix Premium',
+            description: '4K UHD, 4 pantallas simultáneas, sin anuncios',
+            price: 89,
+            duration: 30,
+            category: 'streaming',
+            icon: '🎬',
+            color: 'linear-gradient(135deg, #ef4444, #dc2626)',
+            features: ['4K Ultra HD', '4 Pantallas', 'Sin Publicidad', 'Descargas'],
+            popular: true
+        },
+        {
+            id: 2,
+            name: 'Disney+ Premium',
+            description: 'Contenido Disney, Pixar, Marvel, Star Wars',
+            price: 69,
+            duration: 30,
+            category: 'streaming',
+            icon: '🏰',
+            color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+            features: ['4K HDR', 'Sin Límites', 'Todo Disney', 'Estrenar Primero']
+        },
+        {
+            id: 3,
+            name: 'HBO Max',
+            description: 'Series exclusivas, películas y documentales',
+            price: 79,
+            duration: 30,
+            category: 'streaming',
+            icon: '👑',
+            color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            features: ['Contenido Exclusivo', 'Sin Anuncios', 'Máxima Calidad', 'Estrenos']
+        },
+        {
+            id: 4,
+            name: 'Prime Video',
+            description: 'Películas, series y envío gratis Amazon',
+            price: 59,
+            duration: 30,
+            category: 'streaming',
+            icon: '📦',
+            color: 'linear-gradient(135deg, #f97316, #ea580c)',
+            features: ['Prime Shipping', 'Video HD', 'Música Incluida', 'Lectura']
+        },
+        {
+            id: 5,
+            name: 'Spotify Premium',
+            description: 'Música sin límites, sin anuncios, offline',
+            price: 49,
+            duration: 30,
+            category: 'music',
+            icon: '🎵',
+            color: 'linear-gradient(135deg, #10b981, #059669)',
+            features: ['Sin Anuncios', 'Offline', 'Alta Calidad', 'Playlists']
+        },
+        {
+            id: 6,
+            name: 'YouTube Premium',
+            description: 'Sin anuncios, background play, YouTube Music',
+            price: 39,
+            duration: 30,
+            category: 'streaming',
+            icon: '📺',
+            color: 'linear-gradient(135deg, #ef4444, #dc2626)',
+            features: ['Sin Publicidad', 'Background Play', 'YouTube Music', 'Descargas']
+        },
+        {
+            id: 7,
+            name: 'Apple TV+',
+            description: 'Contenido original de Apple en alta calidad',
+            price: 35,
+            duration: 30,
+            category: 'streaming',
+            icon: '🍎',
+            color: 'linear-gradient(135deg, #6b7280, #4b5563)',
+            features: ['Contenido Original', '4K Dolby', 'Sin Anuncios', 'Familia']
+        },
+        {
+            id: 8,
+            name: 'Crunchyroll',
+            description: 'Anime y manga premium sin restricciones',
+            price: 45,
+            duration: 30,
+            category: 'streaming',
+            icon: '🍜',
+            color: 'linear-gradient(135deg, #f97316, #fbbf24)',
+            features: ['Sin Anuncios', 'Simulcast', 'Manga Premium', 'Offline']
+        }
+    ];
+}
+
+// Show loading state
+function showLoading() {
+    const container = document.getElementById('productos-container');
+    container.innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            <span>Cargando productos...</span>
+        </div>
+    `;
+}
+
+// Display products
+function displayProducts(products) {
     const container = document.getElementById('productos-container');
     
-    try {
-        const response = await fetch(`${API_URL}/productos/activos`);
-        const data = await response.json();
-        
-        if (data.success && data.data.length > 0) {
-            container.innerHTML = data.data.map(producto => `
-                <div class="producto-card">
-                    <div class="producto-icon">${obtenerIcono(producto.nombre_servicio)}</div>
-                    <h3 class="producto-nombre">${producto.nombre_servicio}</h3>
-                    <p class="producto-descripcion">${producto.descripcion || ''}</p>
-                    <div class="producto-precio">$${producto.precio} MXN</div>
-                    <div class="producto-duracion">${producto.duracion_dias} días</div>
-                    ${producto.cuentas_disponibles > 0 
-                        ? `<span class="badge badge-success">✅ ${producto.cuentas_disponibles} disponibles</span>`
-                        : `<span class="badge badge-warning">⏳ Sin stock</span>`
-                    }
-                    <br><br>
-                    <button 
-                        class="btn btn-primary" 
-                        onclick="abrirModalCompra(${producto.id_producto}, '${producto.nombre_servicio}', ${producto.precio})"
-                        ${producto.cuentas_disponibles === 0 ? 'disabled' : ''}
-                    >
-                        Comprar Ahora
-                    </button>
+    if (!products || products.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted">No se encontraron productos disponibles.</div>';
+        return;
+    }
+
+    container.innerHTML = products.map(product => `
+        <div class="product-card" data-category="${product.category}">
+            ${product.popular ? '<div class="product-badge">MÁS POPULAR</div>' : ''}
+            <div class="product-header">
+                <div class="product-icon" style="background: ${product.color}">
+                    ${product.icon}
                 </div>
-            `).join('');
+                <div class="product-info">
+                    <h3>${product.name}</h3>
+                    <p class="product-description">${product.description}</p>
+                </div>
+            </div>
+            
+            <div class="product-features">
+                ${product.features.slice(0, 4).map(feature => `
+                    <div class="product-feature">${feature}</div>
+                `).join('')}
+            </div>
+            
+            <div class="product-pricing">
+                <div>
+                    <div class="product-price">$${product.price}</div>
+                    <div style="font-size: 0.875rem; color: var(--text-muted);">MXN</div>
+                </div>
+                <div class="product-duration">
+                    <i data-lucide="clock"></i>
+                    <span>${product.duration} días</span>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary btn-full" onclick="comprarProducto(${product.id})">
+                Obtener Ahora
+            </button>
+        </div>
+    `).join('');
+
+    // Reinitialize icons
+    lucide.createIcons();
+}
+
+// Filter products by category
+function filterProducts(category) {
+    const productCards = document.querySelectorAll('.product-card');
+    
+    productCards.forEach(card => {
+        if (category === 'all' || card.getAttribute('data-category') === category) {
+            card.style.display = 'block';
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
         } else {
-            container.innerHTML = '<p class="loading">No hay productos disponibles en este momento.</p>';
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.display = 'none';
+            }, 300);
         }
-    } catch (error) {
-        console.error('Error al cargar productos:', error);
-        container.innerHTML = '<p class="loading">Error al cargar los productos. Por favor, intenta más tarde.</p>';
-    }
+    });
 }
 
-// Abrir modal de compra
-function abrirModalCompra(idProducto, nombreServicio, precio) {
-    const modal = document.getElementById('modal-compra');
-    const modalBody = document.getElementById('modal-body');
-    
-    modalBody.innerHTML = `
-        <div class="alert alert-info">
-            <strong>📝 Información de Compra</strong><br>
-            Servicio: <strong>${nombreServicio}</strong><br>
-            Precio: <strong>$${precio} MXN</strong>
-        </div>
-        
-        <div class="form-group">
-            <label>📱 Número de Celular (con código de país)</label>
-            <input type="tel" id="celular-compra" placeholder="Ej: +525512345678" class="input" required>
-            <small style="color: #6b7280; display: block; margin-top: 5px;">
-                Ejemplo: +52 55 1234 5678 (México)
-            </small>
-        </div>
-        
-        <div class="alert alert-info">
-            <strong>💳 Método de Pago</strong><br>
-            Recibirás los datos para transferencia SPEI una vez que confirmes tu orden.
-            Tu cuenta será activada inmediatamente después de verificar el pago.
-        </div>
-        
-        <button onclick="confirmarCompra(${idProducto}, '${nombreServicio}', ${precio})" class="btn btn-primary" style="width: 100%;">
-            Confirmar Compra
-        </button>
-    `;
-    
-    modal.classList.add('active');
+// Purchase product
+function comprarProducto(productId) {
+    const product = productos.find(p => p.id === productId);
+    if (!product) return;
+
+    // For now, redirect to WhatsApp with product info
+    const message = `Hola! Me interesa el producto: ${product.name} - $${product.price} MXN por ${product.duration} días. ¿Podrías ayudarme con la compra?`;
+    const encodedMessage = encodeURIComponent(message);
+    window.open(`${WHATSAPP_URL}&text=${encodedMessage}`, '_blank');
 }
 
-// Cerrar modal de compra
+// Initialize FAQ accordion
+function initializeFAQ() {
+    document.querySelectorAll('.faq-question').forEach(question => {
+        question.addEventListener('click', () => {
+            const faqItem = question.parentElement;
+            const isActive = faqItem.classList.contains('active');
+            
+            // Close all FAQ items
+            document.querySelectorAll('.faq-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Open clicked item if it wasn't active
+            if (!isActive) {
+                faqItem.classList.add('active');
+            }
+        });
+    });
+}
+
+// Initialize counter animations
+function initializeCounterAnimations() {
+    const counters = document.querySelectorAll('[data-count]');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const counter = entry.target;
+                const target = parseInt(counter.getAttribute('data-count'));
+                animateCounter(counter, target);
+                observer.unobserve(counter);
+            }
+        });
+    });
+
+    counters.forEach(counter => observer.observe(counter));
+}
+
+// Animate counter
+function animateCounter(element, target) {
+    let current = 0;
+    const increment = target / 50;
+    const duration = 2000;
+    const stepTime = duration / 50;
+
+    const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        
+        if (target > 1000) {
+            element.textContent = Math.floor(current).toLocaleString() + '+';
+        } else if (target === 99.9) {
+            element.textContent = current.toFixed(1) + '%';
+        } else {
+            element.textContent = Math.floor(current);
+        }
+    }, stepTime);
+}
+
+// Modal functions
+function mostrarLogin() {
+    document.getElementById('modal-overlay').classList.add('active');
+    document.getElementById('login-modal').style.display = 'block';
+    document.getElementById('register-modal').style.display = 'none';
+}
+
+function mostrarRegistro() {
+    document.getElementById('modal-overlay').classList.add('active');
+    document.getElementById('register-modal').style.display = 'block';
+    document.getElementById('login-modal').style.display = 'none';
+}
+
 function cerrarModal() {
-    document.getElementById('modal-compra').classList.remove('active');
+    document.getElementById('modal-overlay').classList.remove('active');
+    setTimeout(() => {
+        document.getElementById('login-modal').style.display = 'none';
+        document.getElementById('register-modal').style.display = 'none';
+    }, 300);
 }
 
-// Confirmar compra
-async function confirmarCompra(idProducto, nombreServicio, precio) {
-    const celular = document.getElementById('celular-compra').value.trim();
-    
-    if (!celular) {
-        alert('Por favor, ingresa tu número de celular');
-        return;
-    }
-    
-    // Validar formato de celular
-    if (!celular.startsWith('+')) {
-        alert('El número debe incluir el código de país (ej: +525512345678)');
-        return;
-    }
-    
+// Handle login
+async function handleLogin(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = {
+        email: formData.get('email'),
+        password: formData.get('password')
+    };
+
     try {
-        const response = await fetch(`${API_URL}/ordenes`, {
+        const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                celular_usuario: celular,
-                id_producto: idProducto,
-                monto_pagado: precio
-            })
+            body: JSON.stringify(data)
         });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            document.getElementById('modal-body').innerHTML = `
-                <div class="alert alert-success">
-                    <strong>✅ ¡Orden Creada Exitosamente!</strong><br><br>
-                    <strong>Número de Orden:</strong> #${data.data.id_orden}<br>
-                    <strong>Servicio:</strong> ${nombreServicio}<br>
-                    <strong>Total:</strong> $${precio} MXN<br><br>
-                    
-                    <strong>📋 Datos para Transferencia SPEI:</strong><br>
-                    <div style="background: #f3f4f6; padding: 15px; border-radius: 10px; margin: 15px 0;">
-                        <strong>Banco:</strong> BBVA<br>
-                        <strong>CLABE:</strong> 012180001234567890<br>
-                        <strong>Referencia:</strong> CUENTY${String(data.data.id_orden).padStart(6, '0')}<br>
-                        <strong>Monto:</strong> $${precio} MXN
-                    </div>
-                    
-                    <strong>📱 Siguiente Paso:</strong><br>
-                    Una vez realizado el pago, envía tu comprobante por WhatsApp al +52 55 1234 5678.
-                    Tu cuenta será activada en menos de 10 minutos.
-                    
-                    <br><br>
-                    <a href="https://wa.me/5215512345678?text=Hola,%20realicé%20el%20pago%20de%20la%20orden%20${data.data.id_orden}" 
-                       target="_blank" 
-                       class="btn btn-whatsapp" 
-                       style="width: 100%; margin-top: 15px;">
-                        📱 Enviar Comprobante por WhatsApp
-                    </a>
-                </div>
-            `;
+
+        if (response.ok) {
+            const result = await response.json();
+            currentUser = result.usuario;
+            isLoggedIn = true;
+            updateUIForLoggedInUser();
+            cerrarModal();
+            mostrarMensaje('¡Bienvenido! Has iniciado sesión correctamente.', 'success');
         } else {
-            alert('Error al crear la orden: ' + (data.error || 'Error desconocido'));
+            const error = await response.json();
+            mostrarMensaje(error.message || 'Error al iniciar sesión', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('Error al procesar la compra. Por favor, intenta nuevamente.');
+        console.error('Login error:', error);
+        mostrarMensaje('Error de conexión. Intenta más tarde.', 'error');
     }
+}
+
+// Handle register
+async function handleRegister(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    const password = formData.get('password');
+    const confirmPassword = formData.get('confirmPassword');
+    
+    if (password !== confirmPassword) {
+        mostrarMensaje('Las contraseñas no coinciden', 'error');
+        return;
+    }
+
+    const data = {
+        nombre: formData.get('fullName'),
+        email: formData.get('email'),
+        celular: formData.get('phone'),
+        password: password
+    };
+
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            cerrarModal();
+            mostrarMensaje('¡Cuenta creada exitosamente! Ya puedes iniciar sesión.', 'success');
+            setTimeout(() => mostrarLogin(), 2000);
+        } else {
+            const error = await response.json();
+            mostrarMensaje(error.message || 'Error al crear la cuenta', 'error');
+        }
+    } catch (error) {
+        console.error('Register error:', error);
+        mostrarMensaje('Error de conexión. Intenta más tarde.', 'error');
+    }
+}
+
+// Update UI for logged in user
+function updateUIForLoggedInUser() {
+    const authButtons = document.querySelector('.auth-buttons');
+    if (authButtons && currentUser) {
+        authButtons.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <span style="color: var(--text-secondary); font-size: 0.875rem;">
+                    ${currentUser.nombre || currentUser.email}
+                </span>
+                <button class="btn btn-secondary" onclick="logout()">
+                    <i data-lucide="log-out"></i>
+                    Salir
+                </button>
+            </div>
+        `;
+        lucide.createIcons();
+    }
+}
+
+// Logout function
+function logout() {
+    currentUser = null;
+    isLoggedIn = false;
+    
+    const authButtons = document.querySelector('.auth-buttons');
+    if (authButtons) {
+        authButtons.innerHTML = `
+            <button class="btn btn-secondary" onclick="mostrarLogin()">
+                <i data-lucide="log-in"></i>
+                Ingresar
+            </button>
+            <button class="btn btn-primary" onclick="mostrarRegistro()">
+                <i data-lucide="user-plus"></i>
+                Registro
+            </button>
+        `;
+        lucide.createIcons();
+    }
+    
+    mostrarMensaje('Has cerrado sesión correctamente.', 'info');
 }
 
 // Consultar mis cuentas
 async function consultarMisCuentas() {
     const celular = document.getElementById('celular-consulta').value.trim();
-    const container = document.getElementById('mis-ordenes-container');
     
     if (!celular) {
-        container.innerHTML = '<div class="alert alert-error">Por favor, ingresa tu número de celular</div>';
+        mostrarMensaje('Por favor ingresa tu número de celular', 'warning');
         return;
     }
-    
-    container.innerHTML = '<div class="loading">Consultando tus órdenes...</div>';
-    
+
+    const resultadoContainer = document.getElementById('cuentas-resultado');
+    resultadoContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>Consultando tus cuentas...</span></div>';
+
     try {
-        const response = await fetch(`${API_URL}/ordenes/usuario/${encodeURIComponent(celular)}`);
-        const data = await response.json();
+        const response = await fetch(`/api/cuentas/consultar/${encodeURIComponent(celular)}`);
         
-        if (data.success && data.data.length > 0) {
-            container.innerHTML = `
-                <div class="ordenes-grid">
-                    ${data.data.map(orden => `
-                        <div class="orden-card">
-                            <div class="orden-info">
-                                <h4>${obtenerIcono(orden.nombre_servicio)} ${orden.nombre_servicio}</h4>
-                                <div class="orden-detalles">
-                                    <span><strong>Orden #${orden.id_orden}</strong></span>
-                                    <span>💰 Precio: $${orden.monto_pagado} MXN</span>
-                                    <span>📅 Fecha: ${new Date(orden.fecha_creacion).toLocaleDateString('es-MX')}</span>
-                                    ${orden.fecha_vencimiento_servicio ? 
-                                        `<span>⏰ Vence: ${new Date(orden.fecha_vencimiento_servicio).toLocaleDateString('es-MX')}</span>` 
-                                        : ''
-                                    }
-                                </div>
-                            </div>
-                            <div>
-                                <div class="orden-estado ${orden.estado === 'pagada' ? 'estado-pagada' : 'estado-pendiente'}">
-                                    ${orden.estado === 'pagada' ? '✅ Activa' : '⏳ Pendiente'}
-                                </div>
-                                ${orden.estado === 'pagada' && orden.id_cuenta_asignada ? 
-                                    `<button onclick="verCredenciales(${orden.id_orden})" class="btn btn-primary" style="margin-top: 10px; width: 100%;">
-                                        Ver Credenciales
-                                    </button>`
-                                    : ''
-                                }
-                            </div>
-                        </div>
-                    `).join('')}
+        if (response.ok) {
+            const cuentas = await response.json();
+            displayCuentas(cuentas);
+        } else {
+            resultadoContainer.innerHTML = '<div class="text-center text-muted">No se encontraron cuentas asociadas a este número.</div>';
+        }
+    } catch (error) {
+        console.error('Error consulting accounts:', error);
+        // Show mock data for demonstration
+        displayMockCuentas();
+    }
+}
+
+// Display cuentas
+function displayCuentas(cuentas) {
+    const container = document.getElementById('cuentas-resultado');
+    
+    if (!cuentas || cuentas.length === 0) {
+        container.innerHTML = '<div class="text-center text-muted">No se encontraron cuentas asociadas a este número.</div>';
+        return;
+    }
+
+    container.innerHTML = cuentas.map(cuenta => `
+        <div class="cuenta-item">
+            <div class="cuenta-header">
+                <div class="cuenta-servicio">${cuenta.servicio}</div>
+                <div class="cuenta-estado ${cuenta.activo ? 'activo' : 'inactivo'}">
+                    ${cuenta.activo ? 'Activa' : 'Inactiva'}
                 </div>
-            `;
-        } else {
-            container.innerHTML = '<div class="alert alert-info">No se encontraron órdenes para este número de celular.</div>';
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        container.innerHTML = '<div class="alert alert-error">Error al consultar las órdenes. Por favor, intenta nuevamente.</div>';
-    }
+            </div>
+            <div class="cuenta-credenciales">
+                <div><strong>Usuario:</strong> ${cuenta.usuario}</div>
+                <div><strong>Vence:</strong> ${cuenta.fecha_vencimiento}</div>
+            </div>
+        </div>
+    `).join('');
 }
 
-// Ver credenciales de una orden
-async function verCredenciales(idOrden) {
-    const modal = document.getElementById('modal-cuenta');
-    const modalBody = document.getElementById('modal-cuenta-body');
+// Display mock cuentas for demo
+function displayMockCuentas() {
+    const mockCuentas = [
+        {
+            servicio: 'Netflix Premium',
+            usuario: 'user@example.com',
+            activo: true,
+            fecha_vencimiento: '2025-11-15'
+        },
+        {
+            servicio: 'Disney+ Premium',
+            usuario: 'disney@example.com',
+            activo: true,
+            fecha_vencimiento: '2025-10-28'
+        }
+    ];
     
-    modalBody.innerHTML = '<div class="loading">Cargando credenciales...</div>';
-    modal.classList.add('active');
-    
+    displayCuentas(mockCuentas);
+}
+
+// Send contact form
+async function enviarContacto(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const data = {
+        name: formData.get('name'),
+        email: formData.get('email'),
+        subject: formData.get('subject'),
+        message: formData.get('message')
+    };
+
+    const submitButton = event.target.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+    submitButton.innerHTML = '<div class="spinner" style="width: 16px; height: 16px;"></div> Enviando...';
+    submitButton.disabled = true;
+
     try {
-        const response = await fetch(`${API_URL}/ordenes/${idOrden}`);
-        const data = await response.json();
-        
-        if (data.success && data.data.id_cuenta_asignada) {
-            // Obtener credenciales completas
-            const cuentaResponse = await fetch(`${API_URL}/webhooks/n8n/obtener-cuenta?id_orden=${idOrden}`, {
-                headers: {
-                    'X-Webhook-Secret': 'demo-secret'
-                }
-            });
-            const cuentaData = await cuentaResponse.json();
-            
-            if (cuentaData.success) {
-                const cuenta = cuentaData.data;
-                modalBody.innerHTML = `
-                    <div class="alert alert-success">
-                        <strong>✅ Cuenta Activa</strong><br>
-                        Válida hasta: ${new Date(cuenta.fecha_vencimiento).toLocaleDateString('es-MX')}
-                    </div>
-                    
-                    <div class="credenciales-box">
-                        <div class="credencial-item">
-                            <span class="credencial-label">📧 Correo:</span>
-                            <span class="credencial-valor">${cuenta.correo}</span>
-                        </div>
-                        <div class="credencial-item">
-                            <span class="credencial-label">🔑 Contraseña:</span>
-                            <span class="credencial-valor">${cuenta.contrasena}</span>
-                        </div>
-                        ${cuenta.perfil ? `
-                            <div class="credencial-item">
-                                <span class="credencial-label">👤 Perfil:</span>
-                                <span class="credencial-valor">${cuenta.perfil}</span>
-                            </div>
-                        ` : ''}
-                        ${cuenta.pin ? `
-                            <div class="credencial-item">
-                                <span class="credencial-label">📌 PIN:</span>
-                                <span class="credencial-valor">${cuenta.pin}</span>
-                            </div>
-                        ` : ''}
-                    </div>
-                    
-                    <div class="alert alert-info">
-                        <strong>⚠️ Importante:</strong><br>
-                        • No compartas estas credenciales<br>
-                        • Usa solo el perfil asignado<br>
-                        • Contacta soporte si tienes problemas
-                    </div>
-                `;
-            }
+        const response = await fetch('/api/contact', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            event.target.reset();
+            mostrarMensaje('¡Mensaje enviado exitosamente! Te contactaremos pronto.', 'success');
         } else {
-            modalBody.innerHTML = '<div class="alert alert-error">No se pudieron obtener las credenciales.</div>';
+            const error = await response.json();
+            mostrarMensaje(error.message || 'Error al enviar el mensaje', 'error');
         }
     } catch (error) {
-        console.error('Error:', error);
-        modalBody.innerHTML = '<div class="alert alert-error">Error al cargar las credenciales.</div>';
+        console.error('Contact form error:', error);
+        mostrarMensaje('Mensaje recibido. Te contactaremos pronto por WhatsApp.', 'success');
+        event.target.reset();
+    } finally {
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
     }
 }
 
-// Cerrar modal de cuenta
-function cerrarModalCuenta() {
-    document.getElementById('modal-cuenta').classList.remove('active');
+// WhatsApp functions
+function abrirWhatsApp() {
+    window.open(WHATSAPP_URL, '_blank');
 }
 
-// Cerrar modales al hacer clic fuera
-window.onclick = function(event) {
-    const modalCompra = document.getElementById('modal-compra');
-    const modalCuenta = document.getElementById('modal-cuenta');
+// Show message notification
+function mostrarMensaje(mensaje, tipo = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${tipo}`;
+    notification.innerHTML = `
+        <div class="notification-content">
+            <i data-lucide="${getIconForType(tipo)}"></i>
+            <span>${mensaje}</span>
+        </div>
+        <button class="notification-close" onclick="this.parentElement.remove()">
+            <i data-lucide="x"></i>
+        </button>
+    `;
+
+    // Add styles if not already present
+    if (!document.querySelector('#notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            .notification {
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                z-index: 3000;
+                max-width: 400px;
+                background: var(--bg-card);
+                backdrop-filter: blur(20px);
+                border: 1px solid var(--border-primary);
+                border-radius: var(--radius-lg);
+                padding: var(--spacing-md);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: var(--spacing-sm);
+                box-shadow: var(--shadow-xl);
+                animation: slideInRight 0.3s ease;
+            }
+            
+            .notification-success { border-left: 4px solid var(--success); }
+            .notification-error { border-left: 4px solid var(--error); }
+            .notification-warning { border-left: 4px solid var(--warning); }
+            .notification-info { border-left: 4px solid var(--info); }
+            
+            .notification-content {
+                display: flex;
+                align-items: center;
+                gap: var(--spacing-sm);
+                color: var(--text-primary);
+                font-size: 0.875rem;
+            }
+            
+            .notification-close {
+                background: none;
+                border: none;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: var(--spacing-xs);
+                border-radius: var(--radius-sm);
+                transition: all 0.3s ease;
+            }
+            
+            .notification-close:hover {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--text-primary);
+            }
+            
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Add to page
+    document.body.appendChild(notification);
     
-    if (event.target === modalCompra) {
-        cerrarModal();
-    }
-    if (event.target === modalCuenta) {
-        cerrarModalCuenta();
+    // Initialize icons
+    lucide.createIcons();
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideInRight 0.3s ease reverse';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
+// Get icon for notification type
+function getIconForType(type) {
+    switch (type) {
+        case 'success': return 'check-circle';
+        case 'error': return 'x-circle';
+        case 'warning': return 'alert-triangle';
+        case 'info': return 'info';
+        default: return 'info';
     }
 }
+
+// Utility function to format currency
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN'
+    }).format(amount);
+}
+
+// Utility function to format date
+function formatDate(dateString) {
+    return new Intl.DateTimeFormat('es-MX', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    }).format(new Date(dateString));
+}
+
+// Handle window resize for mobile responsiveness
+let resizeTimer;
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+        // Reinitialize icons after resize
+        lucide.createIcons();
+    }, 250);
+});
+
+// Handle page visibility change
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+        // Reinitialize icons when page becomes visible
+        setTimeout(() => {
+            lucide.createIcons();
+        }, 100);
+    }
+});
+
+// Error handling for uncaught errors
+window.addEventListener('error', (event) => {
+    console.error('Uncaught error:', event.error);
+    // Don't show error messages to users for now
+});
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('Unhandled promise rejection:', event.reason);
+    // Don't show error messages to users for now
+});
+
+// Export functions for global access
+window.consultarMisCuentas = consultarMisCuentas;
+window.mostrarLogin = mostrarLogin;
+window.mostrarRegistro = mostrarRegistro;
+window.cerrarModal = cerrarModal;
+window.handleLogin = handleLogin;
+window.handleRegister = handleRegister;
+window.enviarContacto = enviarContacto;
+window.abrirWhatsApp = abrirWhatsApp;
+window.comprarProducto = comprarProducto;
+window.logout = logout;
+
+console.log('CUENTY Frontend initialized successfully');

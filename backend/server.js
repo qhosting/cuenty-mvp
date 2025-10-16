@@ -21,6 +21,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Servir archivos estáticos
 app.use(express.static('public'));
+app.use('/frontend', express.static('../frontend'));
 
 // Rutas de la API
 app.use('/api/auth', require('./routes/authRoutes'));
@@ -36,9 +37,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'CUENTY API is running' });
 });
 
-// Ruta principal - Página de bienvenida
+// Ruta principal - Redirigir a la nueva landing page
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/public/index.html');
+  res.redirect('/frontend/customer/');
 });
 
 // Manejo de rutas no encontradas
