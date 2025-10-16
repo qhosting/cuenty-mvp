@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CUENTY - Panel de Administración</title>
+    <link rel="stylesheet" href="admin-styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h1 class="login-title">🔐 CUENTY Admin</h1>
+            <p class="login-subtitle">Panel de Administración</p>
+            <form id="login-form" onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Usuario</label>
+                    <input type="text" id="login-username" required class="input">
+                </div>
+                <div class="form-group">
+                    <label>Contraseña</label>
+                    <input type="password" id="login-password" required class="input">
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Iniciar Sesión</button>
+            </form>
+            <div id="login-error" class="alert alert-error" style="display: none; margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="dashboard" style="display: none;">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🎬 CUENTY</h2>
+                <p>Admin Panel</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" onclick="showSection('dashboard')">
+                    <span class="nav-icon">📊</span> Dashboard
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('ordenes')">
+                    <span class="nav-icon">🛒</span> Órdenes
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('productos')">
+                    <span class="nav-icon">📦</span> Productos
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('cuentas')">
+                    <span class="nav-icon">🔑</span> Inventario
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('usuarios')">
+                    <span class="nav-icon">👥</span> Usuarios
+                </a>
+                <a href="#" class="nav-item" onclick="showSection('tickets')">
+                    <span class="nav-icon">🎫</span> Soporte
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button onclick="logout()" class="btn btn-secondary btn-block">Cerrar Sesión</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Section -->
+            <section id="section-dashboard" class="content-section">
+                <h1 class="page-title">📊 Dashboard</h1>
+                <div class="stats-grid" id="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon">🛒</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Órdenes Pendientes</div>
+                            <div class="stat-value" id="stat-ordenes-pendientes">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Órdenes Activas</div>
+                            <div class="stat-value" id="stat-ordenes-activas">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🔑</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Cuentas Disponibles</div>
+                            <div class="stat-value" id="stat-cuentas-disponibles">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🎫</div>
+                        <div class="stat-info">
+                            <div class="stat-label">Tickets Abiertos</div>
+                            <div class="stat-value" id="stat-tickets-abiertos">0</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Órdenes Section -->
+            <section id="section-ordenes" class="content-section" style="display: none;">
+                <h1 class="page-title">🛒 Gestión de Órdenes</h1>
+                <div class="toolbar">
+                    <select id="filter-ordenes" onchange="cargarOrdenes()" class="input">
+                        <option value="">Todas las órdenes</option>
+                        <option value="pendiente_pago">Pendientes de Pago</option>
+                        <option value="pagada">Pagadas</option>
+                        <option value="expirada">Expiradas</option>
+                    </select>
+                    <button onclick="cargarOrdenes()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="ordenes-container" class="table-container"></div>
+            </section>
+
+            <!-- Productos Section -->
+            <section id="section-productos" class="content-section" style="display: none;">
+                <h1 class="page-title">📦 Gestión de Productos</h1>
+                <div class="toolbar">
+                    <button onclick="mostrarFormProducto()" class="btn btn-primary">➕ Nuevo Producto</button>
+                    <button onclick="cargarProductos()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="productos-container" class="table-container"></div>
+            </section>
+
+            <!-- Cuentas Section -->
+            <section id="section-cuentas" class="content-section" style="display: none;">
+                <h1 class="page-title">🔑 Inventario de Cuentas</h1>
+                <div class="toolbar">
+                    <button onclick="mostrarFormCuenta()" class="btn btn-primary">➕ Nueva Cuenta</button>
+                    <select id="filter-cuentas-producto" onchange="cargarCuentas()" class="input">
+                        <option value="">Todos los productos</option>
+                    </select>
+                    <select id="filter-cuentas-estado" onchange="cargarCuentas()" class="input">
+                        <option value="">Todos los estados</option>
+                        <option value="disponible">Disponible</option>
+                        <option value="asignada">Asignada</option>
+                        <option value="mantenimiento">Mantenimiento</option>
+                    </select>
+                    <button onclick="cargarCuentas()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="cuentas-container" class="table-container"></div>
+            </section>
+
+            <!-- Usuarios Section -->
+            <section id="section-usuarios" class="content-section" style="display: none;">
+                <h1 class="page-title">👥 Gestión de Usuarios</h1>
+                <div class="toolbar">
+                    <button onclick="cargarUsuarios()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="usuarios-container" class="table-container"></div>
+            </section>
+
+            <!-- Tickets Section -->
+            <section id="section-tickets" class="content-section" style="display: none;">
+                <h1 class="page-title">🎫 Sistema de Soporte</h1>
+                <div class="toolbar">
+                    <select id="filter-tickets" onchange="cargarTickets()" class="input">
+                        <option value="">Todos los tickets</option>
+                        <option value="abierto">Abiertos</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="resuelto">Resueltos</option>
+                        <option value="cerrado">Cerrados</option>
+                    </select>
+                    <button onclick="cargarTickets()" class="btn btn-secondary">🔄 Actualizar</button>
+                </div>
+                <div id="tickets-container" class="table-container"></div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal Universal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="cerrarModal()">&times;</span>
+            <h3 class="modal-title" id="modal-title"></h3>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="admin-app.js"></script>
+</body>
+</html>

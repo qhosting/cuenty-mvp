@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CUENTY - Tu Streaming Favorito</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="logo">
+                <h1>🎬 CUENTY</h1>
+                <p class="tagline">Tu streaming favorito al mejor precio</p>
+            </div>
+            <nav class="nav">
+                <a href="#servicios" class="nav-link">Servicios</a>
+                <a href="#mis-cuentas" class="nav-link">Mis Cuentas</a>
+                <a href="#soporte" class="nav-link">Soporte</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h2 class="hero-title">Accede a tus plataformas favoritas</h2>
+            <p class="hero-subtitle">Netflix, Disney+, HBO Max, Prime Video y más<br>Sin compromiso mensual • Activación inmediata • Soporte 24/7</p>
+        </div>
+    </section>
+
+    <!-- Servicios Section -->
+    <section id="servicios" class="section">
+        <div class="container">
+            <h2 class="section-title">🎯 Servicios Disponibles</h2>
+            <div id="productos-container" class="productos-grid">
+                <div class="loading">Cargando servicios...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mis Cuentas Section -->
+    <section id="mis-cuentas" class="section bg-light">
+        <div class="container">
+            <h2 class="section-title">📱 Mis Cuentas</h2>
+            <div class="consulta-form">
+                <input type="tel" id="celular-consulta" placeholder="Ingresa tu número de celular (ej: +525512345678)" class="input">
+                <button onclick="consultarMisCuentas()" class="btn btn-primary">Consultar</button>
+            </div>
+            <div id="mis-ordenes-container"></div>
+        </div>
+    </section>
+
+    <!-- Soporte Section -->
+    <section id="soporte" class="section">
+        <div class="container">
+            <h2 class="section-title">💬 Soporte al Cliente</h2>
+            <div class="soporte-info">
+                <p>¿Tienes algún problema con tu cuenta? Contáctanos por WhatsApp y te ayudaremos inmediatamente.</p>
+                <a href="https://wa.me/5215512345678" target="_blank" class="btn btn-whatsapp">
+                    <span class="whatsapp-icon">📱</span> Contactar por WhatsApp
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 CUENTY. Todos los derechos reservados.</p>
+            <p>Horario de atención: 9:00 AM - 10:00 PM</p>
+        </div>
+    </footer>
+
+    <!-- Modal de Compra -->
+    <div id="modal-compra" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="cerrarModal()">&times;</span>
+            <h3 class="modal-title">Realizar Compra</h3>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal de Cuenta -->
+    <div id="modal-cuenta" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="cerrarModalCuenta()">&times;</span>
+            <h3 class="modal-title">Detalles de tu Cuenta</h3>
+            <div id="modal-cuenta-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
