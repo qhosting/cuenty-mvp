@@ -35,7 +35,12 @@ services:
       NODE_ENV: ${NODE_ENV:-production}
       PORT: 3000
       
-      # Database
+      # Database - Opción 1: DATABASE_URL (Recomendado para bases de datos externas)
+      # Si DATABASE_URL está definido, se usará en lugar de las variables individuales
+      DATABASE_URL: ${DATABASE_URL:-}
+      
+      # Database - Opción 2: Variables individuales (para docker-compose interno)
+      # Solo se usan si DATABASE_URL no está definido
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${DB_NAME:-cuenty_db}

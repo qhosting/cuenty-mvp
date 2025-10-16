@@ -239,6 +239,12 @@ NODE_ENV=production
 PORT=3000
 
 # Base de Datos
+# OPCIÓN 1 (RECOMENDADA): Usar DATABASE_URL para bases de datos externas
+# Formato: postgresql://usuario:password@host:puerto/nombre_db?sslmode=disable
+DATABASE_URL=postgresql://postgres:tu_password@cloudmx_cuenty-db:5432/cuenty_db?sslmode=disable
+
+# OPCIÓN 2 (ALTERNATIVA): Variables individuales (si no usas DATABASE_URL)
+# Útil para desarrollo local o docker-compose con PostgreSQL interno
 DB_HOST=postgres              # 'localhost' para desarrollo local
 DB_PORT=5432
 DB_NAME=cuenty_db
@@ -257,6 +263,8 @@ N8N_WEBHOOK_RESPUESTA_AGENTE=https://tu-n8n.com/webhook/respuesta-agente
 # CORS
 CORS_ORIGIN=*                # En producción: https://tu-dominio.com
 ```
+
+> **💡 Nota**: El sistema prioriza `DATABASE_URL` si está definido. Si prefieres usar variables individuales, simplemente no definas `DATABASE_URL` o déjalo vacío.
 
 ### Generar Secretos Seguros
 
@@ -364,6 +372,52 @@ easypanel exec cuenty_postgres psql -U cuenty_user -d cuenty_db
 INSERT INTO admins (username, password, email) 
 VALUES ('admin', 'HASH_PASSWORD_AQUI', 'admin@cuenty.com');
 ```
+
+### 🔗 Conectar a Base de Datos Externa (Easypanel u otro servidor)
+
+Si tienes una base de datos PostgreSQL en otro contenedor o servidor, puedes conectarte usando `DATABASE_URL`:
+
+#### Configuración en Easypanel:
+
+1. **En las Variables de Entorno del servicio**, agregar:
+   ```
+   DATABASE_URL=postgresql://usuario:password@host:puerto/nombre_db?sslmode=disable
+   ```
+
+2. **Ejemplo para base de datos en otro contenedor Easypanel**:
+   ```
+   DATABASE_URL=postgresql://postgres:51056d26ddf0ddbbc77a@cloudmx_cuenty-db:5432/cuenty-db?sslmode=disable
+   ```
+
+3. **Notas importantes**:
+   - El `host` debe ser el nombre del contenedor o IP del servidor de base de datos
+   - Si está en la misma red Docker/Easypanel, usa el nombre del contenedor
+   - Para conexiones externas, usa la IP o dominio del servidor
+   - `sslmode=disable` es para conexiones locales; para producción externa considera `sslmode=require`
+
+4. **Verificar conexión**:
+   ```bash
+   # Ver logs del contenedor para confirmar la conexión
+   # Deberías ver: "✅ Conectado a la base de datos PostgreSQL"
+   # Y: "📍 Conexión usando: DATABASE_URL"
+   ```
+
+#### Configuración Local (development):
+
+1. Crear archivo `.env` en la raíz del proyecto:
+   ```bash
+   DATABASE_URL=postgresql://postgres:password@localhost:5432/cuenty_db?sslmode=disable
+   NODE_ENV=development
+   PORT=3000
+   JWT_SECRET=tu-secreto-jwt-desarrollo
+   ENCRYPTION_KEY=tu-clave-encriptacion-desarrollo
+   ```
+
+2. Iniciar el servidor:
+   ```bash
+   cd backend
+   npm start
+   ```
 
 ---
 

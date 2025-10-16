@@ -94,6 +94,22 @@ docker exec -i cuenty_postgres psql -U cuenty_user cuenty_db < backup.sql
 
 ## Configuración Adicional
 
+### Conectar a Base de Datos Externa
+
+Si tienes PostgreSQL en otro contenedor/servidor:
+
+1. Agregar en `.env`:
+   ```
+   DATABASE_URL=postgresql://usuario:password@host:puerto/nombre_db?sslmode=disable
+   ```
+
+2. Ejemplo para Easypanel:
+   ```
+   DATABASE_URL=postgresql://postgres:password@cloudmx_cuenty-db:5432/cuenty-db?sslmode=disable
+   ```
+
+3. El sistema usará `DATABASE_URL` automáticamente si está definido
+
 ### Configurar n8n (Opcional)
 
 1. Ver guía completa: `/home/ubuntu/cuenty_n8n/guia-n8n-evolution.md`
