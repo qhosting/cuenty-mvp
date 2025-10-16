@@ -37,9 +37,29 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'CUENTY API is running' });
 });
 
-// Ruta principal - Redirigir a la nueva landing page
+// Ruta principal - Información de la API
 app.get('/', (req, res) => {
-  res.redirect('/frontend/customer/');
+  res.json({
+    name: 'CUENTY API',
+    version: '1.0.0',
+    status: 'online',
+    description: 'API para gestión de productos digitales y cuentas',
+    endpoints: {
+      auth: '/api/auth',
+      productos: '/api/productos',
+      ordenes: '/api/ordenes',
+      cuentas: '/api/cuentas',
+      usuarios: '/api/usuarios',
+      tickets: '/api/tickets',
+      webhooks: '/api/webhooks/n8n',
+      health: '/health'
+    },
+    documentation: {
+      message: 'Para más información sobre los endpoints disponibles, contacta al administrador',
+      frontend: '/frontend/customer/'
+    },
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Manejo de rutas no encontradas
