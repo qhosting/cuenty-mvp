@@ -5,9 +5,13 @@ class Usuario {
   /**
    * Crear un nuevo usuario
    */
-  static async crear(celular) {
-    const query = 'INSERT INTO usuarios (celular) VALUES ($1) RETURNING *';
-    const result = await pool.query(query, [celular]);
+  static async crear(celular, nombre = null, email = null, metodo_entrega_preferido = 'whatsapp') {
+    const query = `
+      INSERT INTO usuarios (celular, nombre, email, metodo_entrega_preferido, verificado)
+      VALUES ($1, $2, $3, $4, true)
+      RETURNING *
+    `;
+    const result = await pool.query(query, [celular, nombre, email, metodo_entrega_preferido]);
     return result.rows[0];
   }
 
@@ -18,6 +22,32 @@ class Usuario {
     const query = 'SELECT * FROM usuarios WHERE celular = $1';
     const result = await pool.query(query, [celular]);
     return result.rows[0];
+  }
+
+  /**
+   * Actualizar perfil de usuario
+   */
+  static async actualizarPerfil(celular, datos) {
+    const { nombre, email, metodo_entrega_preferido } = datos;
+    const query = `
+      UPDATE usuarios
+      SET nombre = COALESCE($2, nombre),
+          email = COALESCE($3, email),
+          metodo_entrega_preferido = COALESCE($4, metodo_entrega_preferido),
+          ultimo_acceso = NOW()
+      WHERE celular = $1
+      RETURNING *
+    `;
+    const result = await pool.query(query, [celular, nombre, email, metodo_entrega_preferido]);
+    return result.rows[0];
+  }
+
+  /**
+   * Actualizar último acceso
+   */
+  static async actualizarUltimoAcceso(celular) {
+    const query = 'UPDATE usuarios SET ultimo_acceso = NOW() WHERE celular = $1';
+    await pool.query(query, [celular]);
   }
 
   /**

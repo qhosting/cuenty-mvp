@@ -24,7 +24,22 @@ app.use(express.static('public'));
 app.use('/frontend', express.static('../frontend'));
 
 // Rutas de la API
-app.use('/api/auth', require('./routes/authRoutes'));
+
+// Autenticación
+app.use('/api/auth', require('./routes/authRoutes')); // Admin auth (legacy)
+app.use('/api/auth/user', require('./routes/authEnhancedRoutes')); // User auth con teléfono
+
+// Servicios y Planes (nueva estructura)
+app.use('/api/servicios', require('./routes/servicioRoutes'));
+app.use('/api/planes', require('./routes/servicePlanRoutes'));
+
+// Carrito de compras
+app.use('/api/cart', require('./routes/cartRoutes'));
+
+// Órdenes (enhanced)
+app.use('/api/ordenes-new', require('./routes/ordenEnhancedRoutes'));
+
+// Legacy routes (mantener compatibilidad)
 app.use('/api/productos', require('./routes/productoRoutes'));
 app.use('/api/ordenes', require('./routes/ordenRoutes'));
 app.use('/api/cuentas', require('./routes/cuentaRoutes'));
@@ -41,23 +56,43 @@ app.get('/health', (req, res) => {
 // Ruta principal - Información de la API
 app.get('/', (req, res) => {
   res.json({
-    name: 'CUENTY API',
-    version: '1.0.0',
+    name: 'CUENTY API - E-Commerce Enhanced',
+    version: '2.0.0',
     status: 'online',
-    description: 'API para gestión de productos digitales y cuentas',
+    description: 'API completa para gestión de e-commerce de cuentas de streaming',
     endpoints: {
-      auth: '/api/auth',
-      productos: '/api/productos',
-      ordenes: '/api/ordenes',
-      cuentas: '/api/cuentas',
-      usuarios: '/api/usuarios',
-      tickets: '/api/tickets',
-      contact: '/api/contact',
-      webhooks: '/api/webhooks/n8n',
-      health: '/health'
+      // Autenticación
+      'auth_admin': '/api/auth',
+      'auth_user': '/api/auth/user',
+      
+      // Nuevas características E-Commerce
+      'servicios': '/api/servicios',
+      'planes': '/api/planes',
+      'carrito': '/api/cart',
+      'ordenes_new': '/api/ordenes-new',
+      
+      // Legacy (compatibilidad)
+      'productos': '/api/productos',
+      'ordenes': '/api/ordenes',
+      'cuentas': '/api/cuentas',
+      'usuarios': '/api/usuarios',
+      'tickets': '/api/tickets',
+      'contact': '/api/contact',
+      'webhooks': '/api/webhooks/n8n',
+      'health': '/health'
+    },
+    features: {
+      user_authentication: 'Autenticación con teléfono y código de verificación',
+      shopping_cart: 'Carrito de compras completo',
+      services_catalog: 'Catálogo de servicios con múltiples planes',
+      flexible_pricing: 'Precios con costo y margen de ganancia configurables',
+      order_management: 'Gestión avanzada de órdenes con estados',
+      payment_instructions: 'Instrucciones de pago bancario automáticas',
+      credential_delivery: 'Entrega de credenciales por WhatsApp, email o web',
+      admin_panel: 'Panel de administración completo'
     },
     documentation: {
-      message: 'Para más información sobre los endpoints disponibles, contacta al administrador',
+      message: 'Documentación completa disponible en /api/docs',
       frontend: '/frontend/customer/'
     },
     timestamp: new Date().toISOString()

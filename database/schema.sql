@@ -1,17 +1,22 @@
 
 -- ============================================================================
 -- CUENTY - Sistema de Gestión de Cuentas de Streaming
--- Esquema de Base de Datos PostgreSQL
+-- Esquema de Base de Datos PostgreSQL - E-COMMERCE ENHANCED
 -- ============================================================================
 
 -- Limpieza de tablas existentes (para desarrollo)
 DROP TABLE IF EXISTS ticket_mensajes CASCADE;
 DROP TABLE IF EXISTS tickets CASCADE;
+DROP TABLE IF EXISTS shopping_cart CASCADE;
 DROP TABLE IF EXISTS ordenes CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS inventario_cuentas CASCADE;
-DROP TABLE IF EXISTS productos CASCADE;
+DROP TABLE IF EXISTS service_plans CASCADE;
+DROP TABLE IF EXISTS servicios CASCADE;
+DROP TABLE IF EXISTS phone_verifications CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 DROP TABLE IF EXISTS admins CASCADE;
+DROP TABLE IF EXISTS payment_instructions CASCADE;
 
 -- ============================================================================
 -- TABLA: admins
@@ -33,25 +38,86 @@ COMMENT ON TABLE admins IS 'Administradores del sistema CUENTY';
 -- ============================================================================
 CREATE TABLE usuarios (
     celular VARCHAR(15) PRIMARY KEY,
-    fecha_creacion TIMESTAMP DEFAULT NOW()
+    nombre VARCHAR(100),
+    email VARCHAR(100),
+    verificado BOOLEAN DEFAULT false,
+    metodo_entrega_preferido VARCHAR(20) CHECK (metodo_entrega_preferido IN ('whatsapp','email','website')) DEFAULT 'whatsapp',
+    fecha_creacion TIMESTAMP DEFAULT NOW(),
+    ultimo_acceso TIMESTAMP
 );
 
 COMMENT ON TABLE usuarios IS 'Usuarios del sistema CUENTY identificados por número de celular';
 
 -- ============================================================================
--- TABLA: productos
--- Descripción: Catálogo de servicios de streaming disponibles para la venta
+-- TABLA: phone_verifications
+-- Descripción: Códigos de verificación telefónica para registro
 -- ============================================================================
-CREATE TABLE productos (
-    id_producto SERIAL PRIMARY KEY,
-    nombre_servicio VARCHAR(100) NOT NULL,
-    descripcion TEXT,
-    precio DECIMAL(10,2) NOT NULL,
-    duracion_dias INTEGER NOT NULL DEFAULT 30,
-    activo BOOLEAN DEFAULT true
+CREATE TABLE phone_verifications (
+    id SERIAL PRIMARY KEY,
+    celular VARCHAR(15) NOT NULL,
+    codigo VARCHAR(6) NOT NULL,
+    expiracion TIMESTAMP NOT NULL,
+    usado BOOLEAN DEFAULT false,
+    intentos INTEGER DEFAULT 0,
+    fecha_creacion TIMESTAMP DEFAULT NOW()
 );
 
-COMMENT ON TABLE productos IS 'Catálogo de productos/servicios de streaming disponibles';
+CREATE INDEX idx_phone_verifications_celular ON phone_verifications(celular);
+CREATE INDEX idx_phone_verifications_codigo ON phone_verifications(codigo);
+
+COMMENT ON TABLE phone_verifications IS 'Códigos de verificación telefónica para registro y autenticación';
+
+-- ============================================================================
+-- TABLA: servicios
+-- Descripción: Servicios de streaming disponibles (Netflix, Disney+, etc.)
+-- ============================================================================
+CREATE TABLE servicios (
+    id_servicio SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    logo_url TEXT,
+    categoria VARCHAR(50) DEFAULT 'streaming',
+    activo BOOLEAN DEFAULT true,
+    fecha_creacion TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE servicios IS 'Servicios de streaming disponibles';
+
+-- ============================================================================
+-- TABLA: service_plans
+-- Descripción: Planes de cada servicio con duración y precios
+-- ============================================================================
+CREATE TABLE service_plans (
+    id_plan SERIAL PRIMARY KEY,
+    id_servicio INTEGER NOT NULL REFERENCES servicios(id_servicio) ON DELETE CASCADE,
+    nombre_plan VARCHAR(100) NOT NULL,
+    duracion_meses INTEGER NOT NULL,
+    duracion_dias INTEGER GENERATED ALWAYS AS (duracion_meses * 30) STORED,
+    costo DECIMAL(10,2) NOT NULL,
+    margen_ganancia DECIMAL(10,2) NOT NULL DEFAULT 0,
+    precio_venta DECIMAL(10,2) GENERATED ALWAYS AS (costo + margen_ganancia) STORED,
+    descripcion TEXT,
+    activo BOOLEAN DEFAULT true,
+    fecha_creacion TIMESTAMP DEFAULT NOW(),
+    UNIQUE(id_servicio, duracion_meses)
+);
+
+CREATE INDEX idx_service_plans_servicio ON service_plans(id_servicio);
+CREATE INDEX idx_service_plans_activo ON service_plans(activo);
+
+COMMENT ON TABLE service_plans IS 'Planes de suscripción para cada servicio con precios y duración';
+
+-- Backward compatibility: Keep productos as a view
+CREATE OR REPLACE VIEW productos AS
+SELECT 
+    id_plan as id_producto,
+    CONCAT(s.nombre, ' - ', sp.nombre_plan) as nombre_servicio,
+    sp.descripcion,
+    sp.precio_venta as precio,
+    sp.duracion_dias,
+    sp.activo
+FROM service_plans sp
+JOIN servicios s ON sp.id_servicio = s.id_servicio;
 
 -- ============================================================================
 -- TABLA: inventario_cuentas
@@ -59,16 +125,37 @@ COMMENT ON TABLE productos IS 'Catálogo de productos/servicios de streaming dis
 -- ============================================================================
 CREATE TABLE inventario_cuentas (
     id_cuenta SERIAL PRIMARY KEY,
-    id_producto INTEGER NOT NULL REFERENCES productos(id_producto),
+    id_plan INTEGER NOT NULL REFERENCES service_plans(id_plan),
     correo_encriptado TEXT NOT NULL,
     contrasena_encriptada TEXT NOT NULL,
-    perfil VARCHAR(10),
+    perfil VARCHAR(50),
     pin VARCHAR(10),
-    estado VARCHAR(20) CHECK (estado IN ('disponible','asignada','mantenimiento')) DEFAULT 'disponible',
-    fecha_agregado TIMESTAMP DEFAULT NOW()
+    notas TEXT,
+    estado VARCHAR(20) CHECK (estado IN ('disponible','asignada','mantenimiento','bloqueada')) DEFAULT 'disponible',
+    fecha_agregado TIMESTAMP DEFAULT NOW(),
+    fecha_ultima_asignacion TIMESTAMP
 );
 
+CREATE INDEX idx_inventario_plan_estado ON inventario_cuentas(id_plan, estado);
+
 COMMENT ON TABLE inventario_cuentas IS 'Inventario de cuentas de streaming con credenciales encriptadas';
+
+-- ============================================================================
+-- TABLA: shopping_cart
+-- Descripción: Carrito de compras de usuarios
+-- ============================================================================
+CREATE TABLE shopping_cart (
+    id_cart_item SERIAL PRIMARY KEY,
+    celular_usuario VARCHAR(15) NOT NULL REFERENCES usuarios(celular) ON DELETE CASCADE,
+    id_plan INTEGER NOT NULL REFERENCES service_plans(id_plan),
+    cantidad INTEGER DEFAULT 1 CHECK (cantidad > 0),
+    fecha_agregado TIMESTAMP DEFAULT NOW(),
+    UNIQUE(celular_usuario, id_plan)
+);
+
+CREATE INDEX idx_shopping_cart_usuario ON shopping_cart(celular_usuario);
+
+COMMENT ON TABLE shopping_cart IS 'Carrito de compras de usuarios';
 
 -- ============================================================================
 -- TABLA: ordenes
@@ -77,16 +164,64 @@ COMMENT ON TABLE inventario_cuentas IS 'Inventario de cuentas de streaming con c
 CREATE TABLE ordenes (
     id_orden SERIAL PRIMARY KEY,
     celular_usuario VARCHAR(15) NOT NULL REFERENCES usuarios(celular),
-    id_producto INTEGER NOT NULL REFERENCES productos(id_producto),
-    id_cuenta_asignada INTEGER REFERENCES inventario_cuentas(id_cuenta),
-    monto_pagado DECIMAL(10,2) NOT NULL,
-    estado VARCHAR(20) CHECK (estado IN ('pendiente_pago','pagada','expirada')) DEFAULT 'pendiente_pago',
+    monto_total DECIMAL(10,2) NOT NULL,
+    estado VARCHAR(30) CHECK (estado IN ('pendiente','pendiente_pago','pagada','en_proceso','entregada','cancelada')) DEFAULT 'pendiente_pago',
+    metodo_pago VARCHAR(50) DEFAULT 'transferencia_bancaria',
+    metodo_entrega VARCHAR(20) CHECK (metodo_entrega IN ('whatsapp','email','website')) DEFAULT 'whatsapp',
+    instrucciones_pago TEXT,
+    notas_admin TEXT,
     fecha_creacion TIMESTAMP DEFAULT NOW(),
-    fecha_vencimiento_servicio TIMESTAMP,
-    datos_pago_spei JSONB
+    fecha_pago TIMESTAMP,
+    fecha_entrega TIMESTAMP,
+    datos_pago JSONB
 );
 
+CREATE INDEX idx_ordenes_usuario ON ordenes(celular_usuario);
+CREATE INDEX idx_ordenes_estado ON ordenes(estado);
+CREATE INDEX idx_ordenes_fecha ON ordenes(fecha_creacion DESC);
+
 COMMENT ON TABLE ordenes IS 'Registro de órdenes de compra de servicios de streaming';
+
+-- ============================================================================
+-- TABLA: order_items
+-- Descripción: Items individuales de cada orden
+-- ============================================================================
+CREATE TABLE order_items (
+    id_order_item SERIAL PRIMARY KEY,
+    id_orden INTEGER NOT NULL REFERENCES ordenes(id_orden) ON DELETE CASCADE,
+    id_plan INTEGER NOT NULL REFERENCES service_plans(id_plan),
+    id_cuenta_asignada INTEGER REFERENCES inventario_cuentas(id_cuenta),
+    cantidad INTEGER NOT NULL DEFAULT 1,
+    precio_unitario DECIMAL(10,2) NOT NULL,
+    subtotal DECIMAL(10,2) NOT NULL,
+    estado VARCHAR(30) CHECK (estado IN ('pendiente','asignada','entregada')) DEFAULT 'pendiente',
+    fecha_vencimiento_servicio TIMESTAMP,
+    credenciales_entregadas BOOLEAN DEFAULT false,
+    fecha_creacion TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_order_items_orden ON order_items(id_orden);
+CREATE INDEX idx_order_items_plan ON order_items(id_plan);
+
+COMMENT ON TABLE order_items IS 'Items individuales de cada orden con sus credenciales asignadas';
+
+-- ============================================================================
+-- TABLA: payment_instructions
+-- Descripción: Instrucciones de pago bancario configurables
+-- ============================================================================
+CREATE TABLE payment_instructions (
+    id SERIAL PRIMARY KEY,
+    banco VARCHAR(100) NOT NULL,
+    titular VARCHAR(200) NOT NULL,
+    numero_cuenta VARCHAR(50),
+    clabe VARCHAR(18),
+    concepto_referencia TEXT,
+    instrucciones_adicionales TEXT,
+    activo BOOLEAN DEFAULT true,
+    fecha_creacion TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE payment_instructions IS 'Instrucciones de pago bancario para transferencias';
 
 -- ============================================================================
 -- TABLA: tickets
@@ -118,14 +253,9 @@ CREATE TABLE ticket_mensajes (
 COMMENT ON TABLE ticket_mensajes IS 'Mensajes de conversación dentro de cada ticket de soporte';
 
 -- ============================================================================
--- ÍNDICES PARA OPTIMIZACIÓN DE CONSULTAS
+-- ÍNDICES ADICIONALES PARA OPTIMIZACIÓN
 -- ============================================================================
 
-CREATE INDEX idx_ordenes_celular ON ordenes(celular_usuario);
-CREATE INDEX idx_ordenes_estado ON ordenes(estado);
-CREATE INDEX idx_ordenes_fecha_creacion ON ordenes(fecha_creacion DESC);
-CREATE INDEX idx_inventario_producto_estado ON inventario_cuentas(id_producto, estado);
-CREATE INDEX idx_inventario_estado ON inventario_cuentas(estado);
 CREATE INDEX idx_tickets_celular ON tickets(celular_usuario);
 CREATE INDEX idx_tickets_estado ON tickets(estado);
 CREATE INDEX idx_tickets_fecha ON tickets(fecha_creacion DESC);
@@ -155,20 +285,60 @@ EXECUTE FUNCTION actualizar_fecha_ticket();
 -- DATOS DE EJEMPLO
 -- ============================================================================
 
-INSERT INTO productos (nombre_servicio, descripcion, precio, duracion_dias, activo) VALUES
-('Netflix 1 Pantalla', 'Acceso a Netflix con 1 pantalla simultánea. Contenido en HD.', 45.00, 30, true),
-('Disney+ Premium', 'Todo el contenido de Disney, Pixar, Marvel, Star Wars y National Geographic.', 50.00, 30, true),
-('HBO Max', 'HBO Max completo. Todo el catálogo de HBO, Warner Bros y Max Originals.', 55.00, 30, true),
-('Prime Video', 'Amazon Prime Video. Catálogo completo de películas y series.', 40.00, 30, true),
-('Spotify Premium', 'Spotify Premium Individual. Música sin anuncios y descarga offline.', 60.00, 30, true),
-('YouTube Premium', 'YouTube sin anuncios, reproducción en segundo plano y YouTube Music.', 55.00, 30, true),
-('Crunchyroll Premium', 'Anime sin anuncios en alta definición.', 45.00, 30, true),
-('Apple TV+', 'Acceso a todo el contenido original de Apple TV+.', 50.00, 30, true);
+-- Insertar servicios de streaming
+INSERT INTO servicios (nombre, descripcion, categoria, activo) VALUES
+('Netflix', 'Plataforma líder de streaming con contenido original y licenciado', 'streaming', true),
+('Disney+', 'Todo el contenido de Disney, Pixar, Marvel, Star Wars y National Geographic', 'streaming', true),
+('HBO Max', 'HBO Max completo con todo el catálogo de HBO, Warner Bros y Max Originals', 'streaming', true),
+('Prime Video', 'Amazon Prime Video con catálogo completo de películas y series', 'streaming', true),
+('Spotify', 'Música sin anuncios y descarga offline', 'musica', true);
+
+-- Insertar planes para cada servicio (1, 3, 6, 12 meses)
+-- Netflix
+INSERT INTO service_plans (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo) VALUES
+(1, '1 Mes', 1, 120.00, 30.00, 'Netflix Premium - 1 pantalla HD', true),
+(1, '3 Meses', 3, 340.00, 80.00, 'Netflix Premium - 1 pantalla HD', true),
+(1, '6 Meses', 6, 650.00, 150.00, 'Netflix Premium - 1 pantalla HD', true),
+(1, '1 Año', 12, 1200.00, 300.00, 'Netflix Premium - 1 pantalla HD', true);
+
+-- Disney+
+INSERT INTO service_plans (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo) VALUES
+(2, '1 Mes', 1, 130.00, 30.00, 'Disney+ Premium completo', true),
+(2, '3 Meses', 3, 370.00, 80.00, 'Disney+ Premium completo', true),
+(2, '6 Meses', 6, 720.00, 150.00, 'Disney+ Premium completo', true),
+(2, '1 Año', 12, 1400.00, 300.00, 'Disney+ Premium completo', true);
+
+-- HBO Max
+INSERT INTO service_plans (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo) VALUES
+(3, '1 Mes', 1, 140.00, 35.00, 'HBO Max completo', true),
+(3, '3 Meses', 3, 400.00, 95.00, 'HBO Max completo', true),
+(3, '6 Meses', 6, 780.00, 180.00, 'HBO Max completo', true),
+(3, '1 Año', 12, 1500.00, 350.00, 'HBO Max completo', true);
+
+-- Prime Video
+INSERT INTO service_plans (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo) VALUES
+(4, '1 Mes', 1, 100.00, 25.00, 'Amazon Prime Video completo', true),
+(4, '3 Meses', 3, 280.00, 70.00, 'Amazon Prime Video completo', true),
+(4, '6 Meses', 6, 540.00, 130.00, 'Amazon Prime Video completo', true),
+(4, '1 Año', 12, 1000.00, 250.00, 'Amazon Prime Video completo', true);
+
+-- Spotify
+INSERT INTO service_plans (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo) VALUES
+(5, '1 Mes', 1, 150.00, 35.00, 'Spotify Premium Individual', true),
+(5, '3 Meses', 3, 430.00, 95.00, 'Spotify Premium Individual', true),
+(5, '6 Meses', 6, 840.00, 180.00, 'Spotify Premium Individual', true),
+(5, '1 Año', 12, 1600.00, 350.00, 'Spotify Premium Individual', true);
+
+-- Instrucciones de pago por defecto
+INSERT INTO payment_instructions (banco, titular, numero_cuenta, clabe, concepto_referencia, instrucciones_adicionales, activo) VALUES
+('BBVA Bancomer', 'CUENTY DIGITAL S.A. DE C.V.', '0123456789', '012345678901234567', 'Orden #{{orden_id}}', 
+'1. Realiza la transferencia por el monto exacto\n2. Incluye el número de orden en el concepto\n3. Envía tu comprobante por WhatsApp al número de contacto\n4. Recibirás tus credenciales en menos de 2 horas', true);
 
 -- Admin por defecto (username: admin, password: admin123)
 -- IMPORTANTE: Cambiar en producción
 INSERT INTO admins (username, password, email) VALUES
-('admin', '$2a$10$YourHashedPasswordHere', 'admin@cuenty.com');
+('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@cuenty.com');
 
 -- Mensaje de bienvenida
-SELECT 'Base de datos inicializada correctamente' AS mensaje;
+SELECT 'Base de datos inicializada correctamente con ' || COUNT(*) || ' planes de servicios' AS mensaje
+FROM service_plans;
