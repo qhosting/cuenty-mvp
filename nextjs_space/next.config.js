@@ -22,16 +22,6 @@ const nextConfig = {
     return 'cuenty-build'
   },
   
-  // Excluir rutas API del output estático
-  exportPathMap: async function (
-    defaultPathMap,
-    { dev, dir, outDir, distDir, buildId }
-  ) {
-    return {
-      '/': { page: '/' },
-    }
-  },
-  
   // Configuración para webpack
   webpack: (config, { isServer }) => {
     if (isServer) {
