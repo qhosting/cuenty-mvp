@@ -8,11 +8,18 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({ token, req }) => {
+        const pathname = req.nextUrl.pathname
+
+        // Permitir acceso público a /admin/login
+        if (pathname === '/admin/login') {
+          return true
+        }
+
         // Check if user is authenticated for protected routes
-        if (req.nextUrl.pathname.startsWith('/dashboard')) {
+        if (pathname.startsWith('/dashboard')) {
           return !!token
         }
-        if (req.nextUrl.pathname.startsWith('/admin')) {
+        if (pathname.startsWith('/admin')) {
           return !!token
         }
         return true
