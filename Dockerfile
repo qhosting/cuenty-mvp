@@ -43,11 +43,16 @@ COPY nextjs_space/ ./
 # Variables de entorno necesarias para el build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
-# Variables para NextAuth durante el build (no se usan en runtime)
+# Indicador de fase de build para NextAuth
 ENV BUILDING=true
+ENV NEXT_PHASE=phase-production-build
+# Variables dummy para NextAuth durante el build (sobrescritas por Easypanel en runtime)
 ENV NEXTAUTH_URL=http://localhost:3000
-ENV NEXTAUTH_SECRET=build-time-secret-not-used-in-production
+ENV NEXTAUTH_SECRET=dummy-build-secret-must-be-changed-in-production-via-easypanel
+# Variable dummy para Prisma durante el build (sobrescrita por Easypanel en runtime)
 ENV DATABASE_URL=file:./build-dummy.db
+# Variables adicionales que pueden ser requeridas
+ENV SKIP_ENV_VALIDATION=true
 
 # Generar Prisma Client ANTES del build de Next.js
 RUN npx prisma generate && \
