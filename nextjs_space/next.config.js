@@ -14,24 +14,6 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
-  
-  // Configuración crítica para evitar pre-renderizado de rutas API
-  // Esto previene el error "Failed to collect page data for /api/auth/[...nextauth]"
-  generateBuildId: async () => {
-    // ID de build estático para evitar problemas
-    return 'cuenty-build'
-  },
-  
-  // Configuración para webpack
-  webpack: (config, { isServer }) => {
-    if (isServer) {
-      // Ignorar módulos opcionales de Prisma que pueden causar problemas
-      config.externals.push({
-        '@prisma/client': 'commonjs @prisma/client',
-      })
-    }
-    return config
-  },
 };
 
 module.exports = nextConfig;
