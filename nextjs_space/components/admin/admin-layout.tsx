@@ -16,7 +16,8 @@ import {
   LogOut,
   Menu,
   X,
-  Bell
+  Bell,
+  Palette
 } from 'lucide-react'
 import { adminAuth } from '@/lib/admin-auth'
 import { toast } from 'react-hot-toast'
@@ -51,6 +52,11 @@ const navigation = [
     name: 'Cuentas',
     href: '/admin/accounts',
     icon: Users
+  },
+  {
+    name: 'Config. Sitio',
+    href: '/admin/site-config',
+    icon: Palette
   },
   {
     name: 'Configuración',

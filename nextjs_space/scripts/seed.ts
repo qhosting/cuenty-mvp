@@ -7,6 +7,43 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Iniciando seed de la base de datos...')
 
+  // Crear configuración del sitio por defecto
+  await prisma.siteConfig.upsert({
+    where: {
+      id: 'default'
+    },
+    update: {},
+    create: {
+      id: 'default',
+      logoUrl: '/images/CUENTY.png',
+      logoSize: 'medium',
+      heroTitle: 'Accede a tus\nPlataformas Favoritas',
+      heroSubtitle: 'Obtén cuentas premium de Netflix, Disney+, HBO Max, Prime Video y más.\nEntrega inmediata y soporte 24/7.',
+      heroBadgeText: 'Plataforma #1 en México',
+      heroCtaPrimary: 'Ver Catálogo',
+      heroCTASecondary: 'Cómo Funciona',
+      stat1Value: '10,000+',
+      stat1Label: 'Clientes Satisfechos',
+      stat2Value: '15+',
+      stat2Label: 'Plataformas',
+      stat3Value: '99.9%',
+      stat3Label: 'Uptime',
+      stat4Value: '24/7',
+      stat4Label: 'Soporte',
+      featuresTitle: '¿Por qué elegir CUENTY?',
+      featuresSubtitle: 'Somos la plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento.',
+      howItWorksTitle: '¿Cómo Funciona?',
+      howItWorksSubtitle: 'Obtener tu cuenta premium es muy fácil. Solo sigue estos 4 simples pasos y estarás disfrutando en minutos.',
+      whatsappNumber: 'message/IOR2WUU66JVMM1',
+      supportEmail: 'soporte@cuenty.com',
+      metaTitle: 'CUENTY - Cuentas de Streaming Premium',
+      metaDescription: 'La mejor plataforma para obtener cuentas de streaming premium como Netflix, Disney+, HBO Max y más. Precios accesibles y entrega inmediata.',
+      metaKeywords: 'streaming, Netflix, Disney+, HBO Max, cuentas premium, CUENTY'
+    }
+  })
+
+  console.log('⚙️  Configuración del sitio creada')
+
   // Crear usuario de prueba (administrador)
   const hashedPassword = await bcrypt.hash('johndoe123', 12)
   

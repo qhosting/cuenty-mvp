@@ -6,10 +6,17 @@ import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, User, LogOut, ShoppingCart, Heart, Settings } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { downloadFile } from '@/lib/s3'
+
+interface SiteConfig {
+  logoUrl?: string
+  logoSize: 'small' | 'medium' | 'large'
+}
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>({ logoSize: 'medium' })
   
   let session = null
   let status = 'loading'
@@ -26,6 +33,24 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true)
+    
+    // Load site configuration
+    const loadSiteConfig = async () => {
+      try {
+        const response = await fetch('/api/site-config')
+        if (response.ok) {
+          const config = await response.json()
+          setSiteConfig({
+            logoUrl: config.logoUrl,
+            logoSize: config.logoSize || 'medium'
+          })
+        }
+      } catch (error) {
+        console.error('Failed to load site config:', error)
+      }
+    }
+    
+    loadSiteConfig()
   }, [])
 
   const navigation = [
@@ -38,15 +63,29 @@ export function Header() {
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
+  const getLogoSize = (size: string) => {
+    switch (size) {
+      case 'small':
+        return { width: 'w-24', height: 'h-6' } // 96px x 24px
+      case 'large':
+        return { width: 'w-40', height: 'h-10' } // 160px x 40px
+      default:
+        return { width: 'w-32', height: 'h-8' } // 128px x 32px
+    }
+  }
+
+  const logoSize = getLogoSize(siteConfig?.logoSize || 'medium')
+  const logoUrl = siteConfig?.logoUrl || '/images/CUENTY.png'
+
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="relative w-32 h-8">
+              <div className={`relative ${logoSize.width} ${logoSize.height}`}>
                 <Image
-                  src="/images/CUENTY.png"
+                  src={logoUrl}
                   alt="CUENTY"
                   fill
                   className="object-contain"
@@ -78,9 +117,9 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
-            <div className="relative w-32 h-8">
+            <div className={`relative ${logoSize.width} ${logoSize.height}`}>
               <Image
-                src="/images/CUENTY.png"
+                src={logoUrl}
                 alt="CUENTY"
                 fill
                 className="object-contain"

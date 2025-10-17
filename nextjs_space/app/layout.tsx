@@ -8,6 +8,7 @@ import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
+// Note: This will be dynamically generated, but we need defaults for static generation
 export const metadata: Metadata = {
   title: 'CUENTY - Cuentas de Streaming Premium',
   description: 'La mejor plataforma para obtener cuentas de streaming premium como Netflix, Disney+, HBO Max y más. Precios accesibles y entrega inmediata.',
