@@ -29,6 +29,9 @@ app.use('/frontend', express.static('../frontend'));
 app.use('/api/auth', require('./routes/authRoutes')); // Admin auth (legacy)
 app.use('/api/auth/user', require('./routes/authEnhancedRoutes')); // User auth con teléfono
 
+// Admin - Panel de administración completo
+app.use('/api/admin', require('./routes/adminRoutes'));
+
 // Servicios y Planes (nueva estructura)
 app.use('/api/servicios', require('./routes/servicioRoutes'));
 app.use('/api/planes', require('./routes/servicePlanRoutes'));
@@ -64,6 +67,9 @@ app.get('/', (req, res) => {
       // Autenticación
       'auth_admin': '/api/auth',
       'auth_user': '/api/auth/user',
+      
+      // Admin Panel
+      'admin': '/api/admin',
       
       // Nuevas características E-Commerce
       'servicios': '/api/servicios',

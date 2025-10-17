@@ -334,10 +334,10 @@ INSERT INTO payment_instructions (banco, titular, numero_cuenta, clabe, concepto
 ('BBVA Bancomer', 'CUENTY DIGITAL S.A. DE C.V.', '0123456789', '012345678901234567', 'Orden #{{orden_id}}', 
 '1. Realiza la transferencia por el monto exacto\n2. Incluye el número de orden en el concepto\n3. Envía tu comprobante por WhatsApp al número de contacto\n4. Recibirás tus credenciales en menos de 2 horas', true);
 
--- Admin por defecto (username: admin, password: admin123)
+-- Admin por defecto (username: admin, email: admin@cuenty.com, password: Admin123!)
 -- IMPORTANTE: Cambiar en producción
 INSERT INTO admins (username, password, email) VALUES
-('admin', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin@cuenty.com');
+('admin', '$2a$10$.qHC00LExwdCytfPF3qGueIsrB1.FF474XmBQ/C4Q1MzHlGUdKO6i', 'admin@cuenty.com');
 
 -- Mensaje de bienvenida
 SELECT 'Base de datos inicializada correctamente con ' || COUNT(*) || ' planes de servicios' AS mensaje
