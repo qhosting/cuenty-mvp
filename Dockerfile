@@ -99,23 +99,34 @@ COPY --from=backend-builder /app/backend/ ./
 # ============================================================================
 # Copiar Frontend construido
 # ============================================================================
-WORKDIR /app
+WORKDIR /app/nextjs_space
 
-# Copiar el frontend construido completo (con node_modules de producción)
+# Copiar package.json y package-lock.json
 COPY --from=frontend-builder /app/frontend/package.json \
                              /app/frontend/package-lock.json \
-                             ./nextjs_space/
+                             ./
 
 # Instalar SOLO dependencias de producción para Next.js
-WORKDIR /app/nextjs_space
 RUN npm ci --only=production && \
     echo "✓ Frontend production dependencies installed"
 
+# Copiar el directorio prisma (necesario para el Cliente de Prisma)
+COPY --from=frontend-builder /app/frontend/prisma ./prisma
+
+# Generar Prisma Client en la imagen final (con binarios correctos para Alpine)
+RUN npx prisma generate && \
+    echo "✓ Prisma Client generated for production"
+
 # Copiar archivos construidos y necesarios del frontend
-COPY --from=frontend-builder /app/frontend/.next ./nextjs_space/.next
-COPY --from=frontend-builder /app/frontend/public ./nextjs_space/public
-COPY --from=frontend-builder /app/frontend/next.config.js ./nextjs_space/
-COPY --from=frontend-builder /app/frontend/.env* ./nextjs_space/ 2>/dev/null || true
+COPY --from=frontend-builder /app/frontend/.next ./.next
+COPY --from=frontend-builder /app/frontend/public ./public
+COPY --from=frontend-builder /app/frontend/next.config.js ./
+COPY --from=frontend-builder /app/frontend/middleware.ts ./
+COPY --from=frontend-builder /app/frontend/app ./app
+COPY --from=frontend-builder /app/frontend/components ./components
+COPY --from=frontend-builder /app/frontend/lib ./lib
+COPY --from=frontend-builder /app/frontend/types ./types
+COPY --from=frontend-builder /app/frontend/.env* ./ 2>/dev/null || true
 
 # ============================================================================
 # Configuración final

@@ -2,7 +2,7 @@
 generator client {
     provider = "prisma-client-js"
     binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
-    output = "/home/ubuntu/cuenty_mvp/nextjs_space/node_modules/.prisma/client"
+    // output usa el default: node_modules/.prisma/client (relativo al directorio del proyecto)
 }
 
 datasource db {
