@@ -1,53 +1,66 @@
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-// Mock data - In production, this would come from your backend API
-const mockProducts = [
-  {
-    id: 1,
-    name: 'Netflix Premium',
-    description: '4K UHD, 4 pantallas simultáneas, sin anuncios',
-    price: 89,
-    duration: 30,
-    category: 'Netflix',
-    isActive: true,
-    features: ['4K Ultra HD', '4 Pantallas', 'Sin Publicidad', 'Descargas']
-  },
-  {
-    id: 2,
-    name: 'Disney+ Premium',
-    description: 'Contenido Disney, Pixar, Marvel, Star Wars',
-    price: 69,
-    duration: 30,
-    category: 'Disney+',
-    isActive: true,
-    features: ['4K HDR', 'Sin Límites', 'Todo Disney', 'Estrenar Primero']
-  },
-  {
-    id: 3,
-    name: 'HBO Max',
-    description: 'Series exclusivas, películas y documentales',
-    price: 79,
-    duration: 30,
-    category: 'HBO Max',
-    isActive: true,
-    features: ['Contenido Exclusivo', 'Sin Anuncios', 'Máxima Calidad', 'Estrenos']
-  }
-]
-
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // In production, fetch from your existing backend
-    // const response = await fetch(`${process.env.BACKEND_URL}/api/productos`)
-    // const products = await response.json()
+    const { searchParams } = new URL(request.url)
+    const category = searchParams.get('category')
+    const duration = searchParams.get('duration')
+
+    const where: any = { isActive: true }
     
-    return NextResponse.json({ productos: mockProducts })
+    if (category && category !== 'all') {
+      where.category = category
+    }
+    
+    if (duration) {
+      where.duration = parseInt(duration)
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: [
+        { category: 'asc' },
+        { duration: 'asc' },
+        { name: 'asc' }
+      ]
+    })
+
+    return NextResponse.json(products)
   } catch (error) {
-    console.error('Products fetch error:', error)
+    console.error('Error fetching products:', error)
     return NextResponse.json(
-      { error: 'Error al obtener productos' },
+      { error: 'Error fetching products' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { name, description, price, duration, category, features } = body
+
+    const product = await prisma.product.create({
+      data: {
+        name,
+        description,
+        price: parseFloat(price),
+        duration: parseInt(duration),
+        category,
+        features: features || [],
+        isActive: true
+      }
+    })
+
+    return NextResponse.json(product)
+  } catch (error) {
+    console.error('Error creating product:', error)
+    return NextResponse.json(
+      { error: 'Error creating product' },
       { status: 500 }
     )
   }

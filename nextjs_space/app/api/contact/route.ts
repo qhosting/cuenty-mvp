@@ -1,87 +1,62 @@
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { name, email, phone, subject, message } = await request.json()
+    const body = await request.json()
+    const { name, email, phone, subject, message } = body
 
-    if (!name || !email || !message) {
+    if (!name || !email || !subject || !message) {
       return NextResponse.json(
-        { message: 'Faltan campos requeridos' },
+        { error: 'Missing required fields' },
         { status: 400 }
       )
     }
 
-    try {
-      // Save contact form to database
-      const contactForm = await prisma.contactForm.create({
-        data: {
-          name,
-          email,
-          phone: phone || null,
-          subject: subject || 'Consulta general',
-          message,
-          status: 'PENDING'
-        }
-      })
-
-      // Also send to backend API if available
-      if (process.env.BACKEND_URL) {
-        try {
-          await fetch(`${process.env.BACKEND_URL}/api/contact`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              nombre: name,
-              email,
-              asunto: subject || 'Consulta general',
-              mensaje: message
-            })
-          })
-        } catch (backendError) {
-          console.warn('Backend contact API not available:', backendError)
-        }
+    const contactForm = await prisma.contactForm.create({
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        subject,
+        message,
+        status: 'PENDING'
       }
+    })
 
-      return NextResponse.json(
-        { 
-          message: 'Mensaje enviado exitosamente. Te contactaremos pronto.',
-          id: contactForm.id
-        },
-        { status: 201 }
-      )
-    } catch (dbError) {
-      // If database fails, try backend API directly
-      if (process.env.BACKEND_URL) {
-        const backendResponse = await fetch(`${process.env.BACKEND_URL}/api/contact`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            nombre: name,
-            email,
-            asunto: subject || 'Consulta general',
-            mensaje: message
-          })
-        })
-
-        if (backendResponse.ok) {
-          const data = await backendResponse.json()
-          return NextResponse.json(data, { status: 201 })
-        }
-      }
-      throw dbError
-    }
+    return NextResponse.json({
+      message: 'Mensaje enviado correctamente',
+      id: contactForm.id
+    })
   } catch (error) {
-    console.error('Contact form error:', error)
+    console.error('Error creating contact form:', error)
     return NextResponse.json(
-      { message: 'Error al enviar el mensaje' },
+      { error: 'Error al enviar el mensaje' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const status = searchParams.get('status')
+
+    const where = status ? { status } : {}
+
+    const contacts = await prisma.contactForm.findMany({
+      where,
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return NextResponse.json(contacts)
+  } catch (error) {
+    console.error('Error fetching contacts:', error)
+    return NextResponse.json(
+      { error: 'Error fetching contacts' },
       { status: 500 }
     )
   }

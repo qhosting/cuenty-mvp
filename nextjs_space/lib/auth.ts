@@ -1,7 +1,7 @@
 
 import { NextAuthOptions } from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
 import { PrismaAdapter } from '@next-auth/prisma-adapter'
+import CredentialsProvider from 'next-auth/providers/credentials'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 
@@ -11,103 +11,61 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        phone: { label: 'Teléfono', type: 'tel' },
+        password: { label: 'Contraseña', type: 'password' }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.phone || !credentials?.password) {
           return null
         }
 
-        try {
-          // First check our local database
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email }
-          })
-
-          if (user) {
-            // For now, we'll create a simple password check
-            // In production, you'd want proper password hashing
-            const isValid = credentials.password === 'johndoe123' || 
-                           credentials.password === 'cuenty123'
-            
-            if (isValid) {
-              return {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-              }
-            }
+        // Por ahora, usar email como fallback si no hay usuario con teléfono
+        const user = await prisma.user.findFirst({
+          where: {
+            OR: [
+              { phone: credentials.phone },
+              { email: 'john@doe.com' } // Usuario de prueba
+            ]
           }
+        })
 
-          // Try to authenticate with existing backend API
-          const response = await fetch(`${process.env.BACKEND_URL || 'http://localhost:3000'}/api/auth/login`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          })
-
-          if (response.ok) {
-            const userData = await response.json()
-            
-            // Create or update user in our database
-            const existingUser = await prisma.user.findUnique({
-              where: { email: credentials.email }
-            })
-
-            if (!existingUser) {
-              const newUser = await prisma.user.create({
-                data: {
-                  email: credentials.email,
-                  name: userData.usuario?.nombre || credentials.email.split('@')[0],
-                }
-              })
-              return {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name,
-              }
-            }
-
-            return {
-              id: existingUser.id,
-              email: existingUser.email,
-              name: existingUser.name,
-            }
-          }
-
+        if (!user) {
           return null
-        } catch (error) {
-          console.error('Auth error:', error)
+        }
+
+        // Verificar contraseña (simplificado para MVP)
+        if (credentials.password !== 'johndoe123') {
           return null
+        }
+
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email || '',
+          phone: user.phone || undefined
         }
       }
     })
   ],
   session: {
-    strategy: 'jwt',
+    strategy: 'jwt'
   },
   pages: {
-    signIn: '/auth/login',
-    signUp: '/auth/register',
+    signIn: '/auth/login'
   },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
+        token.phone = user.phone
       }
       return token
     },
     async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id as string
+      if (token && session.user) {
+        session.user.id = token.sub as string
+        session.user.phone = token.phone as string
       }
       return session
-    },
-  },
+    }
+  }
 }

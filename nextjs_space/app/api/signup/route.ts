@@ -1,58 +1,62 @@
 
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
+import { prisma } from '@/lib/prisma'
 
 export const dynamic = 'force-dynamic'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { name, email, phone, password } = await request.json()
+    const body = await request.json()
+    const { name, email, phone, password } = body
 
-    if (!name || !email || !password) {
+    if (!name || !email || !phone || !password) {
       return NextResponse.json(
-        { message: 'Faltan campos requeridos' },
+        { error: 'Todos los campos son obligatorios' },
         { status: 400 }
       )
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
+    // Verificar si el usuario ya existe
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone }
+        ]
+      }
     })
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'Ya existe un usuario con este email' },
+        { error: 'El usuario ya existe con este email o teléfono' },
         { status: 400 }
       )
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Create user
+    // Crear usuario (sin hash por simplicidad en MVP)
     const user = await prisma.user.create({
       data: {
         name,
         email,
         phone,
-        // Store hashed password temporarily for authentication
-        // In production, you might want to handle this differently
+        emailVerified: new Date()
       }
     })
 
-    return NextResponse.json(
-      { 
-        message: 'Usuario creado exitosamente',
-        user: { id: user.id, email: user.email, name: user.name }
-      },
-      { status: 201 }
-    )
+    return NextResponse.json({
+      message: 'Usuario creado exitosamente',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone
+      }
+    })
   } catch (error) {
-    console.error('Signup error:', error)
+    console.error('Error creating user:', error)
     return NextResponse.json(
-      { message: 'Error interno del servidor' },
+      { error: 'Error al crear el usuario' },
       { status: 500 }
     )
   }
