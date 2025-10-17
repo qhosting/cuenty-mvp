@@ -25,6 +25,9 @@ app.use('/frontend', express.static('../frontend'));
 
 // Rutas de la API
 
+// Versión de la API (público)
+app.use('/api/version', require('./routes/versionRoutes'));
+
 // Autenticación
 app.use('/api/auth', require('./routes/authRoutes')); // Admin auth (legacy)
 app.use('/api/auth/user', require('./routes/authEnhancedRoutes')); // User auth con teléfono
@@ -64,6 +67,10 @@ app.get('/', (req, res) => {
     status: 'online',
     description: 'API completa para gestión de e-commerce de cuentas de streaming',
     endpoints: {
+      // Información del sistema
+      'version': '/api/version',
+      'health': '/health',
+      
       // Autenticación
       'auth_admin': '/api/auth',
       'auth_user': '/api/auth/user',
@@ -84,8 +91,7 @@ app.get('/', (req, res) => {
       'usuarios': '/api/usuarios',
       'tickets': '/api/tickets',
       'contact': '/api/contact',
-      'webhooks': '/api/webhooks/n8n',
-      'health': '/health'
+      'webhooks': '/api/webhooks/n8n'
     },
     features: {
       user_authentication: 'Autenticación con teléfono y código de verificación',
@@ -119,8 +125,19 @@ app.use((err, req, res, next) => {
   });
 });
 
+const packageJson = require('./package.json');
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 CUENTY API corriendo en puerto ${PORT}`);
-  console.log(`📊 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`
+╔═══════════════════════════════════════════════════════════╗
+║              🚀 CUENTY API - Sistema Iniciado             ║
+╚═══════════════════════════════════════════════════════════╝
+  📦 Versión: ${packageJson.version}
+  🌐 Puerto: ${PORT}
+  📊 Entorno: ${process.env.NODE_ENV || 'development'}
+  ⏰ Timestamp: ${new Date().toISOString()}
+  🔗 API Version: http://localhost:${PORT}/api/version
+╔═══════════════════════════════════════════════════════════╗
+  `);
 });

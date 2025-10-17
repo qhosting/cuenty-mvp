@@ -23,6 +23,7 @@
 - [Seguridad](#-seguridad)
 - [Solución de Problemas](#-solución-de-problemas)
 - [Roadmap](#-roadmap)
+- [Sistema de Versionado](#-sistema-de-versionado)
 
 ---
 
@@ -882,6 +883,125 @@ kill -9 $(lsof -t -i :3000)
 - [ ] Integración con más pasarelas de pago
 - [ ] Sistema de renovación automática
 - [ ] Dashboard de métricas de negocio
+
+---
+
+## 📦 Sistema de Versionado
+
+CUENTY utiliza [Semantic Versioning](https://semver.org/lang/es/) (SemVer) para el control de versiones.
+
+### Formato de Versión: `MAJOR.MINOR.PATCH`
+
+- **MAJOR (X.0.0)**: Cambios incompatibles con versiones anteriores
+- **MINOR (1.X.0)**: Nueva funcionalidad compatible con versiones anteriores
+- **PATCH (1.0.X)**: Correcciones de bugs y mejoras menores
+
+### 🔍 Verificar Versión Actual
+
+#### En Producción (API Endpoint)
+
+```bash
+# Verificar versión de la API en producción
+curl https://tu-dominio.com/api/version
+
+# Respuesta:
+# {
+#   "version": "1.0.0",
+#   "environment": "production",
+#   "timestamp": "2025-10-17T12:00:00.000Z",
+#   "name": "cuenty-backend",
+#   "description": "Backend API para CUENTY - Plataforma de gestión de cuentas de streaming"
+# }
+```
+
+#### En Desarrollo (Logs del Servidor)
+
+Al iniciar el servidor backend, verás la versión en los logs:
+
+```bash
+cd backend && npm run dev
+
+# Output:
+# ╔═══════════════════════════════════════════════════════════╗
+# ║              🚀 CUENTY API - Sistema Iniciado             ║
+# ╚═══════════════════════════════════════════════════════════╝
+#   📦 Versión: 1.0.0
+#   🌐 Puerto: 3000
+#   📊 Entorno: development
+#   ⏰ Timestamp: 2025-10-17T12:00:00.000Z
+#   🔗 API Version: http://localhost:3000/api/version
+# ╔═══════════════════════════════════════════════════════════╗
+```
+
+#### En el Frontend
+
+La versión de la API se muestra automáticamente en:
+- 🌐 **Footer de la landing page**: Badge con "API v1.0.0"
+- 👨‍💼 **Panel de administración**: Sidebar inferior con versión
+
+### 📝 Actualizar Versión (Antes de Deploy)
+
+#### 1. Actualizar package.json del Backend
+
+```bash
+cd backend
+npm version patch   # Para bug fixes (1.0.0 → 1.0.1)
+npm version minor   # Para nuevas features (1.0.0 → 1.1.0)
+npm version major   # Para breaking changes (1.0.0 → 2.0.0)
+```
+
+#### 2. Actualizar CHANGELOG.md
+
+Documenta los cambios en `CHANGELOG.md` siguiendo el formato:
+
+```markdown
+## [1.1.0] - 2025-10-17
+
+### ✨ Añadido
+- Nueva funcionalidad X
+- Nuevo endpoint Y
+
+### 🐛 Corregido
+- Bug en validación de formulario
+- Error en cálculo de precios
+```
+
+#### 3. Commit y Push
+
+```bash
+# Hacer commit con mensaje descriptivo
+git add .
+git commit -m "chore: bump version to 1.1.0 - Added new features"
+git tag v1.1.0
+git push origin main --tags
+```
+
+#### 4. Verificar en Producción
+
+Después del deploy, verifica que la versión se actualizó:
+
+```bash
+curl https://tu-dominio.com/api/version
+```
+
+### 📚 Documentación de Cambios
+
+Consulta el archivo [`CHANGELOG.md`](./CHANGELOG.md) para ver el historial completo de cambios entre versiones.
+
+### 🎯 Buenas Prácticas
+
+1. **Siempre actualiza la versión antes de hacer deploy a producción**
+2. **Documenta todos los cambios en CHANGELOG.md**
+3. **Usa tags de git para marcar releases** (`git tag v1.0.0`)
+4. **Mantén la versión del frontend sincronizada con el backend** (opcional)
+5. **Informa a los usuarios sobre breaking changes** en versiones MAJOR
+
+### 🔗 Endpoints de Versión
+
+| Endpoint | Método | Descripción | Público |
+|----------|--------|-------------|---------|
+| `/api/version` | GET | Información de versión actual | ✅ Sí |
+| `/` | GET | Info general de la API (incluye versión) | ✅ Sí |
 
 ---
 
