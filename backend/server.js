@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 require('dotenv').config();
 
 const app = express();
@@ -19,9 +20,9 @@ app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Servir archivos estáticos
-app.use(express.static('public'));
-app.use('/frontend', express.static('../frontend'));
+// Servir archivos estáticos solo desde /public (imágenes, etc)
+// NO servir index.html automáticamente para evitar conflictos con Next.js
+app.use('/public', express.static('public'));
 
 // Rutas de la API
 
@@ -59,8 +60,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'CUENTY API is running' });
 });
 
-// Ruta principal - Información de la API
-app.get('/', (req, res) => {
+// Ruta de información de la API (solo para /api-info)
+app.get('/api-info', (req, res) => {
   res.json({
     name: 'CUENTY API - E-Commerce Enhanced',
     version: '2.0.0',
@@ -105,10 +106,54 @@ app.get('/', (req, res) => {
     },
     documentation: {
       message: 'Documentación completa disponible en /api/docs',
-      frontend: '/frontend/customer/'
+      frontend: '/'
     },
     timestamp: new Date().toISOString()
   });
+});
+
+// Proxy para Next.js Frontend - Debe estar DESPUÉS de todas las rutas de API
+// pero ANTES del manejo de errores 404
+const NEXTJS_PORT = process.env.NEXTJS_PORT || 3001;
+const NEXTJS_URL = `http://localhost:${NEXTJS_PORT}`;
+
+// Solo hacer proxy si NO es una ruta de API, health check, o recursos estáticos
+app.use('/', (req, res, next) => {
+  // Si es una ruta de API, health check, o recursos estáticos, pasar al siguiente middleware
+  if (req.path.startsWith('/api') || 
+      req.path.startsWith('/health') || 
+      req.path.startsWith('/api-info') ||
+      req.path.startsWith('/public')) {
+    return next();
+  }
+  
+  // Para todas las demás rutas, hacer proxy a Next.js
+  return createProxyMiddleware({
+    target: NEXTJS_URL,
+    changeOrigin: true,
+    ws: true, // Soporte para WebSockets (útil para hot reload en desarrollo)
+    onProxyReq: (proxyReq, req, res) => {
+      console.log(`🔀 Proxy: ${req.method} ${req.path} -> ${NEXTJS_URL}${req.path}`);
+    },
+    onError: (err, req, res) => {
+      console.error('❌ Error en proxy a Next.js:', err.message);
+      console.log(`💡 Asegúrate de que Next.js esté corriendo en ${NEXTJS_URL}`);
+      res.status(503).send(`
+        <html>
+          <head><title>CUENTY - Servicio no disponible</title></head>
+          <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+            <h1>🚧 Frontend no disponible</h1>
+            <p>El servidor frontend de Next.js no está corriendo.</p>
+            <p>Por favor, inicia el sistema con:</p>
+            <pre style="background: #f0f0f0; padding: 20px; display: inline-block;">
+./start.sh
+            </pre>
+            <p><a href="/api-info">Ver información de la API</a></p>
+          </body>
+        </html>
+      `);
+    }
+  })(req, res, next);
 });
 
 // Manejo de rutas no encontradas

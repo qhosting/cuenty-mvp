@@ -148,13 +148,45 @@ cuenty_mvp/
 │       └── admin-app.js
 ├── database/                  # Scripts de base de datos
 │   └── schema.sql            # Esquema completo
+├── nextjs_space/              # Frontend Next.js (Nueva landing)
+│   ├── app/                  # App Router de Next.js
+│   ├── components/           # Componentes React
+│   └── public/               # Assets estáticos
 ├── Dockerfile                 # Imagen Docker
 ├── docker-compose.yml         # Orquestación de servicios
+├── start.sh                   # Script de inicio unificado
+├── start-docker.sh            # Script para Docker
 ├── .env.example              # Ejemplo de variables de entorno
 ├── .dockerignore
 ├── .gitignore
 └── README.md                 # Esta documentación
 ```
+
+### 🔄 Sistema Unificado Backend + Frontend
+
+CUENTY ahora utiliza un **sistema unificado** donde:
+
+1. **Backend (Express)** corre en puerto **3000**
+2. **Frontend (Next.js)** corre en puerto **3001** (interno)
+3. El backend hace **proxy automático** al frontend para todas las rutas no-API
+
+**Ventajas:**
+- ✅ Un solo puerto de acceso: `http://localhost:3000`
+- ✅ Sin problemas de CORS
+- ✅ Configuración simplificada
+- ✅ El proxy maneja automáticamente todas las rutas
+
+**Rutas especiales que NO se envían al proxy:**
+- `/api/*` - Todas las rutas de API
+- `/health` - Health check del backend
+- `/api-info` - Información de la API
+- `/public/*` - Recursos estáticos del backend
+
+**Todo lo demás se proxy al frontend Next.js**, incluyendo:
+- `/` - Landing page
+- `/customer/*` - Área de clientes
+- `/admin/*` - Panel de administración (nuevo)
+- Y cualquier otra ruta del frontend
 
 ---
 
@@ -179,25 +211,41 @@ cuenty_mvp/
 
 ## 🚀 Instalación Rápida
 
-### Opción 1: Docker (Recomendado)
+### Opción 1: Script Unificado (Recomendado para Desarrollo)
 
 ```bash
-# 1. Clonar el repositorio (o copiar los archivos)
+# 1. Ir al directorio del proyecto
 cd /home/ubuntu/cuenty_mvp
 
-# 2. Crear archivo de configuración
-cp .env.example .env
+# 2. Ejecutar script de inicio unificado
+./start.sh
 
-# 3. Editar .env con tus valores
-nano .env
+# 3. ¡Listo! Acceder a:
+# - Sitio Web: http://localhost:3000
+# - API Info: http://localhost:3000/api-info
+# - Health: http://localhost:3000/health
+```
 
-# 4. Iniciar servicios con Docker Compose
-docker-compose up -d
+El script `start.sh` hace todo automáticamente:
+- ✅ Verifica e instala dependencias
+- ✅ Inicia Next.js en puerto 3001
+- ✅ Inicia Express en puerto 3000 con proxy
+- ✅ Muestra logs en tiempo real
+- ✅ Limpieza automática al presionar Ctrl+C
 
-# 5. Ver logs
-docker-compose logs -f app
+### Opción 2: Docker (Recomendado para Producción)
 
-# 6. Acceder a la aplicación
+```bash
+# 1. Construir imagen
+docker build -t cuenty:latest .
+
+# 2. Ejecutar contenedor
+docker run -d -p 3000:3000 --name cuenty cuenty:latest
+
+# 3. Ver logs
+docker logs -f cuenty
+
+# 4. Acceder a la aplicación
 # Frontend Cliente: http://localhost:3000
 # Panel Admin: http://localhost:3000/admin
 ```

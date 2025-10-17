@@ -2,29 +2,52 @@
 
 ## Instalación Express (5 minutos)
 
-### Con Docker (Recomendado)
+### Con Script Unificado (Recomendado para Desarrollo)
 
 ```bash
-# 1. Ejecutar script de setup
-./setup.sh
+# 1. Ejecutar script de inicio unificado
+./start.sh
 
 # 2. ¡Listo! Accede a:
-# - Cliente: http://localhost:3000
-# - Admin: http://localhost:3000/admin
+# - Sitio Web: http://localhost:3000
+# - Panel Admin: http://localhost:3000/admin (Legacy en /frontend/admin/)
+# - API Info: http://localhost:3000/api-info
+# - Health: http://localhost:3000/health
 ```
 
-### Sin Docker
+**¿Qué hace `start.sh`?**
+- Inicia Next.js (Frontend) en puerto 3001
+- Inicia Express (Backend) en puerto 3000
+- El backend hace proxy al frontend automáticamente
+- **Accedes a TODO desde http://localhost:3000** 🎉
+
+### Con Docker (Recomendado para Producción)
 
 ```bash
-# 1. Instalar dependencias
-cd backend && npm install
+# 1. Construir imagen
+docker build -t cuenty:latest .
 
-# 2. Configurar PostgreSQL
-createdb cuenty_db
-psql cuenty_db < ../database/schema.sql
+# 2. Ejecutar contenedor
+docker run -d -p 3000:3000 --name cuenty cuenty:latest
 
-# 3. Iniciar servidor
-npm start
+# 3. Acceder a:
+# - http://localhost:3000
+```
+
+### Instalación Manual (Sin Scripts)
+
+```bash
+# Terminal 1: Iniciar Frontend
+cd nextjs_space
+npm install
+PORT=3001 npm run dev
+
+# Terminal 2: Iniciar Backend
+cd backend
+npm install
+PORT=3000 NEXTJS_PORT=3001 node server.js
+
+# Acceder desde: http://localhost:3000
 ```
 
 ## Primeros Pasos
