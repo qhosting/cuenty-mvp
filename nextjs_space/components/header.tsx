@@ -5,12 +5,11 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, User, LogOut, ShoppingCart, Heart, Settings } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { downloadFile } from '@/lib/s3'
+import { Isotipo } from '@/components/isotipo'
 
 interface SiteConfig {
-  logoUrl?: string
   logoSize: 'small' | 'medium' | 'large'
+  logoColor?: string
 }
 
 export function Header() {
@@ -41,8 +40,8 @@ export function Header() {
         if (response.ok) {
           const config = await response.json()
           setSiteConfig({
-            logoUrl: config.logoUrl,
-            logoSize: config.logoSize || 'medium'
+            logoSize: config.logoSize || 'medium',
+            logoColor: config.logoColor || '#60B5FF'
           })
         }
       } catch (error) {
@@ -63,35 +62,33 @@ export function Header() {
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
-  const getLogoSize = (size: string) => {
+  const getIsotipoSize = (size: string) => {
     switch (size) {
       case 'small':
-        return { width: 'w-24', height: 'h-6' } // 96px x 24px
+        return 32 // Pequeño
       case 'large':
-        return { width: 'w-40', height: 'h-10' } // 160px x 40px
+        return 48 // Grande
       default:
-        return { width: 'w-32', height: 'h-8' } // 128px x 32px
+        return 40 // Mediano
     }
   }
 
-  const logoSize = getLogoSize(siteConfig?.logoSize || 'medium')
-  const logoUrl = siteConfig?.logoUrl || '/images/CUENTY.png'
+  const isotipoSize = getIsotipoSize(siteConfig?.logoSize || 'medium')
+  const isotipoColor = siteConfig?.logoColor || '#60B5FF'
 
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className={`relative ${logoSize.width} ${logoSize.height}`}>
-                <Image
-                  src={logoUrl}
-                  alt="CUENTY"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
+            <Link href="/" className="flex items-center space-x-3">
+              <Isotipo 
+                size={isotipoSize} 
+                color={isotipoColor}
+                variant="gradient"
+                className="transition-transform hover:scale-105"
+              />
+              <span className="text-white font-bold text-xl">CUENTY</span>
             </Link>
             <div className="hidden md:flex space-x-8">
               {navigation.map((item) => (
@@ -116,16 +113,14 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <div className={`relative ${logoSize.width} ${logoSize.height}`}>
-              <Image
-                src={logoUrl}
-                alt="CUENTY"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
+          <Link href="/" className="flex items-center space-x-3">
+            <Isotipo 
+              size={isotipoSize} 
+              color={isotipoColor}
+              variant="gradient"
+              className="transition-transform hover:scale-105"
+            />
+            <span className="text-white font-bold text-xl">CUENTY</span>
           </Link>
 
           {/* Desktop Navigation */}
