@@ -8,10 +8,10 @@ FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 
 # Copiar archivos de dependencias del frontend
-COPY nextjs_space/package*.json ./
+COPY nextjs_space/package.json nextjs_space/package-lock.json ./
 
 # Instalar dependencias
-RUN npm ci --omit=dev
+RUN npm install --production
 
 # Copiar código del frontend
 COPY nextjs_space/ ./
@@ -37,11 +37,11 @@ RUN addgroup -g 1001 -S nodejs && \
 WORKDIR /app
 
 # Copiar dependencias del backend
-COPY backend/package*.json ./backend/
+COPY backend/package.json backend/package-lock.json ./backend/
 
 # Instalar dependencias del backend
 WORKDIR /app/backend
-RUN npm ci --omit=dev
+RUN npm install --production
 
 # Copiar código del backend
 COPY backend/ ./
