@@ -49,6 +49,10 @@ ENV NEXTAUTH_URL=http://localhost:3000
 ENV NEXTAUTH_SECRET=build-time-secret-not-used-in-production
 ENV DATABASE_URL=file:./build-dummy.db
 
+# Generar Prisma Client ANTES del build de Next.js
+RUN npx prisma generate && \
+    echo "✓ Prisma Client generated successfully"
+
 # Build del frontend Next.js
 RUN npm run build
 
