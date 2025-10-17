@@ -1,228 +1,201 @@
 
 'use client'
 
-import { motion } from 'framer-motion'
-import { Play, Crown, Sparkles, Clock } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Play, Music, Sparkles, Star, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { formatPrice } from '@/lib/utils'
 
-const products = [
-  {
-    id: 1,
-    name: 'Netflix Premium',
-    description: '4K UHD, 4 pantallas simultáneas, sin anuncios',
-    price: 89,
-    duration: 30,
-    icon: '🎬',
-    color: 'from-red-500 to-red-600',
-    features: ['4K Ultra HD', '4 Pantallas', 'Sin Publicidad', 'Descargas'],
-    popular: true
-  },
-  {
-    id: 2,
-    name: 'Disney+ Premium',
-    description: 'Contenido Disney, Pixar, Marvel, Star Wars',
-    price: 69,
-    duration: 30,
-    icon: '🏰',
-    color: 'from-blue-500 to-blue-600',
-    features: ['4K HDR', 'Sin Límites', 'Todo Disney', 'Estrenar Primero']
-  },
-  {
-    id: 3,
-    name: 'HBO Max',
-    description: 'Series exclusivas, películas y documentales',
-    price: 79,
-    duration: 30,
-    icon: '👑',
-    color: 'from-purple-500 to-purple-600',
-    features: ['Contenido Exclusivo', 'Sin Anuncios', 'Máxima Calidad', 'Estrenos']
-  },
-  {
-    id: 4,
-    name: 'Prime Video',
-    description: 'Películas, series y envío gratis Amazon',
-    price: 59,
-    duration: 30,
-    icon: '📦',
-    color: 'from-orange-500 to-orange-600',
-    features: ['Prime Shipping', 'Video HD', 'Música Incluida', 'Lectura']
-  },
-  {
-    id: 5,
-    name: 'Spotify Premium',
-    description: 'Música sin límites, sin anuncios, offline',
-    price: 49,
-    duration: 30,
-    icon: '🎵',
-    color: 'from-green-500 to-green-600',
-    features: ['Sin Anuncios', 'Offline', 'Alta Calidad', 'Playlists']
-  },
-  {
-    id: 6,
-    name: 'YouTube Premium',
-    description: 'Sin anuncios, background play, YouTube Music',
-    price: 39,
-    duration: 30,
-    icon: '📺',
-    color: 'from-red-500 to-red-600',
-    features: ['Sin Publicidad', 'Background Play', 'YouTube Music', 'Descargas']
-  },
-  {
-    id: 7,
-    name: 'Apple TV+',
-    description: 'Contenido original de Apple en alta calidad',
-    price: 35,
-    duration: 30,
-    icon: '🍎',
-    color: 'from-gray-600 to-gray-700',
-    features: ['Contenido Original', '4K Dolby', 'Sin Anuncios', 'Familia']
-  },
-  {
-    id: 8,
-    name: 'Crunchyroll',
-    description: 'Anime y manga premium sin restricciones',
-    price: 45,
-    duration: 30,
-    icon: '🍜',
-    color: 'from-orange-500 to-yellow-500',
-    features: ['Sin Anuncios', 'Simulcast', 'Manga Premium', 'Offline']
-  }
-]
+interface Product {
+  id: string
+  name: string
+  description: string
+  price: number
+  duration: number
+  category: string
+  features: string[]
+}
 
 export function ProductCatalog() {
-  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [filter, setFilter] = useState('all')
 
-  const categories = [
-    { id: 'all', name: 'Todos', icon: Sparkles },
-    { id: 'streaming', name: 'Streaming', icon: Play },
-    { id: 'music', name: 'Música', icon: Crown },
-  ]
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch('/api/products')
+      const data = await response.json()
+      
+      // Mostrar solo productos de 1 mes para el catálogo principal
+      const monthlyProducts = data.filter((p: Product) => p.duration === 30)
+      setProducts(monthlyProducts)
+    } catch (error) {
+      console.error('Error fetching products:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredProducts = filter === 'all' 
+    ? products
+    : products.filter(product => product.category === filter)
+
+  const getServiceName = (name: string) => {
+    return name.split(' - ')[0]
+  }
+
+  const getServiceIcon = (name: string) => {
+    const service = name.toLowerCase()
+    if (service.includes('spotify')) return Music
+    if (service.includes('netflix') || service.includes('disney') || service.includes('hbo') || service.includes('prime')) return Play
+    return Sparkles
+  }
+
+  if (loading) {
+    return (
+      <section id="productos" className="py-24 bg-slate-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+              Nuestros <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Productos</span>
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="bg-slate-800/50 rounded-xl p-6 animate-pulse">
+                <div className="w-full h-32 bg-slate-700 rounded-lg mb-4"></div>
+                <div className="h-6 bg-slate-700 rounded mb-2"></div>
+                <div className="h-4 bg-slate-700 rounded mb-4"></div>
+                <div className="h-10 bg-slate-700 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
-    <section id="productos" className="py-20 bg-black/20">
+    <section id="productos" className="py-24 bg-slate-900/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
+        {/* Header */}
+        <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            Nuestros <span className="text-gradient">Productos</span>
+            Nuestros <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Productos</span>
           </h2>
-          <p className="text-xl text-white/70 max-w-3xl mx-auto">
-            Accede a las mejores plataformas de streaming y entretenimiento con cuentas premium
-            a precios increíbles.
+          <p className="text-xl text-slate-300 max-w-3xl mx-auto">
+            Accede a las mejores plataformas de streaming y entretenimiento con cuentas premium a precios increíbles.
           </p>
-        </motion.div>
+        </div>
 
-        {/* Category Filter */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex justify-center mb-12"
-        >
-          <div className="flex bg-white/5 backdrop-blur-md rounded-full p-2 border border-white/10">
-            {categories?.map((category) => (
+        {/* Category filters */}
+        <div className="flex justify-center mb-12">
+          <div className="flex flex-wrap gap-2 bg-slate-800/50 backdrop-blur-sm p-2 rounded-xl border border-slate-700">
+            {[
+              { key: 'all', label: 'Todos', icon: Sparkles },
+              { key: 'streaming', label: 'Streaming', icon: Play },
+              { key: 'music', label: 'Música', icon: Music },
+            ].map(({ key, label, icon: Icon }) => (
               <button
-                key={category.id}
-                onClick={() => setSelectedCategory(category.id)}
-                className={`flex items-center space-x-2 px-6 py-3 rounded-full transition-all duration-300 ${
-                  selectedCategory === category.id
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                    : 'text-white/60 hover:text-white/80 hover:bg-white/5'
+                key={key}
+                onClick={() => setFilter(key)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors font-medium ${
+                  filter === key
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
                 }`}
               >
-                <category.icon className="w-5 h-5" />
-                <span className="font-medium">{category.name}</span>
+                <Icon className="w-4 h-4" />
+                <span>{label}</span>
               </button>
             ))}
           </div>
-        </motion.div>
-
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products?.map((product, index) => (
-            <motion.div
-              key={product?.id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="relative group"
-            >
-              <div className="card card-hover h-full flex flex-col">
-                {product?.popular && (
-                  <div className="absolute -top-3 -right-3 z-10">
-                    <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg">
-                      MÁS POPULAR
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex flex-col h-full">
-                  {/* Header */}
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className={`w-16 h-16 bg-gradient-to-r ${product?.color} rounded-xl flex items-center justify-center text-2xl shadow-lg`}>
-                      {product?.icon}
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-white">{product?.name}</h3>
-                      <p className="text-white/60 text-sm">{product?.description}</p>
-                    </div>
-                  </div>
-
-                  {/* Features */}
-                  <div className="flex-1 mb-6">
-                    <div className="grid grid-cols-2 gap-2">
-                      {product?.features?.map((feature, idx) => (
-                        <div key={idx} className="flex items-center space-x-2 text-sm text-white/70">
-                          <div className="w-1.5 h-1.5 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full"></div>
-                          <span>{feature}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Price and Duration */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gradient">${product?.price}</div>
-                      <div className="text-white/60 text-sm">MXN</div>
-                    </div>
-                    <div className="flex items-center space-x-2 text-white/70">
-                      <Clock className="w-4 h-4" />
-                      <span className="text-sm">{product?.duration} días</span>
-                    </div>
-                  </div>
-
-                  {/* CTA Button */}
-                  <button className="w-full btn-primary group-hover:shadow-xl">
-                    Obtener Ahora
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
         </div>
 
-        {/* Bottom CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-center mt-16"
-        >
-          <div className="card max-w-2xl mx-auto">
+        {/* Products grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+          {filteredProducts.map((product) => {
+            const IconComponent = getServiceIcon(product.name)
+            const serviceName = getServiceName(product.name)
+            
+            return (
+              <div
+                key={product.id}
+                className="group relative bg-gradient-to-b from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-xl border border-slate-700 hover:border-blue-500/50 transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/10 hover:scale-105"
+              >
+                {/* Card content */}
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg border border-blue-500/30">
+                        <IconComponent className="w-6 h-6 text-blue-400" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-white text-lg">{serviceName}</h3>
+                        <div className="flex items-center space-x-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star key={i} className="w-3 h-3 text-yellow-400 fill-current" />
+                          ))}
+                          <span className="text-xs text-slate-400 ml-1">(4.9)</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-slate-300 text-sm mb-4 line-clamp-2">
+                    {product.description}
+                  </p>
+
+                  {/* Features */}
+                  <div className="space-y-1 mb-6">
+                    {product.features.slice(0, 3).map((feature, index) => (
+                      <div key={index} className="flex items-center space-x-2 text-xs text-slate-400">
+                        <div className="w-1 h-1 bg-green-400 rounded-full"></div>
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Price and CTA */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-2xl font-bold text-white">{formatPrice(Number(product.price))}</div>
+                      <div className="text-xs text-slate-400">por mes</div>
+                    </div>
+                    <Link
+                      href={`/catalogo/${product.id}`}
+                      className="flex items-center space-x-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors text-sm font-medium"
+                    >
+                      <span>Ver Planes</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+
+        {/* CTA section */}
+        <div className="text-center">
+          <div className="bg-gradient-to-r from-slate-800/50 to-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-700 p-8">
             <h3 className="text-2xl font-bold text-white mb-4">¿No encuentras lo que buscas?</h3>
-            <p className="text-white/70 mb-6">
+            <p className="text-slate-300 mb-6 max-w-md mx-auto">
               Contáctanos y te ayudaremos a encontrar la cuenta perfecta para ti.
             </p>
-            <button className="btn-primary">
-              Contactar Soporte
-            </button>
+            <Link
+              href="/catalogo"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors font-medium"
+            >
+              <span>Ver Catálogo Completo</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
           </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   )

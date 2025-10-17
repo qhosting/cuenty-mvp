@@ -2,9 +2,13 @@
 'use client'
 
 import { SessionProvider as NextAuthSessionProvider } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 
-export function SessionProvider({ children }: { children: React.ReactNode }) {
+interface Props {
+  children: ReactNode
+}
+
+export function SessionProvider({ children }: Props) {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -12,8 +16,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   if (!mounted) {
-    return <>{children}</>
+    return <div>{children}</div>
   }
 
-  return <NextAuthSessionProvider>{children}</NextAuthSessionProvider>
+  return (
+    <NextAuthSessionProvider>
+      {children}
+    </NextAuthSessionProvider>
+  )
 }

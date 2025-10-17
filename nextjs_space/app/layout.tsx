@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -32,6 +33,16 @@ export default function RootLayout({
         <SessionProvider>
           {children}
           <WhatsAppButton />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: '#1e293b',
+                color: '#ffffff',
+                border: '1px solid #475569',
+              },
+            }}
+          />
         </SessionProvider>
       </body>
     </html>
