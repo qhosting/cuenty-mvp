@@ -11,7 +11,7 @@ WORKDIR /app/frontend
 COPY nextjs_space/package*.json ./
 
 # Instalar dependencias
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copiar código del frontend
 COPY nextjs_space/ ./
@@ -41,7 +41,7 @@ COPY backend/package*.json ./backend/
 
 # Instalar dependencias del backend
 WORKDIR /app/backend
-RUN npm ci --only=production
+RUN npm ci --omit=dev
 
 # Copiar código del backend
 COPY backend/ ./
