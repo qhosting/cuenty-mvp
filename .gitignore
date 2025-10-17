@@ -33,6 +33,20 @@ dist/
 build/
 *.tgz
 
+# Next.js
+nextjs_space/.next/
+nextjs_space/.build/
+nextjs_space/out/
+nextjs_space/build/
+
+# TypeScript
+nextjs_space/*.tsbuildinfo
+nextjs_space/.tsbuildinfo
+*.tsbuildinfo
+
+# PDF reports (generated documentation)
+*.pdf
+
 # Test coverage
 coverage/
 .nyc_output/
