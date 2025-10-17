@@ -115,8 +115,8 @@ WORKDIR /app
 
 # Copiar scripts de inicio y healthcheck
 COPY start-docker.sh ./
-COPY scripts/healthcheck.sh ./scripts/ 2>/dev/null || echo "#!/bin/sh\ncurl -f http://localhost:3000/health" > ./scripts/healthcheck.sh
-RUN chmod +x start-docker.sh ./scripts/healthcheck.sh
+COPY scripts/ ./scripts/
+RUN chmod +x start-docker.sh ./scripts/*.sh
 
 # Crear directorios necesarios
 RUN mkdir -p /app/logs /app/database && \
