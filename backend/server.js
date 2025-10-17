@@ -30,6 +30,7 @@ app.use('/api/ordenes', require('./routes/ordenRoutes'));
 app.use('/api/cuentas', require('./routes/cuentaRoutes'));
 app.use('/api/usuarios', require('./routes/usuarioRoutes'));
 app.use('/api/tickets', require('./routes/ticketRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/webhooks/n8n', require('./routes/webhookRoutes'));
 
 // Ruta de salud del servidor
@@ -51,6 +52,7 @@ app.get('/', (req, res) => {
       cuentas: '/api/cuentas',
       usuarios: '/api/usuarios',
       tickets: '/api/tickets',
+      contact: '/api/contact',
       webhooks: '/api/webhooks/n8n',
       health: '/health'
     },

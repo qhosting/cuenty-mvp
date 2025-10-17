@@ -577,7 +577,7 @@ async function consultarMisCuentas() {
     resultadoContainer.innerHTML = '<div class="loading"><div class="spinner"></div><span>Consultando tus cuentas...</span></div>';
 
     try {
-        const response = await fetch(`/api/cuentas/consultar/${encodeURIComponent(celular)}`);
+        const response = await fetch(`/api/usuarios/${encodeURIComponent(celular)}`);
         
         if (response.ok) {
             const cuentas = await response.json();

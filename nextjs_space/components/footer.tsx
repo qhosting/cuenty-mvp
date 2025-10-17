@@ -166,10 +166,10 @@ export function Footer() {
             © 2025 CUENTY. Todos los derechos reservados.
           </div>
           <div className="flex space-x-6">
-            <Link href="#" className="text-white/60 hover:text-white/80 transition-colors duration-300 text-sm">
+            <Link href="/terminos" className="text-white/60 hover:text-white/80 transition-colors duration-300 text-sm">
               Términos de Servicio
             </Link>
-            <Link href="#" className="text-white/60 hover:text-white/80 transition-colors duration-300 text-sm">
+            <Link href="/privacidad" className="text-white/60 hover:text-white/80 transition-colors duration-300 text-sm">
               Política de Privacidad
             </Link>
           </div>
