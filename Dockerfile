@@ -43,6 +43,11 @@ COPY nextjs_space/ ./
 # Variables de entorno necesarias para el build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+# Variables para NextAuth durante el build (no se usan en runtime)
+ENV BUILDING=true
+ENV NEXTAUTH_URL=http://localhost:3000
+ENV NEXTAUTH_SECRET=build-time-secret-not-used-in-production
+ENV DATABASE_URL=file:./build-dummy.db
 
 # Build del frontend Next.js
 RUN npm run build
