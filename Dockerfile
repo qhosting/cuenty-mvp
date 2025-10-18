@@ -55,7 +55,9 @@ ENV DATABASE_URL=file:./build-dummy.db
 ENV SKIP_ENV_VALIDATION=true
 
 # Generar Prisma Client ANTES del build de Next.js
-RUN npx prisma generate && \
+# Limpiar directorio .prisma existente para evitar conflictos de permisos
+RUN rm -rf ./node_modules/.prisma 2>/dev/null || true && \
+    npx prisma generate && \
     echo "✓ Prisma Client generated successfully"
 
 # Build del frontend Next.js
@@ -119,7 +121,9 @@ RUN npm ci --only=production && \
 COPY --from=frontend-builder /app/frontend/prisma ./prisma
 
 # Generar Prisma Client en la imagen final (con binarios correctos para Alpine)
-RUN npx prisma generate && \
+# Limpiar directorio .prisma existente para evitar conflictos de permisos
+RUN rm -rf ./node_modules/.prisma 2>/dev/null || true && \
+    npx prisma generate && \
     echo "✓ Prisma Client generated for production"
 
 # Copiar scripts de migración (necesarios para migraciones automáticas)
