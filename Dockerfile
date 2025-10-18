@@ -115,12 +115,17 @@ COPY --from=frontend-builder /app/frontend/package.json \
 RUN npm ci --only=production && \
     echo "✓ Frontend production dependencies installed"
 
-# Copiar el directorio prisma (necesario para el Cliente de Prisma)
+# Copiar el directorio prisma (necesario para el Cliente de Prisma y migraciones)
 COPY --from=frontend-builder /app/frontend/prisma ./prisma
 
 # Generar Prisma Client en la imagen final (con binarios correctos para Alpine)
 RUN npx prisma generate && \
     echo "✓ Prisma Client generated for production"
+
+# Copiar scripts de migración (necesarios para migraciones automáticas)
+COPY --from=frontend-builder /app/frontend/scripts ./scripts
+RUN chmod +x ./scripts/*.sh ./scripts/*.js && \
+    echo "✓ Migration scripts copied and marked as executable"
 
 # Copiar archivos construidos y necesarios del frontend
 COPY --from=frontend-builder /app/frontend/.next ./.next

@@ -132,11 +132,37 @@ if ! is_process_running "$BACKEND_PID"; then
 fi
 
 # ============================================================================
-# PASO 3: Iniciar Frontend
+# PASO 3: Ejecutar migraciones de base de datos
 # ============================================================================
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 3/3: Iniciando Frontend (Puerto: $FRONTEND_PORT)      ║"
+echo "║  PASO 3/4: Ejecutando migraciones de base de datos        ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+
+cd /app/nextjs_space
+
+# Verificar que el script de migración exista
+if [ -f "scripts/migrate.js" ]; then
+    echo "🔄 Ejecutando migraciones de Prisma (modo SEGURO)..."
+    
+    # Ejecutar migraciones (no falla si no hay migraciones pendientes)
+    if node scripts/migrate.js; then
+        echo "✅ Migraciones aplicadas correctamente"
+    else
+        echo "⚠️  ADVERTENCIA: Error al ejecutar migraciones"
+        echo "   La aplicación intentará continuar, pero puede haber problemas"
+        echo "   Verifica los logs de migración para más detalles"
+    fi
+else
+    echo "⚠️  Script de migraciones no encontrado, continuando sin migraciones..."
+fi
+
+# ============================================================================
+# PASO 4: Iniciar Frontend
+# ============================================================================
+echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║  PASO 4/4: Iniciando Frontend (Puerto: $FRONTEND_PORT)      ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 cd /app/nextjs_space
