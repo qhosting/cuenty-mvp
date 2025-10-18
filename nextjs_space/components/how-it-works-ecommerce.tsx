@@ -49,12 +49,9 @@ const steps = [
 ]
 
 export function HowItWorks() {
-  const [mounted, setMounted] = useState(false)
   const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
-    setMounted(true)
-    
     // Auto-advance steps
     const interval = setInterval(() => {
       setActiveStep(current => (current + 1) % steps.length)
@@ -62,28 +59,6 @@ export function HowItWorks() {
     
     return () => clearInterval(interval)
   }, [])
-
-  if (!mounted) {
-    return (
-      <section className="py-24 bg-gradient-to-b from-slate-900 to-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="h-12 bg-slate-800/50 rounded animate-pulse mb-6 max-w-md mx-auto"></div>
-            <div className="h-6 bg-slate-800/50 rounded animate-pulse max-w-2xl mx-auto"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="bg-slate-800/50 rounded-xl p-6 animate-pulse">
-                <div className="w-16 h-16 bg-slate-700 rounded-full mb-4"></div>
-                <div className="h-6 bg-slate-700 rounded mb-2"></div>
-                <div className="h-4 bg-slate-700 rounded"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
 
   return (
     <section id="como-funciona" className="py-24 bg-gradient-to-b from-slate-900 to-slate-950 relative overflow-hidden">

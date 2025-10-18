@@ -2,7 +2,6 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { ArrowRight, Star } from 'lucide-react'
 import Link from 'next/link'
@@ -65,34 +64,6 @@ const services = [
 ]
 
 export function ServicesSection() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <section className="py-24 bg-slate-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <div className="h-12 bg-slate-800/50 rounded animate-pulse mb-6 max-w-md mx-auto"></div>
-            <div className="h-6 bg-slate-800/50 rounded animate-pulse max-w-2xl mx-auto"></div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="bg-slate-900/50 rounded-xl p-6 animate-pulse">
-                <div className="h-16 bg-slate-800 rounded mb-4"></div>
-                <div className="h-4 bg-slate-800 rounded mb-2"></div>
-                <div className="h-6 bg-slate-800 rounded"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section id="servicios" className="py-24 bg-slate-950 relative">
       {/* Background decoration */}

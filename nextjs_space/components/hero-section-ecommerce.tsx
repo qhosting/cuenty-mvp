@@ -2,31 +2,11 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
 import { ArrowRight, Play, Star, Users, Shield, Clock } from 'lucide-react'
 import Link from 'next/link'
 import Image from 'next/image'
 
 export function HeroSection() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  if (!mounted) {
-    return (
-      <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
-          <div className="h-16 bg-slate-800/50 rounded animate-pulse mb-6"></div>
-          <div className="h-32 bg-slate-800/50 rounded animate-pulse mb-8"></div>
-          <div className="h-12 bg-slate-800/50 rounded animate-pulse"></div>
-        </div>
-      </section>
-    )
-  }
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image */}
