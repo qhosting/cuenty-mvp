@@ -40,10 +40,23 @@ export default function CatalogoPage() {
   const fetchProducts = async () => {
     try {
       const response = await fetch('/api/products')
+      
+      if (!response.ok) {
+        throw new Error(`Error: ${response.status} ${response.statusText}`)
+      }
+      
       const data = await response.json()
+      
+      // Verificar si hay un error en la respuesta
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
       setProducts(data)
     } catch (error) {
       console.error('Error fetching products:', error)
+      // En caso de error, mostrar un array vacío en lugar de quedarse en loading
+      setProducts([])
     } finally {
       setLoading(false)
     }

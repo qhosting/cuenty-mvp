@@ -7,6 +7,7 @@ export const runtime = 'nodejs'
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('[API] GET /api/products - Iniciando...')
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const duration = searchParams.get('duration')
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
       where.duration = parseInt(duration)
     }
 
+    console.log('[API] Consultando productos con filtros:', where)
     const products = await prisma.product.findMany({
       where,
       orderBy: [
@@ -30,11 +32,12 @@ export async function GET(request: NextRequest) {
       ]
     })
 
+    console.log(`[API] Productos encontrados: ${products.length}`)
     return NextResponse.json(products)
   } catch (error) {
-    console.error('Error fetching products:', error)
+    console.error('[API] Error fetching products:', error)
     return NextResponse.json(
-      { error: 'Error fetching products' },
+      { error: 'Error fetching products', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
