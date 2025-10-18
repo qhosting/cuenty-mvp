@@ -15,16 +15,16 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
-    setMounted(true)
-    
     // Redirect if already logged in
-    if (adminAuth.isAuthenticated()) {
-      router.push('/admin')
-      return
+    try {
+      if (adminAuth.isAuthenticated()) {
+        router.push('/admin')
+      }
+    } catch (error) {
+      console.error('Error checking authentication:', error)
     }
   }, [router])
 
@@ -52,14 +52,6 @@ export default function AdminLoginPage() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white">Cargando...</div>
-      </div>
-    )
   }
 
   return (

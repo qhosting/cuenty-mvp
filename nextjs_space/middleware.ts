@@ -31,7 +31,7 @@ export default withAuth(
 export const config = {
   matcher: [
     '/dashboard/:path*',
-    '/admin/:path*',
-    '/checkout/:path*'
+    '/checkout/:path*',
+    // Admin routes use custom auth, not NextAuth
   ]
 }

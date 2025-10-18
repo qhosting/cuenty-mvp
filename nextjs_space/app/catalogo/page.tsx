@@ -22,6 +22,7 @@ export default function CatalogoPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [filters, setFilters] = useState({
     category: 'all',
     duration: 'all',
@@ -30,37 +31,63 @@ export default function CatalogoPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   useEffect(() => {
+    let mounted = true
+    
+    const fetchProducts = async () => {
+      try {
+        console.log('[Catalogo] Iniciando carga de productos...')
+        
+        // Timeout de seguridad: 10 segundos máximo
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 10000)
+        
+        const response = await fetch('/api/products', {
+          signal: controller.signal,
+          cache: 'no-store'
+        })
+        
+        clearTimeout(timeout)
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status} ${response.statusText}`)
+        }
+        
+        const data = await response.json()
+        
+        // Verificar si hay un error en la respuesta
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        
+        if (mounted) {
+          console.log(`[Catalogo] Productos cargados: ${data.length}`)
+          setProducts(data)
+          setError(null)
+        }
+      } catch (error) {
+        console.error('[Catalogo] Error fetching products:', error)
+        if (mounted) {
+          // En caso de error, mostrar un array vacío en lugar de quedarse en loading
+          setProducts([])
+          setError(error instanceof Error ? error.message : 'Error al cargar productos')
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
+      }
+    }
+
     fetchProducts()
+    
+    return () => {
+      mounted = false
+    }
   }, [])
 
   useEffect(() => {
     filterProducts()
   }, [products, filters])
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch('/api/products')
-      
-      if (!response.ok) {
-        throw new Error(`Error: ${response.status} ${response.statusText}`)
-      }
-      
-      const data = await response.json()
-      
-      // Verificar si hay un error en la respuesta
-      if (data.error) {
-        throw new Error(data.error)
-      }
-      
-      setProducts(data)
-    } catch (error) {
-      console.error('Error fetching products:', error)
-      // En caso de error, mostrar un array vacío en lugar de quedarse en loading
-      setProducts([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const filterProducts = () => {
     let filtered = products
@@ -233,20 +260,43 @@ export default function CatalogoPage() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+              <div className="flex items-center space-x-2 text-red-400">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">Error al cargar productos: {error}</span>
+              </div>
+            </div>
+          )}
+
           {/* Products Grid */}
           {filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <div className="bg-slate-800/50 rounded-xl p-8 max-w-md mx-auto">
                 <Search className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">No se encontraron resultados</h3>
+                <h3 className="text-xl font-semibold text-white mb-2">
+                  {error ? 'No hay productos disponibles' : 'No se encontraron resultados'}
+                </h3>
                 <p className="text-slate-300 mb-4">
-                  Intenta cambiar los filtros o términos de búsqueda
+                  {error 
+                    ? 'Por favor, intenta recargar la página'
+                    : 'Intenta cambiar los filtros o términos de búsqueda'
+                  }
                 </p>
                 <button
-                  onClick={() => setFilters({ category: 'all', duration: 'all', search: '' })}
+                  onClick={() => {
+                    if (error) {
+                      window.location.reload()
+                    } else {
+                      setFilters({ category: 'all', duration: 'all', search: '' })
+                    }
+                  }}
                   className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors"
                 >
-                  Limpiar filtros
+                  {error ? 'Recargar página' : 'Limpiar filtros'}
                 </button>
               </div>
             </div>

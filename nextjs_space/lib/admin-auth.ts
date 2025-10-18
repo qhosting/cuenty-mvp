@@ -4,7 +4,8 @@
 import axios, { AxiosResponse } from 'axios'
 import { toast } from 'react-hot-toast'
 
-const API_BASE_URL = 'http://localhost:3000'
+// Use relative URL for API calls to work in all environments
+const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : ''
 
 // Create axios instance for admin API
 export const adminApi = axios.create({
