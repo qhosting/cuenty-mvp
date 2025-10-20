@@ -10,7 +10,11 @@ require('dotenv').config();
 const app = express();
 
 // Middlewares de seguridad
-app.use(helmet());
+// Configure helmet to disable CSP as it blocks Next.js inline scripts
+// Next.js requires inline scripts for hydration and functionality
+app.use(helmet({
+  contentSecurityPolicy: false,
+}));
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   credentials: true
