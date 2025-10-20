@@ -1,6 +1,6 @@
 {
   "name": "cuenty-backend",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backend API para CUENTY - Plataforma de gestión de cuentas de streaming",
   "main": "server.js",
   "scripts": {

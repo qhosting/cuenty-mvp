@@ -5,6 +5,34 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.1] - 2025-10-20
+
+### ✨ Agregado
+- **Componente VersionDisplay**: Componente reutilizable para mostrar versión del sistema
+  - Tres variantes: badge, minimal, full
+  - Ubicación: `/components/version-display.tsx`
+  - Puede ser usado en cualquier página del proyecto
+
+### 🔧 Mejorado
+- **Endpoint /api/version en Frontend**: Ahora lee la versión desde package.json en lugar de estar hardcodeado
+  - Incluye información adicional: nombre del proyecto, entorno, timestamp
+  - Mantiene consistencia con el endpoint del backend
+- **Documentación de Versionado**: 
+  - Creado archivo VERSIONING.md con guía completa del sistema de versiones
+  - Incluye instrucciones detalladas de cómo actualizar versiones
+  - Ejemplos de uso del componente VersionDisplay
+  - Troubleshooting y mejores prácticas
+
+### 🐛 Corregido
+- Verificada la ruta `/admin/login` - confirmado que funciona correctamente
+  - Existe el archivo `app/admin/login/page.tsx`
+  - Endpoint de API configurado en `app/api/admin/login/route.ts`
+  - Middleware configurado correctamente
+
+### 📝 Documentación
+- VERSIONING.md: Guía completa del sistema de control de versiones
+- Actualizado CHANGELOG.md con los cambios de esta versión
+
 ## [1.0.0] - 2025-10-17
 
 ### ✨ Añadido
