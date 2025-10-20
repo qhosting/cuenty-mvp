@@ -1,14 +1,12 @@
-
 generator client {
-    provider = "prisma-client-js"
-    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
-    // Using relative path for better portability across environments (dev, Docker, production)
-    output = "../node_modules/.prisma/client"
+  provider      = "prisma-client-js"
+  output        = "../node_modules/.prisma/client"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Account {
@@ -17,15 +15,14 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -48,8 +45,8 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   accounts      Account[]
-  sessions      Session[]
   orders        Order[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -65,27 +62,26 @@ model Product {
   name        String
   description String?
   price       Decimal  @db.Decimal(10, 2)
-  duration    Int      // días
-  category    String   // Netflix, Disney+, HBO Max, etc.
+  duration    Int
+  category    String
   isActive    Boolean  @default(true)
-  features    String[] // Lista de características
+  features    String[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   orders      Order[]
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  productId   String
-  status      OrderStatus @default(PENDING)
-  totalAmount Decimal     @db.Decimal(10, 2)
+  id            String      @id @default(cuid())
+  userId        String
+  productId     String
+  status        OrderStatus @default(PENDING)
+  totalAmount   Decimal     @db.Decimal(10, 2)
   paymentMethod String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  user        User        @relation(fields: [userId], references: [id])
-  product     Product     @relation(fields: [productId], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  product       Product     @relation(fields: [productId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
 }
 
 model ContactForm {
@@ -100,6 +96,38 @@ model ContactForm {
   updatedAt DateTime @updatedAt
 }
 
+model SiteConfig {
+  id                 String   @id @default(cuid())
+  logoUrl            String?
+  logoSize           String   @default("medium")
+  footerLogoUrl      String?
+  faviconUrl         String?
+  heroTitle          String   @default("Accede a tus\nPlataformas Favoritas")
+  heroSubtitle       String   @default("Obtén cuentas premium de Netflix, Disney+, HBO Max, Prime Video y más.\nEntrega inmediata y soporte 24/7.")
+  heroBadgeText      String   @default("Plataforma #1 en México")
+  heroCtaPrimary     String   @default("Ver Catálogo")
+  heroCTASecondary   String   @default("Cómo Funciona")
+  stat1Value         String   @default("10,000+")
+  stat1Label         String   @default("Clientes Satisfechos")
+  stat2Value         String   @default("15+")
+  stat2Label         String   @default("Plataformas")
+  stat3Value         String   @default("99.9%")
+  stat3Label         String   @default("Uptime")
+  stat4Value         String   @default("24/7")
+  stat4Label         String   @default("Soporte")
+  featuresTitle      String   @default("¿Por qué elegir CUENTY?")
+  featuresSubtitle   String   @default("Somos la plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento.")
+  howItWorksTitle    String   @default("¿Cómo Funciona?")
+  howItWorksSubtitle String   @default("Obtener tu cuenta premium es muy fácil. Solo sigue estos 4 simples pasos y estarás disfrutando en minutos.")
+  whatsappNumber     String   @default("message/IOR2WUU66JVMM1")
+  supportEmail       String   @default("soporte@cuenty.com")
+  metaTitle          String   @default("CUENTY - Cuentas de Streaming Premium")
+  metaDescription    String   @default("La mejor plataforma para obtener cuentas de streaming premium como Netflix, Disney+, HBO Max y más. Precios accesibles y entrega inmediata.")
+  metaKeywords       String   @default("streaming, Netflix, Disney+, HBO Max, cuentas premium, CUENTY")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
 enum OrderStatus {
   PENDING
   PAID
@@ -107,50 +135,4 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   EXPIRED
-}
-
-model SiteConfig {
-  id              String   @id @default(cuid())
-  // Logo Management
-  logoUrl         String?  // Header logo
-  logoSize        String   @default("medium") // small, medium, large
-  footerLogoUrl   String?  // Footer logo
-  faviconUrl      String?  // Favicon
-  
-  // Hero Section Content
-  heroTitle       String   @default("Accede a tus\nPlataformas Favoritas")
-  heroSubtitle    String   @default("Obtén cuentas premium de Netflix, Disney+, HBO Max, Prime Video y más.\nEntrega inmediata y soporte 24/7.")
-  heroBadgeText   String   @default("Plataforma #1 en México")
-  heroCtaPrimary  String   @default("Ver Catálogo")
-  heroCTASecondary String  @default("Cómo Funciona")
-  
-  // Statistics Section
-  stat1Value      String   @default("10,000+")
-  stat1Label      String   @default("Clientes Satisfechos")
-  stat2Value      String   @default("15+")
-  stat2Label      String   @default("Plataformas")
-  stat3Value      String   @default("99.9%")
-  stat3Label      String   @default("Uptime")
-  stat4Value      String   @default("24/7")
-  stat4Label      String   @default("Soporte")
-  
-  // Features Section
-  featuresTitle   String   @default("¿Por qué elegir CUENTY?")
-  featuresSubtitle String  @default("Somos la plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento.")
-  
-  // How It Works Section
-  howItWorksTitle String   @default("¿Cómo Funciona?")
-  howItWorksSubtitle String @default("Obtener tu cuenta premium es muy fácil. Solo sigue estos 4 simples pasos y estarás disfrutando en minutos.")
-  
-  // Contact Information
-  whatsappNumber  String   @default("message/IOR2WUU66JVMM1")
-  supportEmail    String   @default("soporte@cuenty.com")
-  
-  // SEO Settings
-  metaTitle       String   @default("CUENTY - Cuentas de Streaming Premium")
-  metaDescription String   @default("La mejor plataforma para obtener cuentas de streaming premium como Netflix, Disney+, HBO Max y más. Precios accesibles y entrega inmediata.")
-  metaKeywords    String   @default("streaming, Netflix, Disney+, HBO Max, cuentas premium, CUENTY")
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
 }

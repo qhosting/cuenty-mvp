@@ -39,16 +39,21 @@ export default function AdminLoginPage() {
     setLoading(true)
 
     try {
+      console.log('[AdminLogin] Iniciando login...')
       const result = await adminAuth.login(email, password)
       
       if (result.success) {
+        console.log('[AdminLogin] Login exitoso')
         toast.success('¡Bienvenido al panel de administración!')
         router.push('/admin')
       } else {
+        console.warn('[AdminLogin] Login fallido:', result.message)
         toast.error(result.message || 'Credenciales inválidas')
       }
     } catch (error) {
-      toast.error('Error de conexión. Inténtalo de nuevo.')
+      console.error('[AdminLogin] Error durante login:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Error de conexión'
+      toast.error(`Error: ${errorMessage}. Inténtalo de nuevo.`)
     } finally {
       setLoading(false)
     }

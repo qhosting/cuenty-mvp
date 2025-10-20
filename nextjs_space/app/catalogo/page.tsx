@@ -32,24 +32,36 @@ export default function CatalogoPage() {
 
   useEffect(() => {
     let mounted = true
+    let retryCount = 0
+    const maxRetries = 2
     
     const fetchProducts = async () => {
+      let shouldRetry = false
       try {
-        console.log('[Catalogo] Iniciando carga de productos...')
+        console.log('[Catalogo] Iniciando carga de productos...', retryCount > 0 ? `(Intento ${retryCount + 1})` : '')
         
-        // Timeout de seguridad: 10 segundos máximo
+        // Timeout de seguridad: 15 segundos máximo
         const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), 10000)
+        const timeout = setTimeout(() => {
+          console.log('[Catalogo] Timeout alcanzado, abortando request')
+          controller.abort()
+        }, 15000)
         
         const response = await fetch('/api/products', {
           signal: controller.signal,
-          cache: 'no-store'
+          cache: 'no-store',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
         })
         
         clearTimeout(timeout)
         
         if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`)
+          const errorText = await response.text().catch(() => 'No se pudo obtener el mensaje de error')
+          console.error('[Catalogo] Error de respuesta:', response.status, errorText)
+          throw new Error(`Error del servidor: ${response.status}`)
         }
         
         const data = await response.json()
@@ -59,20 +71,37 @@ export default function CatalogoPage() {
           throw new Error(data.error)
         }
         
+        // Verificar que sea un array
+        if (!Array.isArray(data)) {
+          throw new Error('La respuesta no es un array de productos')
+        }
+        
         if (mounted) {
-          console.log(`[Catalogo] Productos cargados: ${data.length}`)
+          console.log(`[Catalogo] Productos cargados exitosamente: ${data.length}`)
           setProducts(data)
           setError(null)
         }
       } catch (error) {
         console.error('[Catalogo] Error fetching products:', error)
+        
+        // Reintentar si es timeout y no hemos alcanzado el máximo
+        if (error instanceof Error && error.name === 'AbortError' && retryCount < maxRetries) {
+          retryCount++
+          shouldRetry = true
+          console.log(`[Catalogo] Reintentando... (${retryCount}/${maxRetries})`)
+          setTimeout(() => fetchProducts(), 1000)
+          return
+        }
+        
         if (mounted) {
           // En caso de error, mostrar un array vacío en lugar de quedarse en loading
           setProducts([])
-          setError(error instanceof Error ? error.message : 'Error al cargar productos')
+          const errorMessage = error instanceof Error ? error.message : 'Error al cargar productos'
+          setError(errorMessage)
+          console.error('[Catalogo] Error final:', errorMessage)
         }
       } finally {
-        if (mounted) {
+        if (mounted && !shouldRetry) {
           setLoading(false)
         }
       }

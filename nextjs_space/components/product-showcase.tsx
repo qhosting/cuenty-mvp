@@ -28,15 +28,48 @@ export function ProductShowcase() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('/api/products')
+      console.log('[ProductShowcase] Cargando productos destacados...')
+      
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 10000)
+      
+      const response = await fetch('/api/products', {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        }
+      })
+      
+      clearTimeout(timeout)
+      
+      if (!response.ok) {
+        console.error('[ProductShowcase] Error de respuesta:', response.status)
+        throw new Error(`Error del servidor: ${response.status}`)
+      }
+      
       const data = await response.json()
+      
+      if (data.error) {
+        throw new Error(data.error)
+      }
+      
+      if (!Array.isArray(data)) {
+        throw new Error('La respuesta no es un array de productos')
+      }
       
       // Mostrar solo productos de 1 mes para el showcase principal
       const monthlyProducts = data.filter((p: Product) => p.duration === 30)
       // Limitar a 8 productos para el showcase
-      setProducts(monthlyProducts.slice(0, 8))
+      const showcaseProducts = monthlyProducts.slice(0, 8)
+      
+      console.log(`[ProductShowcase] Productos cargados: ${showcaseProducts.length}`)
+      setProducts(showcaseProducts)
     } catch (error) {
-      console.error('Error fetching products:', error)
+      console.error('[ProductShowcase] Error fetching products:', error)
+      // En caso de error, mostrar array vacío (el componente no se mostrará)
+      setProducts([])
     } finally {
       setLoading(false)
     }
@@ -74,6 +107,12 @@ export function ProductShowcase() {
         </div>
       </section>
     )
+  }
+
+  // Si no hay productos después de cargar, no mostrar nada
+  if (!loading && filteredProducts.length === 0) {
+    console.log('[ProductShowcase] No hay productos para mostrar, ocultando sección')
+    return null
   }
 
   return (

@@ -10,6 +10,7 @@ const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : ''
 // Create axios instance for admin API
 export const adminApi = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 15000, // 15 segundos de timeout
   headers: {
     'Content-Type': 'application/json',
   },
@@ -52,19 +53,36 @@ adminApi.interceptors.response.use(
 export const adminAuth = {
   login: async (email: string, password: string) => {
     try {
+      console.log('[AdminAuth] Enviando solicitud de login...')
       const response = await adminApi.post('/api/admin/login', {
         email,
         password,
       })
       
+      console.log('[AdminAuth] Respuesta recibida:', response.status)
+      
       if (response.data.token) {
         localStorage.setItem('admin_token', response.data.token)
+        console.log('[AdminAuth] Token guardado exitosamente')
         return { success: true, token: response.data.token }
       }
       
-      return { success: false, message: 'No token received' }
+      console.warn('[AdminAuth] No se recibió token en la respuesta')
+      return { success: false, message: 'No se recibió token de autenticación' }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error de autenticación'
+      console.error('[AdminAuth] Error durante login:', error)
+      
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        return { success: false, message: 'Tiempo de espera agotado. Verifica tu conexión.' }
+      }
+      
+      if (error.code === 'ERR_NETWORK') {
+        return { success: false, message: 'Error de red. Verifica tu conexión a internet.' }
+      }
+      
+      const message = error.response?.data?.message || 
+                     error.message || 
+                     'Error de autenticación. Intenta de nuevo.'
       return { success: false, message }
     }
   },
