@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { Mail, Phone, MapPin, Clock, Send, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import { Isotipo } from '@/components/isotipo'
+import { FooterLogo } from '@/components/dynamic-logo'
 
 export function Footer() {
   const [formData, setFormData] = useState({
@@ -89,14 +89,9 @@ export function Footer() {
         <div className="py-16 grid grid-cols-1 lg:grid-cols-3 gap-12">
           {/* Brand section */}
           <div className="lg:col-span-1">
-            <Link href="/" className="inline-flex items-center space-x-3 mb-6">
-              <Isotipo 
-                size={48} 
-                variant="gradient"
-                className="transition-transform hover:scale-105"
-              />
-              <span className="text-white font-bold text-2xl">CUENTY</span>
-            </Link>
+            <div className="mb-6">
+              <FooterLogo />
+            </div>
             
             <p className="text-slate-300 mb-6 leading-relaxed">
               La plataforma más confiable de México para obtener cuentas premium de streaming y entretenimiento. 

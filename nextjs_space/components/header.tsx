@@ -5,17 +5,11 @@ import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 import { Menu, X, User, LogOut, ShoppingCart, Heart, Settings } from 'lucide-react'
 import Link from 'next/link'
-import { Isotipo } from '@/components/isotipo'
-
-interface SiteConfig {
-  logoSize: 'small' | 'medium' | 'large'
-  logoColor?: string
-}
+import { HeaderLogo } from '@/components/dynamic-logo'
 
 export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [siteConfig, setSiteConfig] = useState<SiteConfig>({ logoSize: 'medium' })
   
   let session = null
   let status = 'loading'
@@ -32,24 +26,6 @@ export function Header() {
 
   useEffect(() => {
     setMounted(true)
-    
-    // Load site configuration
-    const loadSiteConfig = async () => {
-      try {
-        const response = await fetch('/api/site-config')
-        if (response.ok) {
-          const config = await response.json()
-          setSiteConfig({
-            logoSize: config.logoSize || 'medium',
-            logoColor: config.logoColor || '#60B5FF'
-          })
-        }
-      } catch (error) {
-        console.error('Failed to load site config:', error)
-      }
-    }
-    
-    loadSiteConfig()
   }, [])
 
   const navigation = [
@@ -62,34 +38,12 @@ export function Header() {
     await signOut({ redirect: true, callbackUrl: '/' })
   }
 
-  const getIsotipoSize = (size: string) => {
-    switch (size) {
-      case 'small':
-        return 32 // Pequeño
-      case 'large':
-        return 48 // Grande
-      default:
-        return 40 // Mediano
-    }
-  }
-
-  const isotipoSize = getIsotipoSize(siteConfig?.logoSize || 'medium')
-  const isotipoColor = siteConfig?.logoColor || '#60B5FF'
-
   if (!mounted) {
     return (
       <header className="sticky top-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="flex items-center space-x-3">
-              <Isotipo 
-                size={isotipoSize} 
-                color={isotipoColor}
-                variant="gradient"
-                className="transition-transform hover:scale-105"
-              />
-              <span className="text-white font-bold text-xl">CUENTY</span>
-            </Link>
+            <HeaderLogo />
             <div className="hidden md:flex space-x-8">
               {navigation.map((item) => (
                 <Link
@@ -113,15 +67,7 @@ export function Header() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center space-x-3">
-            <Isotipo 
-              size={isotipoSize} 
-              color={isotipoColor}
-              variant="gradient"
-              className="transition-transform hover:scale-105"
-            />
-            <span className="text-white font-bold text-xl">CUENTY</span>
-          </Link>
+          <HeaderLogo />
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">

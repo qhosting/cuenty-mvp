@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
+import { DynamicLogo } from '@/components/dynamic-logo'
 import {
   LayoutDashboard,
   Package,
@@ -138,17 +138,7 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex items-center justify-between px-6 py-6 border-b border-slate-700">
-            <Link href="/" className="flex items-center space-x-3">
-              <div className="relative w-32 h-8">
-                <Image
-                  src="/images/CUENTY.png"
-                  alt="CUENTY"
-                  fill
-                  className="object-contain"
-                  priority
-                />
-              </div>
-            </Link>
+            <DynamicLogo linkTo="/" size="medium" showText={false} />
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden p-2 text-slate-400 hover:text-white"

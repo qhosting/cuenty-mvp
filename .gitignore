@@ -67,3 +67,4 @@ docker-compose.override.yml
 # Uploads
 uploads/*
 !uploads/.gitkeep
+nextjs_space/.next

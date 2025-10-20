@@ -6,7 +6,7 @@ import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Phone, Lock, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { AuthPageLogo } from '@/components/dynamic-logo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -63,17 +63,9 @@ export default function LoginPage() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <div className="relative w-32 h-8 mx-auto">
-              <Image
-                src="/images/CUENTY.png"
-                alt="CUENTY"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
+          <div className="mb-6">
+            <AuthPageLogo />
+          </div>
           <h1 className="text-3xl font-bold text-white mb-2">Iniciar Sesión</h1>
           <p className="text-slate-300">Accede a tu cuenta de CUENTY</p>
         </div>

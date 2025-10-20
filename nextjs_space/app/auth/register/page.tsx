@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { User, Phone, Mail, Lock, Eye, EyeOff, ArrowRight, Loader2, Check } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
+import { AuthPageLogo } from '@/components/dynamic-logo'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -114,17 +114,9 @@ export default function RegisterPage() {
       <div className="max-w-md w-full">
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <div className="relative w-32 h-8 mx-auto">
-              <Image
-                src="/images/CUENTY.png"
-                alt="CUENTY"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
+          <div className="mb-6">
+            <AuthPageLogo />
+          </div>
           <h1 className="text-3xl font-bold text-white mb-2">Crear Cuenta</h1>
           <p className="text-slate-300">Únete a CUENTY y disfruta de streaming premium</p>
         </div>

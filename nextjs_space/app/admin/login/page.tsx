@@ -4,11 +4,11 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react'
 import { adminAuth } from '@/lib/admin-auth'
 import { toast } from 'react-hot-toast'
+import { AuthPageLogo } from '@/components/dynamic-logo'
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState('')
@@ -68,17 +68,9 @@ export default function AdminLoginPage() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <div className="relative w-40 h-12 mx-auto">
-              <Image
-                src="/images/CUENTY.png"
-                alt="CUENTY"
-                fill
-                className="object-contain"
-                priority
-              />
-            </div>
-          </Link>
+          <div className="mb-6">
+            <AuthPageLogo />
+          </div>
           <h1 className="text-2xl font-bold text-white mb-2">
             Panel de Administración
           </h1>
