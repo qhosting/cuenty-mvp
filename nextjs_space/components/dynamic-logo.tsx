@@ -105,8 +105,14 @@ export function DynamicLogo({
   }
 
   // Content to render
+  // Para auth pages, centramos el contenido
+  const isAuthVariant = variant === 'auth'
+  const contentClasses = isAuthVariant 
+    ? "flex items-center justify-center space-x-3" 
+    : "flex items-center space-x-3"
+  
   const logoContent = (
-    <div className="flex items-center space-x-3">
+    <div className={contentClasses}>
       {logoUrl && !error ? (
         // Custom logo from database
         <div className="relative" style={{ width: dimensions.width, height: dimensions.height }}>
@@ -174,12 +180,14 @@ export function FooterLogo() {
 
 export function AuthPageLogo() {
   return (
-    <DynamicLogo 
-      variant="auth"
-      size="large"
-      showText={false}
-      linkTo="/"
-      className="mx-auto transition-transform hover:scale-105"
-    />
+    <div className="flex justify-center w-full">
+      <DynamicLogo 
+        variant="auth"
+        size="large"
+        showText={false}
+        linkTo="/"
+        className="transition-transform hover:scale-105"
+      />
+    </div>
   )
 }
