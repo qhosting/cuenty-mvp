@@ -98,9 +98,6 @@ export default function LoginPage() {
                   className="w-full pl-10 pr-3 py-3 bg-slate-900/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
-              <p className="mt-1 text-xs text-slate-400">
-                Usa +525551234567 con contraseña johndoe123 para pruebas
-              </p>
             </div>
 
             <div>
