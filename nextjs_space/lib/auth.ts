@@ -22,33 +22,47 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         // Durante build time, no intentar conectar a la DB
         if (isBuildTime) {
+          console.log('⚠️ Build time detected, skipping authorization')
           return null
         }
 
         if (!credentials?.phone || !credentials?.password) {
+          console.log('❌ Missing phone or password')
           return null
         }
 
         try {
-          // Por ahora, usar email como fallback si no hay usuario con teléfono
+          console.log(`🔍 Buscando usuario con teléfono: ${credentials.phone}`)
+          
+          // Buscar usuario por teléfono
           const user = await prisma.user.findFirst({
             where: {
-              OR: [
-                { phone: credentials.phone },
-                { email: 'john@doe.com' } // Usuario de prueba
-              ]
+              phone: credentials.phone
             }
           })
 
           if (!user) {
+            console.log('❌ Usuario no encontrado')
             return null
           }
 
-          // Verificar contraseña (simplificado para MVP)
-          if (credentials.password !== 'johndoe123') {
+          console.log(`✅ Usuario encontrado: ${user.name || user.email}`)
+
+          // Verificar si el usuario tiene contraseña
+          if (!user.password) {
+            console.log('❌ Usuario sin contraseña configurada')
             return null
           }
 
+          // Verificar contraseña con bcrypt
+          const passwordValid = await bcrypt.compare(credentials.password, user.password)
+
+          if (!passwordValid) {
+            console.log('❌ Contraseña incorrecta')
+            return null
+          }
+
+          console.log('✅ Autenticación exitosa')
           return {
             id: user.id,
             name: user.name,
@@ -56,7 +70,7 @@ export const authOptions: NextAuthOptions = {
             phone: user.phone || undefined
           }
         } catch (error) {
-          console.error('Error during authorization:', error)
+          console.error('❌ Error durante la autorización:', error)
           return null
         }
       }
