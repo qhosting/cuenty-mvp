@@ -132,29 +132,64 @@ if ! is_process_running "$BACKEND_PID"; then
 fi
 
 # ============================================================================
-# PASO 3: Ejecutar migraciones de base de datos
+# PASO 3: Ejecutar migraciones de base de datos (AUTOMÁTICAS)
 # ============================================================================
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 3/4: Ejecutando migraciones de base de datos        ║"
+echo "║  PASO 3/4: Ejecutando migraciones automáticas de BD       ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 cd /app/nextjs_space
 
-# Verificar que el script de migración exista
-if [ -f "scripts/migrate.js" ]; then
-    echo "🔄 Ejecutando migraciones de Prisma (modo SEGURO)..."
-    
-    # Ejecutar migraciones (no falla si no hay migraciones pendientes)
-    if node scripts/migrate.js; then
-        echo "✅ Migraciones aplicadas correctamente"
-    else
-        echo "⚠️  ADVERTENCIA: Error al ejecutar migraciones"
-        echo "   La aplicación intentará continuar, pero puede haber problemas"
-        echo "   Verifica los logs de migración para más detalles"
-    fi
+# Verificar que DATABASE_URL esté configurada
+if [ -z "$DATABASE_URL" ]; then
+    echo "⚠️  ADVERTENCIA: DATABASE_URL no está configurada"
+    echo "   Las migraciones no se ejecutarán"
 else
-    echo "⚠️  Script de migraciones no encontrado, continuando sin migraciones..."
+    echo "✓ DATABASE_URL configurada"
+    
+    # Verificar que el script de migración exista
+    if [ -f "scripts/migrate.js" ]; then
+        echo "🔄 Ejecutando migraciones de Prisma (modo SEGURO - migrate deploy)..."
+        echo "   → Este proceso NO elimina datos existentes"
+        echo "   → Solo aplica migraciones pendientes"
+        
+        # Ejecutar migraciones (no falla si no hay migraciones pendientes)
+        if node scripts/migrate.js; then
+            echo "✅ Migraciones aplicadas correctamente"
+        else
+            MIGRATION_EXIT_CODE=$?
+            echo "⚠️  ADVERTENCIA: Error al ejecutar migraciones (código: $MIGRATION_EXIT_CODE)"
+            echo "   La aplicación intentará continuar, pero puede haber problemas"
+            echo "   Verifica los logs de migración para más detalles"
+            echo ""
+            echo "💡 Posibles causas:"
+            echo "   - Base de datos no está accesible"
+            echo "   - Credenciales incorrectas"
+            echo "   - No hay migraciones pendientes (esto es normal)"
+        fi
+    else
+        echo "⚠️  Script de migraciones no encontrado en scripts/migrate.js"
+        echo "   Intentando ejecutar migraciones directamente con Prisma..."
+        
+        # Fallback: intentar ejecutar migraciones directamente
+        if npx prisma migrate deploy 2>/dev/null; then
+            echo "✅ Migraciones aplicadas correctamente (usando prisma CLI)"
+        else
+            echo "⚠️  No se pudieron ejecutar migraciones automáticas"
+            echo "   Continuando sin migraciones..."
+        fi
+    fi
+fi
+
+echo ""
+echo "📊 Estado de Prisma Client:"
+# Verificar que el cliente de Prisma esté generado
+if [ -d "node_modules/.prisma/client" ]; then
+    echo "   ✅ Prisma Client está generado correctamente"
+else
+    echo "   ⚠️  Prisma Client no encontrado, regenerando..."
+    npx prisma generate || echo "   ⚠️  Error al generar Prisma Client"
 fi
 
 # ============================================================================

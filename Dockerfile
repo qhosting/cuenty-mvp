@@ -126,9 +126,11 @@ RUN rm -rf ./node_modules/.prisma 2>/dev/null || true && \
     npx prisma generate && \
     echo "✓ Prisma Client generated for production"
 
-# Copiar scripts de migración (necesarios para migraciones automáticas)
+# Copiar scripts de migración (necesarios para migraciones automáticas en producción)
+# IMPORTANTE: Las migraciones se ejecutan automáticamente al iniciar el contenedor
+# mediante start-docker.sh antes de iniciar la aplicación
 COPY --from=frontend-builder /app/frontend/scripts ./scripts
-RUN chmod +x ./scripts/*.sh ./scripts/*.js && \
+RUN chmod +x ./scripts/*.sh ./scripts/*.js 2>/dev/null || chmod +x ./scripts/*.js && \
     echo "✓ Migration scripts copied and marked as executable"
 
 # Copiar archivos construidos y necesarios del frontend
