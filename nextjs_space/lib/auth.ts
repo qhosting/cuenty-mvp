@@ -16,6 +16,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
+        phone: { label: 'Teléfono', type: 'tel' },
         email: { label: 'Email', type: 'email' },
         password: { label: 'Contraseña', type: 'password' }
       },
@@ -26,27 +27,45 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing email or password')
-          throw new Error('Credenciales requeridas')
+        if (!credentials?.password) {
+          console.log('❌ Missing password')
+          throw new Error('Contraseña requerida')
+        }
+
+        if (!credentials?.email && !credentials?.phone) {
+          console.log('❌ Missing email or phone')
+          throw new Error('Email o teléfono requerido')
         }
 
         try {
-          console.log(`🔍 Buscando usuario con email: ${credentials.email}`)
+          let user = null
           
-          // Buscar usuario por email
-          const user = await prisma.user.findUnique({
-            where: {
-              email: credentials.email
-            }
-          })
+          // Intentar buscar por teléfono primero si está presente
+          if (credentials.phone) {
+            console.log(`🔍 Buscando usuario con teléfono: ${credentials.phone}`)
+            user = await prisma.user.findUnique({
+              where: {
+                phone: credentials.phone
+              }
+            })
+          }
+          
+          // Si no se encontró por teléfono, intentar con email
+          if (!user && credentials.email) {
+            console.log(`🔍 Buscando usuario con email: ${credentials.email}`)
+            user = await prisma.user.findUnique({
+              where: {
+                email: credentials.email
+              }
+            })
+          }
 
           if (!user) {
             console.log('❌ Usuario no encontrado')
             throw new Error('Usuario no encontrado')
           }
 
-          console.log(`✅ Usuario encontrado: ${user.name || user.email}`)
+          console.log(`✅ Usuario encontrado: ${user.name || user.email || user.phone}`)
 
           // Verificar si el usuario tiene contraseña
           if (!user.password) {
@@ -95,6 +114,18 @@ export const authOptions: NextAuthOptions = {
         session.user.phone = token.phone as string
       }
       return session
+    },
+    async redirect({ url, baseUrl }) {
+      // Si la URL ya es absoluta y está en el mismo dominio, usarla
+      if (url.startsWith(baseUrl)) {
+        return url
+      }
+      // Si la URL es relativa, construir la URL completa
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Por defecto, redirigir al dashboard después del login
+      return `${baseUrl}/dashboard`
     }
   },
   // Agregar secret con valor por defecto para build time

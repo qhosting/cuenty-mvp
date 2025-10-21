@@ -1,9 +1,20 @@
 
 import { withAuth } from "next-auth/middleware"
+import { NextResponse } from 'next/server'
 
 export default withAuth(
   function middleware(req) {
-    // Middleware logic here
+    const token = req.nextauth.token
+    const pathname = req.nextUrl.pathname
+
+    // Si no hay token y está intentando acceder a una ruta protegida
+    if (!token && (pathname.startsWith('/dashboard') || pathname.startsWith('/checkout'))) {
+      const loginUrl = new URL('/auth/login', req.url)
+      loginUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+
+    return NextResponse.next()
   },
   {
     callbacks: {
@@ -17,6 +28,9 @@ export default withAuth(
 
         // Check if user is authenticated for protected routes
         if (pathname.startsWith('/dashboard')) {
+          return !!token
+        }
+        if (pathname.startsWith('/checkout')) {
           return !!token
         }
         if (pathname.startsWith('/admin')) {
