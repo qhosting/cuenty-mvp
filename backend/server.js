@@ -9,6 +9,10 @@ require('dotenv').config();
 
 const app = express();
 
+// Environment configuration - Must be defined early
+const NEXTJS_PORT = process.env.NEXTJS_PORT || 3001;
+const NEXTJS_URL = `http://localhost:${NEXTJS_PORT}`;
+
 // Middlewares de seguridad
 // Configure helmet to disable CSP as it blocks Next.js inline scripts
 // Next.js requires inline scripts for hydration and functionality
@@ -131,8 +135,7 @@ app.get('/api-info', (req, res) => {
 
 // Proxy para Next.js Frontend - Debe estar DESPUÉS de todas las rutas de API
 // pero ANTES del manejo de errores 404
-const NEXTJS_PORT = process.env.NEXTJS_PORT || 3001;
-const NEXTJS_URL = `http://localhost:${NEXTJS_PORT}`;
+// (NEXTJS_URL defined at top of file)
 
 // Solo hacer proxy si NO es una ruta de API, health check, o recursos estáticos
 app.use('/', (req, res, next) => {
