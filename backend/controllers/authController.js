@@ -1,7 +1,55 @@
 
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../middleware/auth');
-const pool = require('../config/database');
+const { PrismaClient } = require('@prisma/client');
+
+const prisma = new PrismaClient();
+
+/**
+ * Validaciones de entrada
+ */
+const validarUsername = (username) => {
+  if (!username || typeof username !== 'string') {
+    return { valid: false, error: 'Username es requerido' };
+  }
+  if (username.length < 3 || username.length > 50) {
+    return { valid: false, error: 'Username debe tener entre 3 y 50 caracteres' };
+  }
+  if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+    return { valid: false, error: 'Username solo puede contener letras, números, guiones y guiones bajos' };
+  }
+  return { valid: true };
+};
+
+const validarPassword = (password) => {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, error: 'Password es requerido' };
+  }
+  if (password.length < 6) {
+    return { valid: false, error: 'Password debe tener al menos 6 caracteres' };
+  }
+  if (password.length > 100) {
+    return { valid: false, error: 'Password no puede exceder 100 caracteres' };
+  }
+  return { valid: true };
+};
+
+const validarEmail = (email) => {
+  if (!email) {
+    return { valid: true }; // Email es opcional
+  }
+  if (typeof email !== 'string') {
+    return { valid: false, error: 'Email debe ser una cadena de texto' };
+  }
+  if (email.length > 100) {
+    return { valid: false, error: 'Email no puede exceder 100 caracteres' };
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { valid: false, error: 'Formato de email inválido' };
+  }
+  return { valid: true };
+};
 
 /**
  * Registro de administrador
@@ -11,48 +59,103 @@ exports.registrarAdmin = async (req, res) => {
   try {
     const { username, password, email } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username y password son requeridos' });
+    // Validar username
+    const usernameValidation = validarUsername(username);
+    if (!usernameValidation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        error: usernameValidation.error 
+      });
     }
 
-    // Verificar si ya existe un admin con ese username
-    const existeQuery = 'SELECT * FROM admins WHERE username = $1';
-    const existe = await pool.query(existeQuery, [username]);
-
-    if (existe.rows.length > 0) {
-      return res.status(400).json({ error: 'El usuario ya existe' });
+    // Validar password
+    const passwordValidation = validarPassword(password);
+    if (!passwordValidation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        error: passwordValidation.error 
+      });
     }
 
-    // Hash de la contraseña
+    // Validar email (si se proporciona)
+    if (email) {
+      const emailValidation = validarEmail(email);
+      if (!emailValidation.valid) {
+        return res.status(400).json({ 
+          success: false,
+          error: emailValidation.error 
+        });
+      }
+    }
+
+    // Verificar si ya existe un admin con ese username usando Prisma
+    const adminExistente = await prisma.admin.findUnique({
+      where: { username: username.toLowerCase().trim() }
+    });
+
+    if (adminExistente) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'El usuario ya existe' 
+      });
+    }
+
+    // Verificar si ya existe un admin con ese email (si se proporciona)
+    if (email) {
+      const adminConEmail = await prisma.admin.findFirst({
+        where: { 
+          email: email.toLowerCase().trim(),
+          NOT: { email: null }
+        }
+      });
+
+      if (adminConEmail) {
+        return res.status(400).json({ 
+          success: false,
+          error: 'El email ya está registrado' 
+        });
+      }
+    }
+
+    // Hash de la contraseña con bcrypt (10 rounds es seguro y eficiente)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Crear tabla de admins si no existe
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS admins (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(50) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        email VARCHAR(100),
-        fecha_creacion TIMESTAMP DEFAULT NOW()
-      )
-    `);
-
-    // Insertar admin
-    const query = `
-      INSERT INTO admins (username, password, email)
-      VALUES ($1, $2, $3)
-      RETURNING id, username, email, fecha_creacion
-    `;
-    const result = await pool.query(query, [username, hashedPassword, email]);
+    // Crear admin usando Prisma
+    const nuevoAdmin = await prisma.admin.create({
+      data: {
+        username: username.toLowerCase().trim(),
+        password: hashedPassword,
+        email: email ? email.toLowerCase().trim() : null
+      },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fechaCreacion: true
+      }
+    });
 
     res.status(201).json({
       success: true,
       message: 'Administrador creado exitosamente',
-      data: result.rows[0]
+      data: nuevoAdmin
     });
   } catch (error) {
     console.error('Error en registro:', error);
-    res.status(500).json({ error: 'Error al registrar administrador' });
+    
+    // Manejar errores específicos de Prisma
+    if (error.code === 'P2002') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'El usuario ya existe' 
+      });
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al registrar administrador',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -63,28 +166,44 @@ exports.loginAdmin = async (req, res) => {
   try {
     const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ error: 'Username y password son requeridos' });
+    // Validar datos de entrada
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Username es requerido' 
+      });
     }
 
-    // Buscar admin
-    const query = 'SELECT * FROM admins WHERE username = $1';
-    const result = await pool.query(query, [username]);
-
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Password es requerido' 
+      });
     }
 
-    const admin = result.rows[0];
+    // Buscar admin usando Prisma
+    const admin = await prisma.admin.findUnique({
+      where: { username: username.toLowerCase().trim() }
+    });
+
+    if (!admin) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Credenciales inválidas' 
+      });
+    }
 
     // Verificar contraseña
     const passwordValida = await bcrypt.compare(password, admin.password);
 
     if (!passwordValida) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ 
+        success: false,
+        error: 'Credenciales inválidas' 
+      });
     }
 
-    // Generar token
+    // Generar token JWT
     const token = generateToken({
       id: admin.id,
       username: admin.username,
@@ -105,7 +224,11 @@ exports.loginAdmin = async (req, res) => {
     });
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({ error: 'Error al iniciar sesión' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al iniciar sesión',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
 
@@ -114,19 +237,34 @@ exports.loginAdmin = async (req, res) => {
  */
 exports.obtenerPerfil = async (req, res) => {
   try {
-    const query = 'SELECT id, username, email, fecha_creacion FROM admins WHERE id = $1';
-    const result = await pool.query(query, [req.user.id]);
+    // Buscar admin usando Prisma
+    const admin = await prisma.admin.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        fechaCreacion: true
+      }
+    });
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (!admin) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Usuario no encontrado' 
+      });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: admin
     });
   } catch (error) {
     console.error('Error al obtener perfil:', error);
-    res.status(500).json({ error: 'Error al obtener perfil' });
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al obtener perfil',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 };
