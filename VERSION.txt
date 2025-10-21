@@ -1,0 +1,20 @@
+CUENTY MVP - Version Control
+============================
+
+Current Version: 1.0.4
+Release Date: October 21, 2025
+
+Components:
+-----------
+- Frontend (Next.js):  v1.0.4
+- Backend (Node.js):   v1.0.4
+
+Last Updated: October 21, 2025
+
+Changes in this version:
+------------------------
+- Synchronized frontend and backend versions to 1.0.4
+- Maintained version consistency across the project
+
+For detailed changelog, see CHANGELOG.md
+For versioning documentation, see VERSIONING.md

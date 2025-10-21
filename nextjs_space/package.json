@@ -1,6 +1,6 @@
 {
   "name": "nextjs_space",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "next.config.js",
   "directories": {
     "lib": "lib"
