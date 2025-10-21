@@ -1,19 +1,19 @@
 CUENTY MVP - Version Control
 ============================
 
-Current Version: 1.0.4
+Current Version: 1.0.5
 Release Date: October 21, 2025
 
 Components:
 -----------
-- Frontend (Next.js):  v1.0.4
-- Backend (Node.js):   v1.0.4
+- Frontend (Next.js):  v1.0.5
+- Backend (Node.js):   v1.0.5
 
 Last Updated: October 21, 2025
 
 Changes in this version:
 ------------------------
-- Synchronized frontend and backend versions to 1.0.4
+- Fixed User model in Prisma schema (corrección del modelo User)
 - Maintained version consistency across the project
 
 For detailed changelog, see CHANGELOG.md
