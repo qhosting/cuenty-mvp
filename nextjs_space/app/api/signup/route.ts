@@ -108,12 +108,12 @@ export async function POST(request: NextRequest) {
     // Limpiar el teléfono (eliminar espacios y caracteres especiales, mantener el +)
     const phoneClean = phone.replace(/[\s\-\(\)]/g, '')
 
-    // Verificar si el usuario ya existe usando el modelo Usuario de Prisma
-    const existingUser = await prisma.usuario.findFirst({
+    // Verificar si el usuario ya existe usando el modelo User de Prisma
+    const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
           { email: email.toLowerCase().trim() },
-          { celular: phoneClean }
+          { phone: phoneClean }
         ]
       }
     })
@@ -129,20 +129,19 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Crear usuario con contraseña hasheada
-    const nuevoUsuario = await prisma.usuario.create({
+    const nuevoUsuario = await prisma.user.create({
       data: {
-        celular: phoneClean,
-        nombre: name.trim(),
+        phone: phoneClean,
+        name: name.trim(),
         email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        verificado: false // Por defecto no verificado, se puede verificar después
+        password: hashedPassword
       },
       select: {
-        celular: true,
-        nombre: true,
+        id: true,
+        phone: true,
+        name: true,
         email: true,
-        verificado: true,
-        fechaCreacion: true
+        createdAt: true
       }
     })
 

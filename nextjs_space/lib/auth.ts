@@ -46,9 +46,9 @@ export const authOptions: NextAuthOptions = {
           // Intentar buscar por teléfono primero si está presente
           if (phoneClean) {
             console.log(`🔍 Buscando usuario con teléfono: ${phoneClean}`)
-            user = await prisma.usuario.findUnique({
+            user = await prisma.user.findUnique({
               where: {
-                celular: phoneClean
+                phone: phoneClean
               }
             })
           }
@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
           // Si no se encontró por teléfono, intentar con email
           if (!user && credentials.email) {
             console.log(`🔍 Buscando usuario con email: ${credentials.email}`)
-            user = await prisma.usuario.findFirst({
+            user = await prisma.user.findFirst({
               where: {
                 email: credentials.email.toLowerCase().trim()
               }
@@ -68,7 +68,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Usuario no encontrado')
           }
 
-          console.log(`✅ Usuario encontrado: ${user.nombre || user.email || user.celular}`)
+          console.log(`✅ Usuario encontrado: ${user.name || user.email || user.phone}`)
 
           // Verificar si el usuario tiene contraseña
           if (!user.password) {
@@ -86,10 +86,10 @@ export const authOptions: NextAuthOptions = {
 
           console.log('✅ Autenticación exitosa')
           return {
-            id: user.celular, // El ID del usuario es el celular (es la PK)
-            name: user.nombre || '',
+            id: user.id, // El ID del usuario
+            name: user.name || '',
             email: user.email || '',
-            phone: user.celular
+            phone: user.phone || ''
           }
         } catch (error) {
           console.error('❌ Error durante la autorización:', error)
