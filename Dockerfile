@@ -19,6 +19,15 @@ RUN npm ci
 # Copiar código del backend
 COPY backend/ ./
 
+# Generar Prisma Client para el backend
+RUN if [ -f "prisma/schema.prisma" ]; then \
+        echo "🔄 Generando Prisma Client para el backend..."; \
+        npx prisma generate && \
+        echo "✓ Prisma Client generado exitosamente para el backend"; \
+    else \
+        echo "⚠️  No se encontró schema.prisma en el backend"; \
+    fi
+
 # Verificar que la instalación fue exitosa
 RUN echo "✓ Backend dependencies installed successfully" && \
     node --version && \
@@ -102,6 +111,16 @@ RUN npm ci --only=production && \
 
 # Copiar código del backend desde la etapa builder
 COPY --from=backend-builder /app/backend/ ./
+
+# Generar Prisma Client para el backend en la imagen final
+RUN if [ -f "prisma/schema.prisma" ]; then \
+        echo "🔄 Regenerando Prisma Client para el backend en producción..."; \
+        rm -rf ./node_modules/.prisma 2>/dev/null || true && \
+        npx prisma generate && \
+        echo "✓ Prisma Client generado para el backend en producción"; \
+    else \
+        echo "⚠️  No se encontró schema.prisma en el backend"; \
+    fi
 
 # ============================================================================
 # Copiar Frontend construido
