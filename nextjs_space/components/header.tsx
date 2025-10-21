@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession, signOut } from 'next-auth/react'
-import { Menu, X, User, LogOut, ShoppingCart, Heart, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, Heart, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { HeaderLogo } from '@/components/dynamic-logo'
 
@@ -84,16 +84,6 @@ export function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Link
-              href="/carrito"
-              className="relative p-2 text-slate-300 hover:text-white transition-colors"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                0
-              </span>
-            </Link>
-
             {status === 'loading' ? (
               <div className="h-9 w-20 bg-slate-700 animate-pulse rounded"></div>
             ) : session ? (
@@ -174,10 +164,6 @@ export function Header() {
                   <Link href="/dashboard" className="flex items-center space-x-2 py-2 text-slate-300">
                     <User className="w-4 h-4" />
                     <span>Mi Cuenta</span>
-                  </Link>
-                  <Link href="/carrito" className="flex items-center space-x-2 py-2 text-slate-300">
-                    <ShoppingCart className="w-4 h-4" />
-                    <span>Carrito</span>
                   </Link>
                   <button onClick={handleLogout} className="flex items-center space-x-2 py-2 text-slate-300">
                     <LogOut className="w-4 h-4" />

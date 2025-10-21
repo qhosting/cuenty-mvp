@@ -1,0 +1,180 @@
+{
+  "summary": {
+    "total_internal_routes": 13,
+    "total_api_routes": 5,
+    "total_external_links": 0,
+    "total_images": 1,
+    "total_broken_links": 0
+  },
+  "broken_links": [],
+  "all_links": {
+    "api_routes": {
+      "/api/site-config": [
+        "components/whatsapp-button-dynamic.tsx",
+        "components/dynamic-logo.tsx",
+        "components/how-it-works-section.tsx",
+        "components/features-section.tsx",
+        "components/hero-section.tsx"
+      ],
+      "/api/version": [
+        "components/footer.tsx",
+        "components/version-display.tsx",
+        "components/admin/admin-layout.tsx"
+      ],
+      "/api/products": [
+        "components/product-catalog.tsx",
+        "app/catalogo/[id]/page.tsx"
+      ],
+      "/api/orders": [
+        "app/dashboard/page.tsx",
+        "app/dashboard/orders/page.tsx"
+      ],
+      "/api/admin/site-config": [
+        "app/admin/site-config/page.tsx"
+      ]
+    },
+    "internal_routes": {
+      "/catalogo": [
+        "components/product-showcase.tsx",
+        "components/footer.tsx",
+        "components/hero-section-ecommerce.tsx",
+        "components/how-it-works-section.tsx",
+        "components/product-catalog.tsx",
+        "components/hero-section.tsx",
+        "components/services-section.tsx",
+        "components/services-section.tsx",
+        "app/dashboard/page.tsx",
+        "app/dashboard/page.tsx",
+        "app/dashboard/orders/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx"
+      ],
+      "/terminos": [
+        "components/footer.tsx",
+        "app/auth/register/page.tsx"
+      ],
+      "/privacidad": [
+        "components/footer.tsx",
+        "app/auth/register/page.tsx"
+      ],
+      "/dashboard": [
+        "components/header.tsx",
+        "components/header.tsx",
+        "components/auth/login-form.tsx",
+        "app/dashboard/settings/page.tsx",
+        "app/dashboard/orders/page.tsx",
+        "app/auth/login/page.tsx",
+        "app/auth/register/page.tsx"
+      ],
+      "/dashboard/orders": [
+        "components/header.tsx",
+        "app/dashboard/page.tsx",
+        "app/dashboard/page.tsx",
+        "app/checkout/page.tsx"
+      ],
+      "/dashboard/settings": [
+        "components/header.tsx",
+        "app/dashboard/page.tsx"
+      ],
+      "/auth/login": [
+        "components/header.tsx",
+        "components/header.tsx",
+        "components/auth/register-form.tsx",
+        "components/auth/register-form.tsx",
+        "app/dashboard/page.tsx",
+        "app/dashboard/settings/page.tsx",
+        "app/dashboard/orders/page.tsx",
+        "app/auth/register/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/checkout/page.tsx"
+      ],
+      "/auth/register": [
+        "components/header.tsx",
+        "components/header.tsx",
+        "components/auth/login-form.tsx",
+        "app/auth/login/page.tsx"
+      ],
+      "#como-funciona": [
+        "components/hero-section.tsx"
+      ],
+      "/": [
+        "components/auth/register-form.tsx",
+        "app/auth/login/page.tsx",
+        "app/auth/register/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/admin/login/page.tsx"
+      ],
+      "/admin/login": [
+        "components/admin/admin-layout.tsx"
+      ],
+      "/auth/login?message=Cuenta creada exitosamente. Inicia sesión.": [
+        "app/auth/register/page.tsx"
+      ],
+      "/admin": [
+        "app/admin/login/page.tsx",
+        "app/admin/login/page.tsx"
+      ]
+    },
+    "images": {
+      "https://i.etsystatic.com/41319467/r/il/1a4b6c/6558311821/il_fullxfull.6558311821_jitc.jpg": [
+        "components/hero-section-ecommerce.tsx"
+      ]
+    },
+    "router_navigation": {
+      "/auth/login": [
+        "components/auth/register-form.tsx",
+        "app/dashboard/page.tsx",
+        "app/dashboard/settings/page.tsx",
+        "app/dashboard/orders/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/checkout/page.tsx"
+      ],
+      "/": [
+        "components/auth/register-form.tsx",
+        "app/catalogo/[id]/page.tsx"
+      ],
+      "/dashboard": [
+        "components/auth/login-form.tsx",
+        "app/auth/login/page.tsx",
+        "app/auth/register/page.tsx"
+      ],
+      "/admin/login": [
+        "components/admin/admin-layout.tsx"
+      ],
+      "/auth/login?message=Cuenta creada exitosamente. Inicia sesión.": [
+        "app/auth/register/page.tsx"
+      ],
+      "/catalogo": [
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/catalogo/[id]/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx",
+        "app/checkout/page.tsx"
+      ],
+      "/dashboard/orders": [
+        "app/checkout/page.tsx"
+      ],
+      "/admin": [
+        "app/admin/login/page.tsx",
+        "app/admin/login/page.tsx"
+      ],
+      "#como-funciona": [],
+      "/auth/register": [],
+      "/dashboard/settings": [],
+      "/privacidad": [],
+      "/terminos": []
+    },
+    "external_links": {}
+  }
+}
