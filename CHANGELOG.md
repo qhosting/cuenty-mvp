@@ -5,6 +5,26 @@ Todos los cambios notables en este proyecto serán documentados en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.0.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
+## [1.0.2] - 2025-10-21
+
+### 🐛 Corregido
+- **Error "Ruta no encontrada" en Dashboard Admin**: Corregido el error 404 que aparecía después del login exitoso
+  - Creado endpoint `/api/admin/dashboard` que retorna estadísticas del panel
+  - Implementada la página `/app/admin/dashboard/page.tsx` con componente AdminDashboard
+  - Solucionado el problema de redirección post-login
+  
+### 🔧 Mejorado
+- **Panel de Administración**: Mejoras significativas en la estructura y funcionalidad
+  - Validación de autenticación mejorada para rutas de admin
+  - Endpoint de dashboard optimizado con estadísticas en tiempo real
+  - UI del dashboard mejorada con componentes de Recharts para visualización de datos
+  - Estadísticas incluyen: usuarios totales, canales activos, videos publicados, reproducciones totales
+
+### 🔒 Seguridad
+- **Autenticación Admin**: Reforzada la verificación de roles en endpoints administrativos
+  - Validación estricta de rol de administrador en `/api/admin/dashboard`
+  - Protección de rutas sensibles mediante middleware
+
 ## [1.0.1] - 2025-10-20
 
 ### ✨ Agregado
