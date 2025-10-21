@@ -17,6 +17,8 @@ console.log('[Admin Login Route] Variables de entorno cargadas:', {
   hasAdminPassword: !!process.env.ADMIN_PASSWORD,
   hasAdminSecret: !!process.env.ADMIN_SECRET,
   adminEmailPrefix: process.env.ADMIN_EMAIL?.substring(0, 5) + '...',
+  adminPasswordDefault: ADMIN_CREDENTIALS.password,
+  adminEmailDefault: ADMIN_CREDENTIALS.email,
 })
 
 export async function POST(request: NextRequest) {
@@ -63,6 +65,9 @@ export async function POST(request: NextRequest) {
     console.log('[Admin Login] Comparando credenciales...')
     console.log('[Admin Login] Email esperado:', ADMIN_CREDENTIALS.email?.substring(0, 5) + '...')
     console.log('[Admin Login] Email recibido:', email?.substring(0, 5) + '...')
+    console.log('[Admin Login] Password match:', password === ADMIN_CREDENTIALS.password)
+    console.log('[Admin Login] Password length recibido:', password?.length)
+    console.log('[Admin Login] Password length esperado:', ADMIN_CREDENTIALS.password?.length)
     
     if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
       console.warn('[Admin Login] Credenciales inválidas')
