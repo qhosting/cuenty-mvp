@@ -16,7 +16,7 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        phone: { label: 'Teléfono', type: 'tel' },
+        email: { label: 'Email', type: 'email' },
         password: { label: 'Contraseña', type: 'password' }
       },
       async authorize(credentials) {
@@ -26,24 +26,24 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        if (!credentials?.phone || !credentials?.password) {
-          console.log('❌ Missing phone or password')
-          return null
+        if (!credentials?.email || !credentials?.password) {
+          console.log('❌ Missing email or password')
+          throw new Error('Credenciales requeridas')
         }
 
         try {
-          console.log(`🔍 Buscando usuario con teléfono: ${credentials.phone}`)
+          console.log(`🔍 Buscando usuario con email: ${credentials.email}`)
           
-          // Buscar usuario por teléfono
-          const user = await prisma.user.findFirst({
+          // Buscar usuario por email
+          const user = await prisma.user.findUnique({
             where: {
-              phone: credentials.phone
+              email: credentials.email
             }
           })
 
           if (!user) {
             console.log('❌ Usuario no encontrado')
-            return null
+            throw new Error('Usuario no encontrado')
           }
 
           console.log(`✅ Usuario encontrado: ${user.name || user.email}`)
@@ -51,7 +51,7 @@ export const authOptions: NextAuthOptions = {
           // Verificar si el usuario tiene contraseña
           if (!user.password) {
             console.log('❌ Usuario sin contraseña configurada')
-            return null
+            throw new Error('Usuario sin contraseña')
           }
 
           // Verificar contraseña con bcrypt
@@ -59,7 +59,7 @@ export const authOptions: NextAuthOptions = {
 
           if (!passwordValid) {
             console.log('❌ Contraseña incorrecta')
-            return null
+            throw new Error('Contraseña incorrecta')
           }
 
           console.log('✅ Autenticación exitosa')
@@ -71,7 +71,7 @@ export const authOptions: NextAuthOptions = {
           }
         } catch (error) {
           console.error('❌ Error durante la autorización:', error)
-          return null
+          throw error
         }
       }
     })

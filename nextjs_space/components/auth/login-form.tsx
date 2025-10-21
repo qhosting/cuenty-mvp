@@ -23,21 +23,30 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
+      console.log('🔄 Iniciando sesión con:', formData.email)
+      
       const result = await signIn('credentials', {
         email: formData.email,
         password: formData.password,
         redirect: false,
       })
 
+      console.log('📋 Resultado de signIn:', result)
+
       if (result?.error) {
-        toast.error('Credenciales incorrectas')
-      } else {
+        console.error('❌ Error en signIn:', result.error)
+        toast.error('Credenciales incorrectas. Por favor verifica tu email y contraseña.')
+      } else if (result?.ok) {
+        console.log('✅ Login exitoso, redirigiendo al dashboard...')
         toast.success('¡Bienvenido!')
-        router.replace('/')
+        // Pequeña espera para que se complete la sesión
+        await new Promise(resolve => setTimeout(resolve, 500))
+        router.push('/dashboard')
+        router.refresh()
       }
     } catch (error) {
-      toast.error('Error al iniciar sesión')
-      console.error('Login error:', error)
+      console.error('❌ Error al iniciar sesión:', error)
+      toast.error('Error al iniciar sesión. Por favor intenta nuevamente.')
     } finally {
       setIsLoading(false)
     }
