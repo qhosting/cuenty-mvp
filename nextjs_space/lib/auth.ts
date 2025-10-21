@@ -40,12 +40,15 @@ export const authOptions: NextAuthOptions = {
         try {
           let user = null
           
+          // Limpiar el teléfono si está presente (eliminar espacios y caracteres especiales)
+          const phoneClean = credentials.phone ? credentials.phone.replace(/[\s\-\(\)]/g, '') : null
+          
           // Intentar buscar por teléfono primero si está presente
-          if (credentials.phone) {
-            console.log(`🔍 Buscando usuario con teléfono: ${credentials.phone}`)
-            user = await prisma.user.findUnique({
+          if (phoneClean) {
+            console.log(`🔍 Buscando usuario con teléfono: ${phoneClean}`)
+            user = await prisma.usuario.findUnique({
               where: {
-                phone: credentials.phone
+                celular: phoneClean
               }
             })
           }
@@ -53,9 +56,9 @@ export const authOptions: NextAuthOptions = {
           // Si no se encontró por teléfono, intentar con email
           if (!user && credentials.email) {
             console.log(`🔍 Buscando usuario con email: ${credentials.email}`)
-            user = await prisma.user.findUnique({
+            user = await prisma.usuario.findFirst({
               where: {
-                email: credentials.email
+                email: credentials.email.toLowerCase().trim()
               }
             })
           }
@@ -65,7 +68,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error('Usuario no encontrado')
           }
 
-          console.log(`✅ Usuario encontrado: ${user.name || user.email || user.phone}`)
+          console.log(`✅ Usuario encontrado: ${user.nombre || user.email || user.celular}`)
 
           // Verificar si el usuario tiene contraseña
           if (!user.password) {
@@ -83,10 +86,10 @@ export const authOptions: NextAuthOptions = {
 
           console.log('✅ Autenticación exitosa')
           return {
-            id: user.id,
-            name: user.name,
+            id: user.celular, // El ID del usuario es el celular (es la PK)
+            name: user.nombre || '',
             email: user.email || '',
-            phone: user.phone || undefined
+            phone: user.celular
           }
         } catch (error) {
           console.error('❌ Error durante la autorización:', error)

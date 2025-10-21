@@ -32,6 +32,7 @@ model Usuario {
   celular                 String         @id @db.VarChar(15)
   nombre                  String?        @db.VarChar(100)
   email                   String?        @db.VarChar(100)
+  password                String?        @db.VarChar(255)
   verificado              Boolean        @default(false)
   metodoEntregaPreferido  String         @default("whatsapp") @map("metodo_entrega_preferido") @db.VarChar(20)
   fechaCreacion           DateTime       @default(now()) @map("fecha_creacion")
