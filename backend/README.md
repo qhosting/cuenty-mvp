@@ -48,9 +48,17 @@ cp .env.example .env
 
 # 3. Crear y configurar base de datos
 psql -U postgres -c "CREATE DATABASE cuenty_db"
-psql -U postgres -d cuenty_db -f ../database/schema.sql
 
-# 4. Iniciar servidor
+# Opción A: Usar Prisma Migrations (Recomendado)
+npx prisma migrate deploy
+
+# Opción B: Usar SQL directo (Legado)
+# psql -U postgres -d cuenty_db -f ../database/schema.sql
+
+# 4. Generar cliente de Prisma
+npx prisma generate
+
+# 5. Iniciar servidor
 npm start
 
 # O en modo desarrollo
@@ -58,6 +66,49 @@ npm run dev
 ```
 
 El servidor estará disponible en `http://localhost:3000`
+
+### 🗄️ Gestión de Base de Datos con Prisma
+
+Este proyecto usa **Prisma ORM** para gestionar el esquema de base de datos. Las migraciones están versionadas y se encuentran en `prisma/migrations/`.
+
+#### Comandos de Prisma
+
+```bash
+# Aplicar migraciones en producción
+npx prisma migrate deploy
+
+# Crear nueva migración en desarrollo (después de modificar schema.prisma)
+npx prisma migrate dev --name nombre_de_migracion
+
+# Ver estado de migraciones
+npx prisma migrate status
+
+# Generar/actualizar cliente de Prisma
+npx prisma generate
+
+# Abrir Prisma Studio (GUI para la base de datos)
+npx prisma studio
+
+# Resetear base de datos (⚠️ elimina todos los datos)
+npx prisma migrate reset
+```
+
+#### Estructura de Prisma
+
+```
+backend/
+├── prisma/
+│   ├── schema.prisma           # Esquema de base de datos
+│   └── migrations/             # Historial de migraciones
+│       ├── 20251021042116_init/
+│       │   └── migration.sql
+│       └── migration_lock.toml
+```
+
+**Importante para Producción:**
+- Usar `npx prisma migrate deploy` (NO `prisma migrate dev`)
+- Las migraciones se aplican automáticamente desde Git
+- Nunca editar archivos de migración manualmente
 
 ## 📚 Documentación
 
@@ -165,6 +216,7 @@ Ver esquema completo en `/database/schema.sql`
 - **Runtime**: Node.js 16+
 - **Framework**: Express.js
 - **Base de Datos**: PostgreSQL 12+
+- **ORM**: Prisma (migraciones versionadas)
 - **Autenticación**: JWT (jsonwebtoken)
 - **Seguridad**: Helmet, CORS, bcryptjs
 - **Validación**: express-validator
