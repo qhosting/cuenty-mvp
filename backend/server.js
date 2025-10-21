@@ -59,6 +59,19 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/webhooks/n8n', require('./routes/webhookRoutes'));
 
+// Alias para compatibilidad con Next.js frontend  
+// Proxy /api/products to Next.js API
+app.use('/api/products', createProxyMiddleware({
+  target: NEXTJS_URL,
+  changeOrigin: true,
+  pathRewrite: {
+    '^/api/products': '/api/products',
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔀 Proxy API: ${req.method} ${req.path} -> ${NEXTJS_URL}${req.path}`);
+  },
+}));
+
 // Ruta de salud del servidor
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'CUENTY API is running' });
