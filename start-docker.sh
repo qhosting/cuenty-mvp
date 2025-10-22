@@ -317,25 +317,29 @@ echo "╚═══════════════════════�
 
 cd /app/nextjs_space
 
-# Verificar que los archivos necesarios existan
-if [ ! -d ".next" ]; then
-    echo "❌ ERROR: .next no encontrado en /app/nextjs_space"
+# Verificar que los archivos necesarios existan (modo standalone)
+if [ ! -f "server.js" ]; then
+    echo "❌ ERROR: server.js no encontrado en /app/nextjs_space"
+    echo "   El build standalone del frontend no se completó correctamente"
+    echo "   Verifica que next.config.js tenga output: 'standalone'"
+    exit 1
+fi
+
+if [ ! -d ".next/static" ]; then
+    echo "❌ ERROR: .next/static no encontrado en /app/nextjs_space"
     echo "   El build del frontend no se completó correctamente"
     exit 1
 fi
 
-if [ ! -d "node_modules" ]; then
-    echo "❌ ERROR: node_modules no encontrado en /app/nextjs_space"
-    exit 1
-fi
-
 echo "✓ Archivos del frontend verificados"
-echo "🚀 Iniciando Frontend..."
+echo "🚀 Iniciando Frontend en modo standalone..."
+echo "   → El modo standalone incluye todas las rutas API automáticamente"
 
-# Iniciar frontend en background
+# Iniciar frontend en background usando el servidor standalone
+# En modo standalone, Next.js genera un server.js optimizado
 PORT=$FRONTEND_PORT \
 NODE_ENV=production \
-npm start > "$FRONTEND_LOG" 2>&1 &
+node server.js > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
 
 echo "✅ Frontend iniciado (PID: $FRONTEND_PID)"

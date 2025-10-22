@@ -157,15 +157,18 @@ COPY --from=frontend-builder /app/frontend/scripts ./scripts
 RUN chmod +x ./scripts/*.sh ./scripts/*.js 2>/dev/null || chmod +x ./scripts/*.js && \
     echo "✓ Migration scripts copied and marked as executable"
 
-# Copiar archivos construidos y necesarios del frontend
-COPY --from=frontend-builder /app/frontend/.next ./.next
+# Copiar archivos construidos del frontend en modo standalone
+# El modo standalone crea un servidor Node.js optimizado y autocontenido
+COPY --from=frontend-builder /app/frontend/.next/standalone ./
+COPY --from=frontend-builder /app/frontend/.next/static ./.next/static
 COPY --from=frontend-builder /app/frontend/public ./public
-COPY --from=frontend-builder /app/frontend/next.config.js ./
-COPY --from=frontend-builder /app/frontend/middleware.ts ./
-COPY --from=frontend-builder /app/frontend/app ./app
-COPY --from=frontend-builder /app/frontend/components ./components
-COPY --from=frontend-builder /app/frontend/lib ./lib
-COPY --from=frontend-builder /app/frontend/types ./types
+
+# Nota: En modo standalone, Next.js incluye automáticamente:
+# - Todas las rutas API (/app/api/*)
+# - Todas las páginas y componentes necesarios
+# - Las dependencias mínimas requeridas
+# No necesitamos copiar manualmente app/, components/, lib/, types/ ya que
+# están incluidos en el bundle standalone optimizado
 
 # ============================================================================
 # Configuración final

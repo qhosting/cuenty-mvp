@@ -3,7 +3,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  output: process.env.NEXT_OUTPUT_MODE,
+  // Modo standalone: optimizado para Docker y producción
+  // Genera un servidor Node.js mínimo con todas las dependencias
+  output: 'standalone',
   experimental: {
     outputFileTracingRoot: path.join(__dirname, '../'),
   },
@@ -14,6 +16,8 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   images: { unoptimized: true },
+  // Asegurar que las rutas API se incluyan en el build
+  // El modo standalone las incluye automáticamente
 };
 
 module.exports = nextConfig;
