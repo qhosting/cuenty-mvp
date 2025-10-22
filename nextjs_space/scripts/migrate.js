@@ -70,12 +70,51 @@ function checkDatabaseUrl() {
 }
 
 /**
+ * Lista las migraciones disponibles
+ */
+function listMigrations() {
+  try {
+    const fs = require('fs');
+    const migrationsDir = path.join(__dirname, '..', 'prisma', 'migrations');
+    
+    if (!fs.existsSync(migrationsDir)) {
+      logger.warning('No se encontró el directorio prisma/migrations/');
+      return;
+    }
+    
+    const migrations = fs.readdirSync(migrationsDir)
+      .filter(file => {
+        const stat = fs.statSync(path.join(migrationsDir, file));
+        return stat.isDirectory() && file !== 'migration_lock.toml';
+      })
+      .sort();
+    
+    if (migrations.length === 0) {
+      logger.warning('No se encontraron migraciones en el directorio');
+    } else {
+      logger.info(`📋 Migraciones encontradas en FRONTEND: ${migrations.length}`);
+      migrations.forEach((migration, index) => {
+        logger.info(`   ${index + 1}. ${migration}`);
+      });
+    }
+  } catch (error) {
+    logger.warning('No se pudo listar las migraciones: ' + error.message);
+  }
+}
+
+/**
  * Ejecuta el comando de migración con reintentos
  */
 async function runMigration(attempt = 1) {
   try {
-    logger.info(`Ejecutando migraciones (intento ${attempt}/${MAX_RETRIES})...`);
+    logger.info(`Ejecutando migraciones del FRONTEND (intento ${attempt}/${MAX_RETRIES})...`);
     logger.warning('Usando "prisma migrate deploy" - Modo SEGURO (no resetea datos)');
+    
+    // Listar migraciones disponibles
+    listMigrations();
+    
+    logger.info('');
+    logger.info('🚀 Aplicando migraciones pendientes...');
     
     // Ejecutar migrate deploy (NO usa migrate dev que puede resetear)
     const output = execSync('npx prisma migrate deploy', {
@@ -88,7 +127,7 @@ async function runMigration(attempt = 1) {
       }
     });
     
-    logger.success('Migraciones aplicadas exitosamente');
+    logger.success('Migraciones del FRONTEND aplicadas exitosamente');
     return true;
     
   } catch (error) {
