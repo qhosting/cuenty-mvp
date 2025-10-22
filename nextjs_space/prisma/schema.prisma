@@ -1,13 +1,32 @@
+// This is your Prisma schema file for CUENTY (Frontend + Backend Models)
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
-  provider      = "prisma-client-js"
-  output        = "../node_modules/.prisma/client"
-  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================================================
+// ADMINISTRADORES
+// ============================================================================
+
+model Admin {
+  id             Int      @id @default(autoincrement())
+  username       String   @unique @db.VarChar(50)
+  password       String   @db.VarChar(255)
+  email          String?  @db.VarChar(100)
+  fechaCreacion  DateTime @default(now()) @map("fecha_creacion")
+
+  @@map("admins")
+}
+
+// ============================================================================
+// FRONTEND-SPECIFIC MODELS (NextAuth & Site Config)
+// ============================================================================
 
 model Account {
   id                String  @id @default(cuid())
@@ -136,4 +155,284 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
   EXPIRED
+}
+
+// ============================================================================
+// USUARIOS
+// ============================================================================
+
+model Usuario {
+  celular                 String         @id @db.VarChar(15)
+  nombre                  String?        @db.VarChar(100)
+  email                   String?        @db.VarChar(100)
+  password                String?        @db.VarChar(255)
+  verificado              Boolean        @default(false)
+  metodoEntregaPreferido  String         @default("whatsapp") @map("metodo_entrega_preferido") @db.VarChar(20)
+  fechaCreacion           DateTime       @default(now()) @map("fecha_creacion")
+  ultimoAcceso            DateTime?      @map("ultimo_acceso")
+  
+  // Relations
+  ordenes                 Orden[]
+  shoppingCart            ShoppingCart[]
+  tickets                 Ticket[]
+
+  @@map("usuarios")
+}
+
+// ============================================================================
+// VERIFICACIÓN TELEFÓNICA
+// ============================================================================
+
+model PhoneVerification {
+  id             Int      @id @default(autoincrement())
+  celular        String   @db.VarChar(15)
+  codigo         String   @db.VarChar(6)
+  expiracion     DateTime
+  usado          Boolean  @default(false)
+  intentos       Int      @default(0)
+  fechaCreacion  DateTime @default(now()) @map("fecha_creacion")
+
+  @@index([celular], name: "idx_phone_verifications_celular")
+  @@index([codigo], name: "idx_phone_verifications_codigo")
+  @@map("phone_verifications")
+}
+
+// ============================================================================
+// SERVICIOS DE STREAMING
+// ============================================================================
+
+model Servicio {
+  idServicio     Int           @id @default(autoincrement()) @map("id_servicio")
+  nombre         String        @db.VarChar(100)
+  descripcion    String?       @db.Text
+  logoUrl        String?       @map("logo_url") @db.Text
+  categoria      String        @default("streaming") @db.VarChar(50)
+  activo         Boolean       @default(true)
+  fechaCreacion  DateTime      @default(now()) @map("fecha_creacion")
+  
+  // Relations
+  planes         ServicePlan[]
+
+  @@map("servicios")
+}
+
+// ============================================================================
+// PLANES DE SERVICIO
+// ============================================================================
+
+model ServicePlan {
+  idPlan          Int                  @id @default(autoincrement()) @map("id_plan")
+  idServicio      Int                  @map("id_servicio")
+  nombrePlan      String               @map("nombre_plan") @db.VarChar(100)
+  duracionMeses   Int                  @map("duracion_meses")
+  duracionDias    Int?                 @map("duracion_dias")
+  costo           Decimal              @db.Decimal(10, 2)
+  margenGanancia  Decimal              @default(0) @map("margen_ganancia") @db.Decimal(10, 2)
+  precioVenta     Decimal?             @map("precio_venta") @db.Decimal(10, 2)
+  descripcion     String?              @db.Text
+  activo          Boolean              @default(true)
+  fechaCreacion   DateTime             @default(now()) @map("fecha_creacion")
+  
+  // Relations
+  servicio        Servicio             @relation(fields: [idServicio], references: [idServicio], onDelete: Cascade)
+  cuentas         InventarioCuenta[]
+  shoppingCart    ShoppingCart[]
+  orderItems      OrderItem[]
+
+  @@unique([idServicio, duracionMeses])
+  @@index([idServicio], name: "idx_service_plans_servicio")
+  @@index([activo], name: "idx_service_plans_activo")
+  @@map("service_plans")
+}
+
+// ============================================================================
+// INVENTARIO DE CUENTAS
+// ============================================================================
+
+model InventarioCuenta {
+  idCuenta               Int          @id @default(autoincrement()) @map("id_cuenta")
+  idPlan                 Int          @map("id_plan")
+  correoEncriptado       String       @map("correo_encriptado") @db.Text
+  contrasenaEncriptada   String       @map("contrasena_encriptada") @db.Text
+  perfil                 String?      @db.VarChar(50)
+  pin                    String?      @db.VarChar(10)
+  notas                  String?      @db.Text
+  estado                 EstadoCuenta @default(disponible)
+  fechaAgregado          DateTime     @default(now()) @map("fecha_agregado")
+  fechaUltimaAsignacion  DateTime?    @map("fecha_ultima_asignacion")
+  
+  // Relations
+  plan                   ServicePlan  @relation(fields: [idPlan], references: [idPlan])
+  orderItems             OrderItem[]
+
+  @@index([idPlan, estado], name: "idx_inventario_plan_estado")
+  @@map("inventario_cuentas")
+}
+
+enum EstadoCuenta {
+  disponible
+  asignada
+  mantenimiento
+  bloqueada
+}
+
+// ============================================================================
+// CARRITO DE COMPRAS
+// ============================================================================
+
+model ShoppingCart {
+  idCartItem      Int          @id @default(autoincrement()) @map("id_cart_item")
+  celularUsuario  String       @map("celular_usuario") @db.VarChar(15)
+  idPlan          Int          @map("id_plan")
+  cantidad        Int          @default(1)
+  fechaAgregado   DateTime     @default(now()) @map("fecha_agregado")
+  
+  // Relations
+  usuario         Usuario      @relation(fields: [celularUsuario], references: [celular], onDelete: Cascade)
+  plan            ServicePlan  @relation(fields: [idPlan], references: [idPlan])
+
+  @@unique([celularUsuario, idPlan])
+  @@index([celularUsuario], name: "idx_shopping_cart_usuario")
+  @@map("shopping_cart")
+}
+
+// ============================================================================
+// ÓRDENES
+// ============================================================================
+
+model Orden {
+  idOrden              Int          @id @default(autoincrement()) @map("id_orden")
+  celularUsuario       String       @map("celular_usuario") @db.VarChar(15)
+  montoTotal           Decimal      @map("monto_total") @db.Decimal(10, 2)
+  estado               EstadoOrden  @default(pendiente_pago)
+  metodoPago           String       @default("transferencia_bancaria") @map("metodo_pago") @db.VarChar(50)
+  metodoEntrega        String       @default("whatsapp") @map("metodo_entrega") @db.VarChar(20)
+  instruccionesPago    String?      @map("instrucciones_pago") @db.Text
+  notasAdmin           String?      @map("notas_admin") @db.Text
+  fechaCreacion        DateTime     @default(now()) @map("fecha_creacion")
+  fechaPago            DateTime?    @map("fecha_pago")
+  fechaEntrega         DateTime?    @map("fecha_entrega")
+  datosPago            Json?        @map("datos_pago")
+  
+  // Relations
+  usuario              Usuario      @relation(fields: [celularUsuario], references: [celular])
+  items                OrderItem[]
+
+  @@index([celularUsuario], name: "idx_ordenes_usuario")
+  @@index([estado], name: "idx_ordenes_estado")
+  @@index([fechaCreacion(sort: Desc)], name: "idx_ordenes_fecha")
+  @@map("ordenes")
+}
+
+enum EstadoOrden {
+  pendiente
+  pendiente_pago
+  pagada
+  en_proceso
+  entregada
+  cancelada
+}
+
+// ============================================================================
+// ITEMS DE ORDEN
+// ============================================================================
+
+model OrderItem {
+  idOrderItem               Int               @id @default(autoincrement()) @map("id_order_item")
+  idOrden                   Int               @map("id_orden")
+  idPlan                    Int               @map("id_plan")
+  idCuentaAsignada          Int?              @map("id_cuenta_asignada")
+  cantidad                  Int               @default(1)
+  precioUnitario            Decimal           @map("precio_unitario") @db.Decimal(10, 2)
+  subtotal                  Decimal           @db.Decimal(10, 2)
+  estado                    EstadoOrderItem   @default(pendiente)
+  fechaVencimientoServicio  DateTime?         @map("fecha_vencimiento_servicio")
+  credencialesEntregadas    Boolean           @default(false) @map("credenciales_entregadas")
+  fechaCreacion             DateTime          @default(now()) @map("fecha_creacion")
+  
+  // Relations
+  orden                     Orden             @relation(fields: [idOrden], references: [idOrden], onDelete: Cascade)
+  plan                      ServicePlan       @relation(fields: [idPlan], references: [idPlan])
+  cuentaAsignada            InventarioCuenta? @relation(fields: [idCuentaAsignada], references: [idCuenta])
+
+  @@index([idOrden], name: "idx_order_items_orden")
+  @@index([idPlan], name: "idx_order_items_plan")
+  @@map("order_items")
+}
+
+enum EstadoOrderItem {
+  pendiente
+  asignada
+  entregada
+}
+
+// ============================================================================
+// INSTRUCCIONES DE PAGO
+// ============================================================================
+
+model PaymentInstruction {
+  id                        Int      @id @default(autoincrement())
+  banco                     String   @db.VarChar(100)
+  titular                   String   @db.VarChar(200)
+  numeroCuenta              String?  @map("numero_cuenta") @db.VarChar(50)
+  clabe                     String?  @db.VarChar(18)
+  conceptoReferencia        String?  @map("concepto_referencia") @db.Text
+  instruccionesAdicionales  String?  @map("instrucciones_adicionales") @db.Text
+  activo                    Boolean  @default(true)
+  fechaCreacion             DateTime @default(now()) @map("fecha_creacion")
+
+  @@map("payment_instructions")
+}
+
+// ============================================================================
+// SISTEMA DE TICKETS
+// ============================================================================
+
+model Ticket {
+  idTicket                Int             @id @default(autoincrement()) @map("id_ticket")
+  celularUsuario          String          @map("celular_usuario") @db.VarChar(15)
+  ituloProblema          String          @map("titulo_problema") @db.Text
+  estado                  EstadoTicket    @default(abierto)
+  fechaCreacion           DateTime        @default(now()) @map("fecha_creacion")
+  fechaUltimaActualizacion DateTime       @default(now()) @map("fecha_ultima_actualizacion")
+  
+  // Relations
+  usuario                 Usuario         @relation(fields: [celularUsuario], references: [celular])
+  mensajes                TicketMensaje[]
+
+  @@index([celularUsuario], name: "idx_tickets_celular")
+  @@index([estado], name: "idx_tickets_estado")
+  @@index([fechaCreacion(sort: Desc)], name: "idx_tickets_fecha")
+  @@map("tickets")
+}
+
+enum EstadoTicket {
+  abierto
+  en_proceso
+  resuelto
+  cerrado
+}
+
+// ============================================================================
+// MENSAJES DE TICKETS
+// ============================================================================
+
+model TicketMensaje {
+  idMensaje      Int              @id @default(autoincrement()) @map("id_mensaje")
+  idTicket       Int              @map("id_ticket")
+  remitente      RemitenteTicket
+  cuerpoMensaje  String           @map("cuerpo_mensaje") @db.Text
+  timestamp      DateTime         @default(now())
+  
+  // Relations
+  ticket         Ticket           @relation(fields: [idTicket], references: [idTicket], onDelete: Cascade)
+
+  @@index([idTicket], name: "idx_ticket_mensajes_ticket")
+  @@index([timestamp(sort: Desc)], name: "idx_ticket_mensajes_timestamp")
+  @@map("ticket_mensajes")
+}
+
+enum RemitenteTicket {
+  usuario
+  agente
 }
