@@ -175,7 +175,9 @@ WORKDIR /app
 # Copiar scripts de inicio y healthcheck
 COPY start-docker.sh ./
 COPY scripts/ ./scripts/
-RUN chmod +x start-docker.sh ./scripts/*.sh
+RUN chmod +x start-docker.sh ./scripts/*.sh && \
+    echo "✓ Scripts copiados y marcados como ejecutables:" && \
+    ls -la ./scripts/*.sh
 
 # Crear directorios necesarios
 RUN mkdir -p /app/logs /app/database && \

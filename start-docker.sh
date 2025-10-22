@@ -70,63 +70,102 @@ cleanup() {
 trap cleanup SIGTERM SIGINT EXIT
 
 # ============================================================================
-# PASO 1: Ejecutar migraciones de base de datos del BACKEND (CRÍTICO)
+# PASO 0: Verificar conectividad con PostgreSQL (NUEVO - MÁS ROBUSTO)
 # ============================================================================
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 1/4: Ejecutando migraciones del BACKEND             ║"
+echo "║  PASO 0/5: Verificando conectividad con PostgreSQL        ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
-
-cd /app/backend
 
 # Verificar que DATABASE_URL esté configurada
 if [ -z "$DATABASE_URL" ]; then
     echo "❌ ERROR: DATABASE_URL no está configurada"
-    echo "   Las migraciones del backend NO pueden ejecutarse"
-    echo "   El servidor backend FALLARÁ al iniciar"
+    echo "   No se puede verificar conectividad con la base de datos"
     exit 1
+fi
+
+# Mostrar DATABASE_URL sanitizada para debugging
+SANITIZED_DB_URL=$(echo "$DATABASE_URL" | sed 's/:\/\/[^:]*:[^@]*@/:\/\/***:***@/')
+echo "📊 DATABASE_URL: $SANITIZED_DB_URL"
+echo ""
+
+# Dar permisos de ejecución al script wait-for-postgres
+chmod +x /app/scripts/wait-for-postgres.sh 2>/dev/null || true
+
+# Ejecutar script de verificación de conectividad con timeout de 2.5 minutos (30 intentos x 5 segundos)
+echo "🔍 Ejecutando wait-for-postgres.sh..."
+echo "   → Máximo de espera: 2.5 minutos (30 intentos)"
+echo "   → Delay entre intentos: 5 segundos"
+echo ""
+
+if /app/scripts/wait-for-postgres.sh 30 5; then
+    echo ""
+    echo "✅ Conectividad con PostgreSQL verificada exitosamente"
+    echo "   → Procediendo con migraciones..."
 else
-    echo "✓ DATABASE_URL configurada"
+    echo ""
+    echo "❌ ERROR CRÍTICO: No se pudo conectar a PostgreSQL"
+    echo "   → Las migraciones NO pueden ejecutarse"
+    echo "   → El backend NO puede iniciar"
+    echo ""
+    echo "💡 Verificar:"
+    echo "   1. Que el contenedor de base de datos esté corriendo"
+    echo "   2. Que la red entre contenedores esté configurada correctamente"
+    echo "   3. Que DATABASE_URL sea correcta: $SANITIZED_DB_URL"
+    exit 1
+fi
+
+# ============================================================================
+# PASO 1: Ejecutar migraciones de base de datos del BACKEND (CRÍTICO)
+# ============================================================================
+echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║  PASO 1/5: Ejecutando migraciones del BACKEND             ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+
+cd /app/backend
+
+echo "✓ DATABASE_URL configurada"
+echo "✓ Conectividad con PostgreSQL verificada"
+
+# Verificar que el script de migración exista
+if [ -f "scripts/migrate.js" ]; then
+    echo "🔄 Ejecutando migraciones del BACKEND..."
+    echo "   → Este proceso es CRÍTICO - el backend NO iniciará sin las tablas"
+    echo "   → Usando migrate deploy (modo SEGURO - no elimina datos)"
     
-    # Verificar que el script de migración exista
-    if [ -f "scripts/migrate.js" ]; then
-        echo "🔄 Ejecutando migraciones del BACKEND..."
-        echo "   → Este proceso es CRÍTICO - el backend NO iniciará sin las tablas"
-        echo "   → Usando migrate deploy (modo SEGURO - no elimina datos)"
-        
-        # Ejecutar migraciones del backend (DEBE tener éxito)
-        if node scripts/migrate.js; then
-            echo "✅ Migraciones del BACKEND aplicadas correctamente"
-            echo "   → Base de datos lista para el backend"
-        else
-            MIGRATION_EXIT_CODE=$?
-            echo "❌ ERROR CRÍTICO: Migraciones del BACKEND fallaron (código: $MIGRATION_EXIT_CODE)"
-            echo "   → El backend NO puede iniciar sin las tablas en la base de datos"
-            echo ""
-            echo "💡 Posibles causas:"
-            echo "   1. Base de datos no está accesible desde este contenedor"
-            echo "   2. Credenciales de DATABASE_URL son incorrectas"
-            echo "   3. La base de datos no existe o no tiene permisos"
-            echo "   4. Red entre contenedores no está configurada correctamente"
-            echo ""
-            echo "🔧 Soluciones sugeridas:"
-            echo "   1. Verificar que el contenedor de base de datos esté corriendo"
-            echo "   2. Verificar DATABASE_URL: $DATABASE_URL"
-            echo "   3. Intentar conectar manualmente: docker exec -it <container> psql \$DATABASE_URL"
-            echo "   4. Revisar logs de la base de datos"
-            exit 1
-        fi
+    # Ejecutar migraciones del backend (DEBE tener éxito)
+    if node scripts/migrate.js; then
+        echo "✅ Migraciones del BACKEND aplicadas correctamente"
+        echo "   → Base de datos lista para el backend"
     else
-        echo "⚠️  Script de migraciones no encontrado en backend/scripts/migrate.js"
-        echo "   Intentando ejecutar migraciones directamente con Prisma..."
-        
-        # Fallback: intentar ejecutar migraciones directamente
-        if npx prisma migrate deploy 2>/dev/null; then
-            echo "✅ Migraciones del BACKEND aplicadas (usando prisma CLI)"
-        else
-            echo "❌ ERROR: No se pudieron ejecutar migraciones del BACKEND"
-            echo "   El backend NO puede iniciar sin las tablas"
-            exit 1
-        fi
+        MIGRATION_EXIT_CODE=$?
+        echo "❌ ERROR CRÍTICO: Migraciones del BACKEND fallaron (código: $MIGRATION_EXIT_CODE)"
+        echo "   → El backend NO puede iniciar sin las tablas en la base de datos"
+        echo ""
+        echo "💡 Nota: La conectividad ya fue verificada por wait-for-postgres.sh"
+        echo "   El problema puede ser:"
+        echo "   1. Archivos de migración inválidos o corruptos"
+        echo "   2. Permisos insuficientes en la base de datos"
+        echo "   3. Estado inconsistente de la base de datos"
+        echo ""
+        echo "🔧 Soluciones sugeridas:"
+        echo "   1. Revisar logs de la base de datos"
+        echo "   2. Verificar que existan archivos en backend/prisma/migrations/"
+        echo "   3. Intentar ejecutar manualmente: cd /app/backend && npx prisma migrate deploy"
+        echo "   4. Verificar DATABASE_URL: $SANITIZED_DB_URL"
+        exit 1
+    fi
+else
+    echo "⚠️  Script de migraciones no encontrado en backend/scripts/migrate.js"
+    echo "   Intentando ejecutar migraciones directamente con Prisma..."
+    
+    # Fallback: intentar ejecutar migraciones directamente
+    if npx prisma migrate deploy 2>/dev/null; then
+        echo "✅ Migraciones del BACKEND aplicadas (usando prisma CLI)"
+    else
+        echo "❌ ERROR: No se pudieron ejecutar migraciones del BACKEND"
+        echo "   El backend NO puede iniciar sin las tablas"
+        exit 1
     fi
 fi
 

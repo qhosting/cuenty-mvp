@@ -18,8 +18,8 @@ const { execSync } = require('child_process');
 const path = require('path');
 
 // Configuración
-const MAX_RETRIES = 5;
-const RETRY_DELAY = 5000; // 5 segundos
+const MAX_RETRIES = 3;  // Reducido a 3 porque la conectividad ya fue verificada por wait-for-postgres.sh
+const RETRY_DELAY = 3000; // 3 segundos
 const PRISMA_SCHEMA_PATH = path.join(__dirname, '..', 'prisma', 'schema.prisma');
 
 // Colores para logs
@@ -71,36 +71,14 @@ function checkDatabaseUrl() {
 
 /**
  * Verifica conectividad con la base de datos
+ * NOTA: Esta función ya no se usa. La verificación de conectividad
+ * se hace con wait-for-postgres.sh antes de ejecutar migraciones.
+ * Se mantiene por compatibilidad con exports.
  */
-async function checkDatabaseConnection(attempt = 1) {
-  try {
-    logger.info(`Verificando conectividad con la base de datos (intento ${attempt}/${MAX_RETRIES})...`);
-    
-    execSync('npx prisma db execute --stdin < /dev/null', {
-      encoding: 'utf8',
-      stdio: 'pipe',
-      cwd: path.join(__dirname, '..'),
-      env: {
-        ...process.env,
-        DATABASE_URL: process.env.DATABASE_URL,
-      }
-    });
-    
-    logger.success('Conexión a la base de datos exitosa');
-    return true;
-    
-  } catch (error) {
-    logger.warning(`No se pudo conectar a la base de datos (intento ${attempt}/${MAX_RETRIES})`);
-    
-    if (attempt < MAX_RETRIES) {
-      logger.warning(`Reintentando en ${RETRY_DELAY / 1000} segundos...`);
-      await sleep(RETRY_DELAY);
-      return checkDatabaseConnection(attempt + 1);
-    } else {
-      logger.error('No se pudo conectar a la base de datos después de múltiples intentos');
-      return false;
-    }
-  }
+async function checkDatabaseConnection() {
+  logger.warning('checkDatabaseConnection() está deprecada');
+  logger.info('La verificación de conectividad se hace con wait-for-postgres.sh');
+  return true;
 }
 
 /**
@@ -127,6 +105,7 @@ async function runMigration(attempt = 1) {
     
   } catch (error) {
     logger.error(`Error al ejecutar migraciones (intento ${attempt}/${MAX_RETRIES})`);
+    logger.error(`Código de error: ${error.code || 'N/A'}`);
     
     if (attempt < MAX_RETRIES) {
       logger.warning(`Reintentando en ${RETRY_DELAY / 1000} segundos...`);
@@ -137,14 +116,20 @@ async function runMigration(attempt = 1) {
       logger.error('Detalles del error:');
       console.error(error.message);
       
+      // Ocultar credenciales al mostrar la URL en mensajes de error
+      const dbUrl = process.env.DATABASE_URL || '';
+      const sanitizedUrl = dbUrl.replace(/:\/\/([^:]+):([^@]+)@/, '://***:***@');
+      
       // Instrucciones de diagnóstico
       logger.header();
       logger.warning('Pasos de diagnóstico sugeridos:');
       logger.info('1. Verificar que la base de datos esté accesible');
       logger.info('2. Verificar credenciales de la base de datos');
-      logger.info('3. Verificar que existan archivos de migración en backend/prisma/migrations/');
-      logger.info('4. Revisar logs de la base de datos para más detalles');
-      logger.info('5. Intentar ejecutar manualmente: cd /app/backend && npx prisma migrate deploy');
+      logger.info(`3. DATABASE_URL: ${sanitizedUrl}`);
+      logger.info('4. Verificar que existan archivos de migración en backend/prisma/migrations/');
+      logger.info('5. Revisar logs de la base de datos para más detalles');
+      logger.info('6. Intentar ejecutar manualmente: cd /app/backend && npx prisma migrate deploy');
+      logger.info('7. Verificar que wait-for-postgres.sh haya ejecutado exitosamente antes');
       logger.header();
       
       return false;
@@ -188,17 +173,12 @@ async function main() {
   // Paso 1: Verificar DATABASE_URL
   checkDatabaseUrl();
   
-  // Paso 2: Verificar conectividad con la base de datos
+  // Paso 2: La conectividad con la base de datos ya fue verificada por wait-for-postgres.sh
   logger.header();
-  const connectionSuccess = await checkDatabaseConnection();
+  logger.info('🔌 Asumiendo conectividad verificada por wait-for-postgres.sh');
+  logger.info('   (La verificación de conectividad debe ejecutarse antes de este script)');
   
-  if (!connectionSuccess) {
-    logger.error('No se pudo establecer conexión con la base de datos');
-    logger.warning('El servidor backend NO iniciará hasta resolver este problema');
-    process.exit(1);
-  }
-  
-  // Paso 3: Ejecutar migraciones
+  // Paso 3: Ejecutar migraciones directamente
   logger.header();
   const migrationSuccess = await runMigration();
   
