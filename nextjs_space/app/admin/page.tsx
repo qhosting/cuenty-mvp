@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 import {
   TrendingUp,
@@ -16,20 +17,17 @@ import {
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { adminApiService } from '@/lib/admin-auth'
 import { toast } from 'react-hot-toast'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  Tooltip
-} from 'recharts'
+
+// Importar componentes de gráficos de forma dinámica para evitar problemas de SSR
+const SalesChart = dynamic(() => import('@/components/admin/charts/SalesChart').then(mod => mod.SalesChart), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-slate-400">Cargando gráfico...</div>
+})
+
+const OrdersStatusChart = dynamic(() => import('@/components/admin/charts/OrdersStatusChart').then(mod => mod.OrdersStatusChart), { 
+  ssr: false,
+  loading: () => <div className="flex items-center justify-center h-full text-slate-400">Cargando gráfico...</div>
+})
 
 interface DashboardStats {
   totalOrders: number
@@ -54,8 +52,10 @@ const defaultStats: DashboardStats = {
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats>(defaultStats)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     fetchDashboardData()
   }, [])
 
@@ -216,93 +216,41 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Sales Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Ventas por Día</h3>
-              <TrendingUp className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={stats.salesData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 12, fill: '#94a3b8' }}
-                  />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #475569',
-                      borderRadius: '12px',
-                      color: '#fff'
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="sales" 
-                    stroke="#3b82f6" 
-                    strokeWidth={3}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
+        {mounted && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Sales Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-white">Ventas por Día</h3>
+                <TrendingUp className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="h-80">
+                <SalesChart data={stats.salesData} />
+              </div>
+            </motion.div>
 
-          {/* Orders Status Pie Chart */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-white">Estado de Pedidos</h3>
-              <Calendar className="w-5 h-5 text-blue-400" />
-            </div>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={stats.ordersByStatus}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    dataKey="count"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {stats.ordersByStatus.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: '#1e293b',
-                      border: '1px solid #475569',
-                      borderRadius: '12px',
-                      color: '#fff'
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-        </div>
+            {/* Orders Status Pie Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold text-white">Estado de Pedidos</h3>
+                <Calendar className="w-5 h-5 text-blue-400" />
+              </div>
+              <div className="h-80">
+                <OrdersStatusChart data={stats.ordersByStatus} />
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Top Services */}
         <motion.div
