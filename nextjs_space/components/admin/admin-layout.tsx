@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { DynamicLogo } from '@/components/dynamic-logo'
+import { ErrorBoundary } from '@/components/error-boundary'
 import {
   LayoutDashboard,
   Package,
@@ -68,38 +69,46 @@ const navigation = [
 export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [apiVersion, setApiVersion] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
-    setMounted(true)
-    
-    // Check authentication
-    const isAuth = adminAuth.isAuthenticated()
-    console.log('[AdminLayout] Verificando autenticación:', isAuth)
-    
-    if (!isAuth) {
-      console.log('[AdminLayout] No autenticado, redirigiendo a login...')
-      // Usar window.location para evitar problemas con el router de Next.js
-      window.location.href = '/admin/login'
-      return
-    }
-
-    console.log('[AdminLayout] Usuario autenticado, cargando dashboard...')
-
-    // Obtener versión de la API
-    const fetchApiVersion = async () => {
-      try {
-        const response = await fetch('/api/version')
-        if (response.ok) {
-          const data = await response.json()
-          setApiVersion(data.version)
-        }
-      } catch (error) {
-        console.error('Error al obtener versión de API:', error)
+    // Check authentication only once
+    const checkAuth = () => {
+      const isAuth = adminAuth.isAuthenticated()
+      console.log('[AdminLayout] Verificando autenticación:', isAuth)
+      
+      if (!isAuth) {
+        console.log('[AdminLayout] No autenticado, redirigiendo a login...')
+        // Usar window.location para evitar problemas con el router de Next.js
+        window.location.href = '/admin/login'
+        return false
       }
+
+      console.log('[AdminLayout] Usuario autenticado, cargando dashboard...')
+      return true
     }
-    fetchApiVersion()
+
+    const isAuth = checkAuth()
+    setIsAuthenticated(isAuth)
+    setMounted(true)
+
+    if (isAuth) {
+      // Obtener versión de la API solo si está autenticado
+      const fetchApiVersion = async () => {
+        try {
+          const response = await fetch('/api/version')
+          if (response.ok) {
+            const data = await response.json()
+            setApiVersion(data.version)
+          }
+        } catch (error) {
+          console.error('Error al obtener versión de API:', error)
+        }
+      }
+      fetchApiVersion()
+    }
   }, [router])
 
   const handleLogout = () => {
@@ -107,20 +116,23 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
     adminAuth.logout()
   }
 
+  // Show loading state while checking authentication
   if (!mounted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white">Cargando...</div>
+        <div className="text-white text-lg">Cargando...</div>
       </div>
     )
   }
 
-  if (!adminAuth.isAuthenticated()) {
+  // If not authenticated, don't render anything (will redirect)
+  if (!isAuthenticated) {
     return null
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <ErrorBoundary>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -235,5 +247,6 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
         </main>
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
