@@ -24,10 +24,39 @@ async function initAdmin() {
     });
 
     if (adminExistente) {
-      console.log('✅ El administrador ya existe en la base de datos');
+      console.log('ℹ️  El administrador ya existe en la base de datos');
       console.log(`   ID: ${adminExistente.id}`);
       console.log(`   Username: ${adminExistente.username}`);
       console.log(`   Email: ${adminExistente.email || 'N/A'}`);
+      
+      // Verificar si la contraseña actual es diferente
+      const passwordMatch = await bcrypt.compare(adminPassword, adminExistente.password);
+      
+      if (!passwordMatch) {
+        console.log('🔄 Actualizando contraseña del administrador...');
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        
+        await prisma.admin.update({
+          where: { username },
+          data: { 
+            password: hashedPassword,
+            email: adminEmail.toLowerCase().trim() // Actualizar email también
+          }
+        });
+        
+        console.log('✅ Contraseña y email actualizados exitosamente');
+        console.log('\n🔐 Credenciales de acceso actualizadas:');
+        console.log(`   Email: ${adminEmail}`);
+        console.log(`   Password: ${adminPassword}`);
+        console.log('   URL: /admin/login\n');
+      } else {
+        console.log('✅ La contraseña actual es correcta');
+        console.log('\n🔐 Credenciales de acceso:');
+        console.log(`   Email: ${adminEmail}`);
+        console.log(`   Password: ${adminPassword}`);
+        console.log('   URL: /admin/login\n');
+      }
+      
       return;
     }
 

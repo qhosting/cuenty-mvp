@@ -328,7 +328,85 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 node -e "console.log(require('crypto').randomBytes(16).toString('hex'))"
 ```
 
-### Crear Administrador Inicial
+### 🔐 Configuración de Administrador
+
+#### Inicialización Automática
+
+CUENTY crea automáticamente el usuario administrador al iniciar el backend usando las variables de entorno. **No necesitas crear el admin manualmente**.
+
+**Variables de entorno para admin**:
+
+```bash
+# En tu archivo .env o en Easypanel:
+ADMIN_EMAIL=admin@cuenty.top
+ADMIN_PASSWORD=tu_password_seguro
+ADMIN_SECRET=tu_secreto_jwt_para_admin
+```
+
+**¿Cómo funciona?**
+
+1. Al iniciar el servidor backend, se ejecuta automáticamente el script `init-admin.js`
+2. El script verifica si existe un admin con el username extraído del email
+3. Si no existe, lo crea con las credenciales configuradas
+4. Si ya existe, verifica y actualiza la contraseña si es diferente
+
+**Ventajas**:
+- ✅ No necesitas ejecutar scripts manualmente
+- ✅ La contraseña se actualiza automáticamente si cambias las variables
+- ✅ Funciona en desarrollo, staging y producción
+- ✅ Ideal para contenedores efímeros (Docker/Kubernetes)
+
+**Logs al iniciar**:
+
+```bash
+🔧 Inicializando usuario administrador...
+📧 Email: admin@cuenty.top
+👤 Username: admin
+✅ Administrador creado exitosamente:
+   ID: 1
+   Username: admin
+   Email: admin@cuenty.top
+   Fecha: 2025-10-22T10:00:00.000Z
+🔐 Credenciales de acceso:
+   Email: admin@cuenty.top
+   Password: tu_password_seguro
+   URL: /admin/login
+```
+
+#### Login de Administrador
+
+1. **Acceder al panel**: `https://tu-dominio.com/admin/login`
+2. **Ingresar credenciales**:
+   - Email: El configurado en `ADMIN_EMAIL`
+   - Password: El configurado en `ADMIN_PASSWORD`
+3. **El sistema acepta login por**:
+   - ✅ Email completo (ej: `admin@cuenty.top`)
+   - ✅ Username (ej: `admin`)
+
+#### Cambiar Contraseña de Admin
+
+Para cambiar la contraseña del administrador:
+
+1. **Actualiza la variable de entorno**:
+   ```bash
+   # En .env o en Easypanel
+   ADMIN_PASSWORD=nueva_password_super_segura
+   ```
+
+2. **Reinicia el servidor**:
+   ```bash
+   # Docker
+   docker-compose restart app
+   
+   # Easypanel
+   # Click en "Restart" en el panel de control
+   ```
+
+3. **El script detecta automáticamente el cambio** y actualiza la contraseña hasheada en la base de datos
+
+#### Crear Admin Manualmente (Opcional)
+
+Si prefieres crear un administrador manualmente:
 
 ```bash
 # Opción 1: Via API
@@ -349,6 +427,8 @@ psql -U cuenty_user -d cuenty_db -c \
   "INSERT INTO admins (username, password, email) 
    VALUES ('admin', 'HASH_GENERADO_AQUI', 'admin@cuenty.com');"
 ```
+
+> **⚠️ Importante**: Si usas la inicialización automática con variables de entorno, el admin manual podría ser sobrescrito al reiniciar el servidor si el username coincide.
 
 ---
 

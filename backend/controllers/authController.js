@@ -161,16 +161,20 @@ exports.registrarAdmin = async (req, res) => {
 
 /**
  * Login de administrador
+ * Acepta login por username o email
  */
 exports.loginAdmin = async (req, res) => {
   try {
-    const { username, password } = req.body;
+    const { username, email, password } = req.body;
+
+    // El usuario puede enviar username o email
+    const loginIdentifier = username || email;
 
     // Validar datos de entrada
-    if (!username || typeof username !== 'string') {
+    if (!loginIdentifier || typeof loginIdentifier !== 'string') {
       return res.status(400).json({ 
         success: false,
-        error: 'Username es requerido' 
+        error: 'Username o email es requerido' 
       });
     }
 
@@ -181,27 +185,49 @@ exports.loginAdmin = async (req, res) => {
       });
     }
 
-    // Buscar admin usando Prisma
-    const admin = await prisma.admin.findUnique({
-      where: { username: username.toLowerCase().trim() }
+    console.log(`[AuthController] Intento de login con: ${loginIdentifier}`);
+
+    // Buscar admin por username o email usando Prisma
+    let admin = null;
+    
+    // Intentar buscar por username primero
+    admin = await prisma.admin.findUnique({
+      where: { username: loginIdentifier.toLowerCase().trim() }
     });
 
+    // Si no se encuentra por username, intentar por email
     if (!admin) {
-      return res.status(401).json({ 
-        success: false,
-        error: 'Credenciales inválidas' 
+      admin = await prisma.admin.findFirst({
+        where: { 
+          email: loginIdentifier.toLowerCase().trim()
+        }
       });
     }
+
+    if (!admin) {
+      console.warn(`[AuthController] Admin no encontrado: ${loginIdentifier}`);
+      return res.status(401).json({ 
+        success: false,
+        error: 'Credenciales inválidas',
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    console.log(`[AuthController] Admin encontrado: ${admin.username} (ID: ${admin.id})`);
 
     // Verificar contraseña
     const passwordValida = await bcrypt.compare(password, admin.password);
 
     if (!passwordValida) {
+      console.warn(`[AuthController] Contraseña inválida para: ${admin.username}`);
       return res.status(401).json({ 
         success: false,
-        error: 'Credenciales inválidas' 
+        error: 'Credenciales inválidas',
+        message: 'Contraseña incorrecta'
       });
     }
+
+    console.log(`[AuthController] Login exitoso para: ${admin.username}`);
 
     // Generar token JWT
     const token = generateToken({
@@ -213,6 +239,7 @@ exports.loginAdmin = async (req, res) => {
     res.json({
       success: true,
       message: 'Login exitoso',
+      token: token, // Asegurar que el token esté en el nivel principal
       data: {
         token,
         user: {
@@ -223,10 +250,11 @@ exports.loginAdmin = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('[AuthController] Error en login:', error);
     res.status(500).json({ 
       success: false,
       error: 'Error al iniciar sesión',
+      message: error.message,
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
