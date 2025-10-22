@@ -112,6 +112,11 @@ RUN npm ci --only=production && \
 # Copiar código del backend desde la etapa builder
 COPY --from=backend-builder /app/backend/ ./
 
+# Copiar scripts de migración del backend (CRÍTICO para migraciones automáticas)
+COPY backend/scripts ./scripts
+RUN chmod +x ./scripts/*.js ./scripts/*.sh 2>/dev/null || chmod +x ./scripts/*.js && \
+    echo "✓ Backend migration scripts copied and marked as executable"
+
 # Generar Prisma Client para el backend en la imagen final
 RUN if [ -f "prisma/schema.prisma" ]; then \
         echo "🔄 Regenerando Prisma Client para el backend en producción..."; \

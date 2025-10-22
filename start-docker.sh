@@ -70,10 +70,85 @@ cleanup() {
 trap cleanup SIGTERM SIGINT EXIT
 
 # ============================================================================
-# PASO 1: Iniciar Backend
+# PASO 1: Ejecutar migraciones de base de datos del BACKEND (CRÍTICO)
 # ============================================================================
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 1/3: Iniciando Backend (Puerto: $BACKEND_PORT)        ║"
+echo "║  PASO 1/4: Ejecutando migraciones del BACKEND             ║"
+echo "╚═══════════════════════════════════════════════════════════╝"
+
+cd /app/backend
+
+# Verificar que DATABASE_URL esté configurada
+if [ -z "$DATABASE_URL" ]; then
+    echo "❌ ERROR: DATABASE_URL no está configurada"
+    echo "   Las migraciones del backend NO pueden ejecutarse"
+    echo "   El servidor backend FALLARÁ al iniciar"
+    exit 1
+else
+    echo "✓ DATABASE_URL configurada"
+    
+    # Verificar que el script de migración exista
+    if [ -f "scripts/migrate.js" ]; then
+        echo "🔄 Ejecutando migraciones del BACKEND..."
+        echo "   → Este proceso es CRÍTICO - el backend NO iniciará sin las tablas"
+        echo "   → Usando migrate deploy (modo SEGURO - no elimina datos)"
+        
+        # Ejecutar migraciones del backend (DEBE tener éxito)
+        if node scripts/migrate.js; then
+            echo "✅ Migraciones del BACKEND aplicadas correctamente"
+            echo "   → Base de datos lista para el backend"
+        else
+            MIGRATION_EXIT_CODE=$?
+            echo "❌ ERROR CRÍTICO: Migraciones del BACKEND fallaron (código: $MIGRATION_EXIT_CODE)"
+            echo "   → El backend NO puede iniciar sin las tablas en la base de datos"
+            echo ""
+            echo "💡 Posibles causas:"
+            echo "   1. Base de datos no está accesible desde este contenedor"
+            echo "   2. Credenciales de DATABASE_URL son incorrectas"
+            echo "   3. La base de datos no existe o no tiene permisos"
+            echo "   4. Red entre contenedores no está configurada correctamente"
+            echo ""
+            echo "🔧 Soluciones sugeridas:"
+            echo "   1. Verificar que el contenedor de base de datos esté corriendo"
+            echo "   2. Verificar DATABASE_URL: $DATABASE_URL"
+            echo "   3. Intentar conectar manualmente: docker exec -it <container> psql \$DATABASE_URL"
+            echo "   4. Revisar logs de la base de datos"
+            exit 1
+        fi
+    else
+        echo "⚠️  Script de migraciones no encontrado en backend/scripts/migrate.js"
+        echo "   Intentando ejecutar migraciones directamente con Prisma..."
+        
+        # Fallback: intentar ejecutar migraciones directamente
+        if npx prisma migrate deploy 2>/dev/null; then
+            echo "✅ Migraciones del BACKEND aplicadas (usando prisma CLI)"
+        else
+            echo "❌ ERROR: No se pudieron ejecutar migraciones del BACKEND"
+            echo "   El backend NO puede iniciar sin las tablas"
+            exit 1
+        fi
+    fi
+fi
+
+echo ""
+echo "📊 Verificando Prisma Client del BACKEND:"
+# Verificar que el cliente de Prisma esté generado
+if [ -d "node_modules/.prisma/client" ]; then
+    echo "   ✅ Prisma Client del BACKEND está generado correctamente"
+else
+    echo "   ⚠️  Prisma Client no encontrado, regenerando..."
+    npx prisma generate || {
+        echo "   ❌ ERROR: No se pudo generar Prisma Client del BACKEND"
+        exit 1
+    }
+fi
+
+# ============================================================================
+# PASO 2: Iniciar Backend
+# ============================================================================
+echo ""
+echo "╔═══════════════════════════════════════════════════════════╗"
+echo "║  PASO 2/5: Iniciando Backend (Puerto: $BACKEND_PORT)        ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 cd /app/backend
@@ -90,6 +165,7 @@ if [ ! -d "node_modules" ]; then
 fi
 
 echo "✓ Archivos del backend verificados"
+echo "✓ Base de datos con migraciones aplicadas"
 echo "🚀 Iniciando Backend..."
 
 # Iniciar backend en background
@@ -103,11 +179,11 @@ echo "✅ Backend iniciado (PID: $BACKEND_PID)"
 echo "📝 Logs: $BACKEND_LOG"
 
 # ============================================================================
-# PASO 2: Esperar a que Backend esté listo
+# PASO 3: Esperar a que Backend esté listo
 # ============================================================================
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 2/3: Esperando a que Backend esté disponible        ║"
+echo "║  PASO 3/5: Esperando a que Backend esté disponible        ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 # Dar permisos de ejecución al script wait-for-backend
@@ -132,11 +208,11 @@ if ! is_process_running "$BACKEND_PID"; then
 fi
 
 # ============================================================================
-# PASO 3: Ejecutar migraciones de base de datos (AUTOMÁTICAS)
+# PASO 4: Ejecutar migraciones de base de datos del FRONTEND (AUTOMÁTICAS)
 # ============================================================================
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 3/4: Ejecutando migraciones automáticas de BD       ║"
+echo "║  PASO 4/5: Ejecutando migraciones del FRONTEND            ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 cd /app/nextjs_space
@@ -193,11 +269,11 @@ else
 fi
 
 # ============================================================================
-# PASO 4: Iniciar Frontend
+# PASO 5: Iniciar Frontend
 # ============================================================================
 echo ""
 echo "╔═══════════════════════════════════════════════════════════╗"
-echo "║  PASO 4/4: Iniciando Frontend (Puerto: $FRONTEND_PORT)      ║"
+echo "║  PASO 5/5: Iniciando Frontend (Puerto: $FRONTEND_PORT)      ║"
 echo "╚═══════════════════════════════════════════════════════════╝"
 
 cd /app/nextjs_space

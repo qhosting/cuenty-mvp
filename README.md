@@ -991,6 +991,183 @@ PORT=3001
 kill -9 $(lsof -t -i :3000)
 ```
 
+### Problema: Tablas faltantes en la base de datos
+
+```
+Error: The table `public.admins` does not exist in the current database.
+```
+
+**Causa**: Las migraciones de Prisma no se ejecutaron correctamente al iniciar el contenedor.
+
+**Solución Automática** (Recomendado):
+
+El sistema ahora ejecuta migraciones automáticamente al iniciar. Solo necesitas:
+
+1. **Rebuild y restart del contenedor en Easypanel**:
+   - Ve a tu aplicación en Easypanel
+   - Click en "Deploy" o "Rebuild"
+   - El sistema ejecutará las migraciones automáticamente
+
+2. **Verificar logs** para confirmar que las migraciones se ejecutaron:
+   ```bash
+   # Ver logs del contenedor
+   docker logs <container-name> | grep "Migraciones"
+   
+   # Deberías ver:
+   # ✅ Migraciones del BACKEND aplicadas correctamente
+   ```
+
+**Solución Manual** (Si la automática falla):
+
+```bash
+# Opción 1: Ejecutar migraciones manualmente desde el contenedor
+docker exec -it <container-name> /bin/bash
+cd /app/backend
+node scripts/migrate.js
+
+# Opción 2: Usar Prisma CLI directamente
+docker exec -it <container-name> /bin/bash
+cd /app/backend
+npx prisma migrate deploy
+
+# Opción 3: Crear tablas con script SQL de respaldo
+docker cp database/init-backend-tables.sql <container-name>:/tmp/
+docker exec -it <container-name> psql $DATABASE_URL -f /tmp/init-backend-tables.sql
+```
+
+**Verificar que las tablas se crearon**:
+
+```bash
+# Conectar a la base de datos
+docker exec -it <db-container-name> psql -U postgres -d cuenty-db
+
+# Listar todas las tablas
+\dt
+
+# Deberías ver:
+# admins, usuarios, servicios, service_plans, inventario_cuentas, 
+# ordenes, order_items, shopping_cart, tickets, etc.
+
+# Salir
+\q
+```
+
+**Prevención**:
+
+- ✅ Las migraciones ahora se ejecutan AUTOMÁTICAMENTE antes de iniciar el backend
+- ✅ El sistema verifica la conexión a la base de datos antes de migrar
+- ✅ Si las migraciones fallan, el contenedor no iniciará (fail-fast)
+
+**Diagnóstico avanzado**:
+
+```bash
+# Ver estado actual de las migraciones
+docker exec -it <container-name> /bin/bash
+cd /app/backend
+npx prisma migrate status
+
+# Ver historial de migraciones aplicadas
+psql $DATABASE_URL -c "SELECT * FROM _prisma_migrations ORDER BY finished_at DESC;"
+```
+
+### Problema: Error al ejecutar migraciones
+
+```
+Error: Can't reach database server
+```
+
+**Causa**: El contenedor del backend no puede conectar al contenedor de base de datos.
+
+**Solución**:
+
+1. **Verificar que DATABASE_URL está configurado correctamente en Easypanel**:
+   ```
+   postgresql://postgres:PASSWORD@HOST:5432/DATABASE_NAME?sslmode=disable
+   ```
+
+2. **Verificar que el contenedor de base de datos está corriendo**:
+   ```bash
+   docker ps | grep postgres
+   ```
+
+3. **Verificar conectividad entre contenedores**:
+   ```bash
+   # Desde el contenedor del backend, hacer ping a la base de datos
+   docker exec -it <backend-container> ping <db-container-name>
+   ```
+
+4. **Verificar que la base de datos existe**:
+   ```bash
+   docker exec -it <db-container> psql -U postgres -l
+   ```
+
+---
+
+## 🔄 Migraciones de Base de Datos
+
+### ¿Cómo funcionan las migraciones?
+
+CUENTY usa **Prisma** para gestionar el schema de la base de datos. Las migraciones:
+
+1. ✅ Se ejecutan **automáticamente** al iniciar el contenedor
+2. ✅ Son **seguras** - NO eliminan datos existentes
+3. ✅ Se aplican en orden secuencial
+4. ✅ Tienen reintentos automáticos si la BD no está lista
+
+### Flujo de inicio del contenedor
+
+```
+1. 🔄 Ejecutar migraciones del BACKEND    ← NUEVO
+2. 🚀 Iniciar servidor Backend
+3. ⏳ Esperar a que Backend esté listo
+4. 🔄 Ejecutar migraciones del FRONTEND
+5. 🎨 Iniciar servidor Frontend
+```
+
+### Comandos útiles de Prisma
+
+```bash
+# Ver estado de migraciones
+cd /app/backend
+npx prisma migrate status
+
+# Ver migraciones pendientes
+npx prisma migrate status | grep "pending"
+
+# Aplicar migraciones manualmente
+npx prisma migrate deploy
+
+# Regenerar Prisma Client
+npx prisma generate
+
+# Ver schema actual de la BD
+npx prisma db pull
+
+# Crear una nueva migración (desarrollo local)
+npx prisma migrate dev --name nombre_migracion
+```
+
+### Scripts de migración personalizados
+
+El proyecto incluye scripts de migración con manejo robusto de errores:
+
+- **Backend**: `/app/backend/scripts/migrate.js`
+- **Frontend**: `/app/nextjs_space/scripts/migrate.js`
+
+Características:
+- ✅ Reintentos automáticos (hasta 5 intentos)
+- ✅ Verificación de conectividad antes de migrar
+- ✅ Logs detallados del proceso
+- ✅ Manejo de errores con mensajes descriptivos
+
+### Scripts SQL de respaldo
+
+En caso de que las migraciones automáticas fallen, puedes usar los scripts SQL de respaldo:
+
+- **Ubicación**: `/database/init-backend-tables.sql`
+- **Uso**: Solo como último recurso
+- **Documentación**: Ver `/database/README.md`
+
 ---
 
 ## 🗺️ Roadmap
