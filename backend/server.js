@@ -193,8 +193,18 @@ app.use((err, req, res, next) => {
 const packageJson = require('./package.json');
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`
+// Inicializar administrador al arrancar
+const { initAdmin } = require('./scripts/init-admin');
+
+// Función para iniciar el servidor
+async function startServer() {
+  try {
+    // Inicializar administrador
+    await initAdmin();
+    
+    // Iniciar servidor
+    app.listen(PORT, () => {
+      console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║              🚀 CUENTY API - Sistema Iniciado             ║
 ╚═══════════════════════════════════════════════════════════╝
@@ -204,5 +214,13 @@ app.listen(PORT, () => {
   ⏰ Timestamp: ${new Date().toISOString()}
   🔗 API Version: http://localhost:${PORT}/api/version
 ╔═══════════════════════════════════════════════════════════╗
-  `);
-});
+      `);
+    });
+  } catch (error) {
+    console.error('❌ Error al iniciar el servidor:', error);
+    process.exit(1);
+  }
+}
+
+// Iniciar el servidor
+startServer();

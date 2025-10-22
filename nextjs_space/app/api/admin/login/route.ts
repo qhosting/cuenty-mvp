@@ -1,25 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
+import { PrismaClient } from '@prisma/client'
+import bcrypt from 'bcryptjs'
+
+const prisma = new PrismaClient()
 
 // Secreto para firmar los tokens JWT
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
-
-// Credenciales de admin (en producción, usar base de datos)
-const ADMIN_CREDENTIALS = {
-  email: process.env.ADMIN_EMAIL || 'admin@cuenty.com',
-  password: process.env.ADMIN_PASSWORD || 'admin123'
-}
-
-// Log de las variables de entorno (solo para debugging, sin mostrar valores sensibles)
-console.log('[Admin Login Route] Variables de entorno cargadas:', {
-  hasAdminEmail: !!process.env.ADMIN_EMAIL,
-  hasAdminPassword: !!process.env.ADMIN_PASSWORD,
-  hasAdminSecret: !!process.env.ADMIN_SECRET,
-  adminEmailPrefix: process.env.ADMIN_EMAIL?.substring(0, 5) + '...',
-  adminPasswordDefault: ADMIN_CREDENTIALS.password,
-  adminEmailDefault: ADMIN_CREDENTIALS.email,
-})
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,16 +49,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Verificar credenciales
-    console.log('[Admin Login] Comparando credenciales...')
-    console.log('[Admin Login] Email esperado:', ADMIN_CREDENTIALS.email?.substring(0, 5) + '...')
-    console.log('[Admin Login] Email recibido:', email?.substring(0, 5) + '...')
-    console.log('[Admin Login] Password match:', password === ADMIN_CREDENTIALS.password)
-    console.log('[Admin Login] Password length recibido:', password?.length)
-    console.log('[Admin Login] Password length esperado:', ADMIN_CREDENTIALS.password?.length)
+    // Buscar admin en la base de datos por email
+    console.log('[Admin Login] Buscando admin en la base de datos...')
+    const admin = await prisma.admin.findFirst({
+      where: {
+        email: email.toLowerCase().trim()
+      }
+    })
+
+    if (!admin) {
+      console.warn('[Admin Login] Admin no encontrado con ese email')
+      return NextResponse.json(
+        { message: 'Credenciales inválidas' },
+        { status: 401 }
+      )
+    }
+
+    console.log('[Admin Login] Admin encontrado, verificando contraseña...')
     
-    if (email !== ADMIN_CREDENTIALS.email || password !== ADMIN_CREDENTIALS.password) {
-      console.warn('[Admin Login] Credenciales inválidas')
+    // Verificar contraseña con bcrypt
+    const passwordValida = await bcrypt.compare(password, admin.password)
+
+    if (!passwordValida) {
+      console.warn('[Admin Login] Contraseña inválida')
       return NextResponse.json(
         { message: 'Credenciales inválidas' },
         { status: 401 }
@@ -82,7 +83,9 @@ export async function POST(request: NextRequest) {
     // Generar token JWT válido por 24 horas
     const token = jwt.sign(
       { 
-        email,
+        id: admin.id,
+        email: admin.email,
+        username: admin.username,
         role: 'admin',
         iat: Math.floor(Date.now() / 1000)
       },
@@ -97,7 +100,9 @@ export async function POST(request: NextRequest) {
       token,
       message: 'Login exitoso',
       user: {
-        email,
+        id: admin.id,
+        email: admin.email,
+        username: admin.username,
         role: 'admin'
       }
     })
@@ -110,5 +115,7 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     )
+  } finally {
+    await prisma.$disconnect()
   }
 }
