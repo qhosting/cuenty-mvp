@@ -21,11 +21,6 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname
 
-        // Permitir acceso público a /admin/login
-        if (pathname === '/admin/login') {
-          return true
-        }
-
         // Check if user is authenticated for protected routes
         if (pathname.startsWith('/dashboard')) {
           return !!token
@@ -33,9 +28,13 @@ export default withAuth(
         if (pathname.startsWith('/checkout')) {
           return !!token
         }
+        
+        // Admin routes use custom JWT auth, always allow
+        // (they handle their own authentication client-side)
         if (pathname.startsWith('/admin')) {
-          return !!token
+          return true
         }
+        
         return true
       },
     },
@@ -46,6 +45,6 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/checkout/:path*',
-    // Admin routes use custom auth, not NextAuth
+    // Admin routes are excluded - they use custom JWT auth
   ]
 }

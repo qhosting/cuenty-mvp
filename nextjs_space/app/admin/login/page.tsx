@@ -45,16 +45,23 @@ export default function AdminLoginPage() {
       if (result.success) {
         console.log('[AdminLogin] Login exitoso')
         toast.success('¡Bienvenido al panel de administración!')
-        router.push('/admin')
+        
+        // Pequeño delay para asegurar que el token se guarde en localStorage
+        // antes de la redirección
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+        // Usar window.location para forzar una recarga completa
+        // y asegurar que el nuevo token sea reconocido
+        window.location.href = '/admin'
       } else {
         console.warn('[AdminLogin] Login fallido:', result.message)
         toast.error(result.message || 'Credenciales inválidas')
+        setLoading(false)
       }
     } catch (error) {
       console.error('[AdminLogin] Error durante login:', error)
       const errorMessage = error instanceof Error ? error.message : 'Error de conexión'
       toast.error(`Error: ${errorMessage}. Inténtalo de nuevo.`)
-    } finally {
       setLoading(false)
     }
   }

@@ -75,10 +75,17 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
     setMounted(true)
     
     // Check authentication
-    if (!adminAuth.isAuthenticated()) {
-      router.push('/admin/login')
+    const isAuth = adminAuth.isAuthenticated()
+    console.log('[AdminLayout] Verificando autenticación:', isAuth)
+    
+    if (!isAuth) {
+      console.log('[AdminLayout] No autenticado, redirigiendo a login...')
+      // Usar window.location para evitar problemas con el router de Next.js
+      window.location.href = '/admin/login'
       return
     }
+
+    console.log('[AdminLayout] Usuario autenticado, cargando dashboard...')
 
     // Obtener versión de la API
     const fetchApiVersion = async () => {
