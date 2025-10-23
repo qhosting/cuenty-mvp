@@ -603,7 +603,7 @@ exports.eliminarPlan = async (req, res) => {
  */
 exports.listarOrdenes = async (req, res) => {
   try {
-    const { estado, celular, fecha_desde, fecha_hasta, limit = 50, offset = 0 } = req.query;
+    const { estado, celular, fecha_desde, fecha_hasta, payment_status, limit = 50, offset = 0 } = req.query;
     
     let query = `
       SELECT 
@@ -614,6 +614,8 @@ exports.listarOrdenes = async (req, res) => {
         o.estado,
         o.metodo_pago,
         o.metodo_entrega,
+        o.payment_status,
+        o.payment_confirmed_at,
         o.fecha_creacion,
         o.fecha_pago,
         o.fecha_entrega,
@@ -648,6 +650,12 @@ exports.listarOrdenes = async (req, res) => {
     if (fecha_hasta) {
       conditions.push(`o.fecha_creacion <= $${paramCount}`);
       values.push(fecha_hasta);
+      paramCount++;
+    }
+    
+    if (payment_status) {
+      conditions.push(`o.payment_status = $${paramCount}`);
+      values.push(payment_status);
       paramCount++;
     }
     
@@ -701,9 +709,11 @@ exports.obtenerOrden = async (req, res) => {
       SELECT 
         o.*,
         u.nombre as nombre_usuario,
-        u.email as email_usuario
+        u.email as email_usuario,
+        a.username as admin_confirmador
       FROM ordenes o
       LEFT JOIN usuarios u ON o.celular_usuario = u.celular
+      LEFT JOIN admins a ON o.payment_confirmed_by = a.id
       WHERE o.id_orden = $1
     `;
     
@@ -849,6 +859,182 @@ exports.actualizarEstadoOrden = async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Error interno del servidor al actualizar orden',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+/**
+ * Confirmar pago de una orden
+ * FASE 4.1 - Sistema de pagos con confirmación manual
+ */
+exports.confirmarPago = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const adminId = req.user.adminId || req.user.id;
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de orden inválido'
+      });
+    }
+
+    // Obtener la orden actual
+    const ordenQuery = `
+      SELECT 
+        o.*,
+        COUNT(oi.id_order_item) as total_items
+      FROM ordenes o
+      LEFT JOIN order_items oi ON o.id_orden = oi.id_orden
+      WHERE o.id_orden = $1
+      GROUP BY o.id_orden
+    `;
+    
+    const ordenResult = await pool.query(ordenQuery, [id]);
+
+    if (ordenResult.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Orden no encontrada' 
+      });
+    }
+
+    const orden = ordenResult.rows[0];
+
+    // Validar que el pago esté pendiente
+    if (orden.payment_status === 'confirmed') {
+      return res.status(400).json({
+        success: false,
+        message: 'El pago de esta orden ya fue confirmado anteriormente'
+      });
+    }
+
+    // Iniciar transacción
+    const client = await pool.connect();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Actualizar estado de pago
+      const updateQuery = `
+        UPDATE ordenes 
+        SET 
+          payment_status = 'confirmed',
+          payment_confirmed_at = NOW(),
+          payment_confirmed_by = $1,
+          estado = CASE 
+            WHEN estado = 'pendiente_pago' THEN 'en_proceso'::estado_orden
+            ELSE estado 
+          END,
+          fecha_pago = CASE 
+            WHEN fecha_pago IS NULL THEN NOW()
+            ELSE fecha_pago
+          END
+        WHERE id_orden = $2
+        RETURNING *
+      `;
+      
+      const updateResult = await client.query(updateQuery, [adminId, id]);
+      const ordenActualizada = updateResult.rows[0];
+
+      // Intentar asignar cuentas automáticamente si hay disponibles
+      const itemsQuery = `
+        SELECT oi.*, sp.duracion_dias
+        FROM order_items oi
+        JOIN service_plans sp ON oi.id_plan = sp.id_plan
+        WHERE oi.id_orden = $1 
+        AND oi.id_cuenta_asignada IS NULL
+        ORDER BY oi.id_order_item
+      `;
+      
+      const itemsResult = await client.query(itemsQuery, [id]);
+      const itemsPendientes = itemsResult.rows;
+
+      let cuentasAsignadas = 0;
+      
+      for (const item of itemsPendientes) {
+        // Buscar cuenta disponible para cada item
+        for (let i = 0; i < item.cantidad; i++) {
+          const cuentaQuery = `
+            SELECT ic.id_cuenta
+            FROM inventario_cuentas ic
+            WHERE ic.id_plan = $1 
+            AND ic.estado = 'disponible'
+            LIMIT 1
+            FOR UPDATE
+          `;
+          
+          const cuentaResult = await client.query(cuentaQuery, [item.id_plan]);
+          
+          if (cuentaResult.rows.length > 0) {
+            const cuentaId = cuentaResult.rows[0].id_cuenta;
+            
+            // Asignar cuenta
+            await client.query(`
+              UPDATE order_items
+              SET 
+                id_cuenta_asignada = $1,
+                estado = 'asignada',
+                fecha_vencimiento_servicio = NOW() + INTERVAL '1 day' * $2
+              WHERE id_order_item = $3
+            `, [cuentaId, item.duracion_dias || 30, item.id_order_item]);
+            
+            // Actualizar estado de cuenta
+            await client.query(`
+              UPDATE inventario_cuentas
+              SET 
+                estado = 'asignada',
+                fecha_ultima_asignacion = NOW()
+              WHERE id_cuenta = $1
+            `, [cuentaId]);
+            
+            cuentasAsignadas++;
+          }
+        }
+      }
+
+      await client.query('COMMIT');
+
+      // Obtener orden actualizada con detalles
+      const ordenDetalleQuery = `
+        SELECT 
+          o.*,
+          u.nombre as nombre_usuario,
+          u.email as email_usuario,
+          a.username as admin_confirmador
+        FROM ordenes o
+        LEFT JOIN usuarios u ON o.celular_usuario = u.celular
+        LEFT JOIN admins a ON o.payment_confirmed_by = a.id
+        WHERE o.id_orden = $1
+      `;
+      
+      const detalleResult = await client.query(ordenDetalleQuery, [id]);
+      const ordenCompleta = detalleResult.rows[0];
+
+      res.json({
+        success: true,
+        message: `Pago confirmado correctamente. ${cuentasAsignadas > 0 ? `Se asignaron ${cuentasAsignadas} cuenta(s) automáticamente.` : 'No se pudieron asignar cuentas automáticamente por falta de stock.'}`,
+        data: {
+          orden: ordenCompleta,
+          cuentas_asignadas: cuentasAsignadas,
+          items_totales: orden.total_items
+        }
+      });
+      
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+
+  } catch (error) {
+    console.error('Error al confirmar pago:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error interno del servidor al confirmar pago',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }

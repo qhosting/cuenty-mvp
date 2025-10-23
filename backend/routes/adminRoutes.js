@@ -65,6 +65,9 @@ router.get('/orders/:id', verifyToken, verifyAdmin, adminController.obtenerOrden
 // Actualizar estado de una orden
 router.put('/orders/:id/status', verifyToken, verifyAdmin, adminController.actualizarEstadoOrden);
 
+// Confirmar pago de una orden (FASE 4.1)
+router.post('/orders/:id/confirm-payment', verifyToken, verifyAdmin, adminController.confirmarPago);
+
 // ============================================================================
 // CUENTAS DE STREAMING - CRUD
 // Requiere autenticación de administrador

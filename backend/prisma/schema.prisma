@@ -15,11 +15,14 @@ datasource db {
 // ============================================================================
 
 model Admin {
-  id             Int      @id @default(autoincrement())
-  username       String   @unique @db.VarChar(50)
-  password       String   @db.VarChar(255)
-  email          String?  @db.VarChar(100)
-  fechaCreacion  DateTime @default(now()) @map("fecha_creacion")
+  id                    Int      @id @default(autoincrement())
+  username              String   @unique @db.VarChar(50)
+  password              String   @db.VarChar(255)
+  email                 String?  @db.VarChar(100)
+  fechaCreacion         DateTime @default(now()) @map("fecha_creacion")
+  
+  // Relations
+  ordenesConfirmadas    Orden[]
 
   @@map("admins")
 }
@@ -168,27 +171,40 @@ model ShoppingCart {
 // ============================================================================
 
 model Orden {
-  idOrden              Int          @id @default(autoincrement()) @map("id_orden")
-  celularUsuario       String       @map("celular_usuario") @db.VarChar(15)
-  montoTotal           Decimal      @map("monto_total") @db.Decimal(10, 2)
-  estado               EstadoOrden  @default(pendiente_pago)
-  metodoPago           String       @default("transferencia_bancaria") @map("metodo_pago") @db.VarChar(50)
-  metodoEntrega        String       @default("whatsapp") @map("metodo_entrega") @db.VarChar(20)
-  instruccionesPago    String?      @map("instrucciones_pago") @db.Text
-  notasAdmin           String?      @map("notas_admin") @db.Text
-  fechaCreacion        DateTime     @default(now()) @map("fecha_creacion")
-  fechaPago            DateTime?    @map("fecha_pago")
-  fechaEntrega         DateTime?    @map("fecha_entrega")
-  datosPago            Json?        @map("datos_pago")
+  idOrden              Int              @id @default(autoincrement()) @map("id_orden")
+  celularUsuario       String           @map("celular_usuario") @db.VarChar(15)
+  montoTotal           Decimal          @map("monto_total") @db.Decimal(10, 2)
+  estado               EstadoOrden      @default(pendiente_pago)
+  metodoPago           String           @default("transferencia_bancaria") @map("metodo_pago") @db.VarChar(50)
+  metodoEntrega        String           @default("whatsapp") @map("metodo_entrega") @db.VarChar(20)
+  instruccionesPago    String?          @map("instrucciones_pago") @db.Text
+  notasAdmin           String?          @map("notas_admin") @db.Text
+  fechaCreacion        DateTime         @default(now()) @map("fecha_creacion")
+  fechaPago            DateTime?        @map("fecha_pago")
+  fechaEntrega         DateTime?        @map("fecha_entrega")
+  datosPago            Json?            @map("datos_pago")
+  
+  // Campos para sistema de pagos con confirmación manual
+  paymentStatus        PaymentStatus    @default(pending) @map("payment_status")
+  paymentConfirmedAt   DateTime?        @map("payment_confirmed_at")
+  paymentConfirmedBy   Int?             @map("payment_confirmed_by")
   
   // Relations
-  usuario              Usuario      @relation(fields: [celularUsuario], references: [celular])
+  usuario              Usuario          @relation(fields: [celularUsuario], references: [celular])
   items                OrderItem[]
+  adminConfirmador     Admin?           @relation(fields: [paymentConfirmedBy], references: [id])
 
   @@index([celularUsuario], name: "idx_ordenes_usuario")
   @@index([estado], name: "idx_ordenes_estado")
   @@index([fechaCreacion(sort: Desc)], name: "idx_ordenes_fecha")
+  @@index([paymentStatus], name: "idx_ordenes_payment_status")
   @@map("ordenes")
+}
+
+enum PaymentStatus {
+  pending
+  confirmed
+  failed
 }
 
 enum EstadoOrden {

@@ -37,11 +37,11 @@ class OrdenEnhanced {
       const paymentResult = await client.query(paymentQuery);
       const paymentInfo = paymentResult.rows[0];
 
-      // Crear orden
+      // Crear orden con payment_status en 'pending' (FASE 4.1)
       const ordenQuery = `
         INSERT INTO ordenes 
-        (celular_usuario, monto_total, metodo_entrega, estado)
-        VALUES ($1, $2, $3, 'pendiente_pago')
+        (celular_usuario, monto_total, metodo_entrega, estado, payment_status)
+        VALUES ($1, $2, $3, 'pendiente_pago', 'pending')
         RETURNING *
       `;
       const ordenResult = await client.query(ordenQuery, [

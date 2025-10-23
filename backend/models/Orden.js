@@ -8,8 +8,8 @@ class Orden {
   static async crear(celular_usuario, id_producto, monto_pagado, datos_pago_spei = null) {
     const query = `
       INSERT INTO ordenes 
-      (celular_usuario, id_producto, monto_pagado, estado, datos_pago_spei)
-      VALUES ($1, $2, $3, 'pendiente_pago', $4)
+      (celular_usuario, id_producto, monto_pagado, estado, datos_pago_spei, payment_status)
+      VALUES ($1, $2, $3, 'pendiente_pago', $4, 'pending')
       RETURNING *
     `;
     const result = await pool.query(query, [
