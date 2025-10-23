@@ -4,6 +4,13 @@ const pool = require('../config/database');
 const Servicio = require('../models/Servicio');
 const ServicePlan = require('../models/ServicePlan');
 const Cuenta = require('../models/Cuenta');
+const {
+  validateServicioData,
+  validatePlanData,
+  validateCuentaData,
+  validateOrdenEstado,
+  validateOrdenUpdate
+} = require('../utils/validators');
 
 // ============================================================================
 // SERVICIOS DE STREAMING - CRUD
@@ -35,7 +42,8 @@ exports.listarServicios = async (req, res) => {
     console.error('Error al listar servicios:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al obtener servicios' 
+      message: 'Error interno del servidor al obtener servicios',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -45,16 +53,37 @@ exports.listarServicios = async (req, res) => {
  */
 exports.crearServicio = async (req, res) => {
   try {
-    const { nombre, descripcion, logo_url, categoria, activo } = req.body;
-
-    if (!nombre) {
+    // Validar datos de entrada
+    const validation = validateServicioData(req.body);
+    
+    if (!validation.valid) {
       return res.status(400).json({ 
         success: false,
-        error: 'Nombre del servicio es requerido' 
+        message: 'Errores de validación',
+        errors: validation.errors
       });
     }
 
-    const servicio = await Servicio.crear(nombre, descripcion, logo_url, categoria);
+    // Verificar que no exista un servicio con el mismo nombre
+    const existingService = await pool.query(
+      'SELECT id_servicio FROM servicios WHERE LOWER(nombre) = LOWER($1)',
+      [validation.sanitized.nombre]
+    );
+
+    if (existingService.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya existe un servicio con ese nombre'
+      });
+    }
+
+    // Crear servicio con datos validados
+    const servicio = await Servicio.crear(
+      validation.sanitized.nombre,
+      validation.sanitized.descripcion,
+      validation.sanitized.logo_url,
+      validation.sanitized.categoria
+    );
 
     // Formatear respuesta para el frontend
     const servicioFormateado = {
@@ -76,7 +105,8 @@ exports.crearServicio = async (req, res) => {
     console.error('Error al crear servicio:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al crear servicio' 
+      message: 'Error interno del servidor al crear servicio',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -87,12 +117,61 @@ exports.crearServicio = async (req, res) => {
 exports.actualizarServicio = async (req, res) => {
   try {
     const { id } = req.params;
-    const servicio = await Servicio.actualizar(id, req.body);
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de servicio inválido'
+      });
+    }
+
+    // Validar datos de entrada
+    const validation = validateServicioData(req.body);
+    
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Errores de validación',
+        errors: validation.errors
+      });
+    }
+
+    // Verificar que el servicio exista
+    const existingService = await pool.query(
+      'SELECT id_servicio FROM servicios WHERE id_servicio = $1',
+      [id]
+    );
+
+    if (existingService.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Servicio no encontrado'
+      });
+    }
+
+    // Verificar que no haya otro servicio con el mismo nombre
+    if (validation.sanitized.nombre) {
+      const duplicateCheck = await pool.query(
+        'SELECT id_servicio FROM servicios WHERE LOWER(nombre) = LOWER($1) AND id_servicio != $2',
+        [validation.sanitized.nombre, id]
+      );
+
+      if (duplicateCheck.rows.length > 0) {
+        return res.status(409).json({
+          success: false,
+          message: 'Ya existe otro servicio con ese nombre'
+        });
+      }
+    }
+
+    // Actualizar con datos validados
+    const servicio = await Servicio.actualizar(id, validation.sanitized);
 
     if (!servicio) {
       return res.status(404).json({ 
         success: false,
-        error: 'Servicio no encontrado' 
+        message: 'Servicio no encontrado' 
       });
     }
 
@@ -116,7 +195,8 @@ exports.actualizarServicio = async (req, res) => {
     console.error('Error al actualizar servicio:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al actualizar servicio' 
+      message: 'Error interno del servidor al actualizar servicio',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -127,12 +207,34 @@ exports.actualizarServicio = async (req, res) => {
 exports.eliminarServicio = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de servicio inválido'
+      });
+    }
+
+    // Verificar que el servicio no tenga planes activos
+    const planesActivos = await pool.query(
+      'SELECT id_plan FROM service_plans WHERE id_servicio = $1 AND activo = true LIMIT 1',
+      [id]
+    );
+
+    if (planesActivos.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar un servicio con planes activos. Desactiva los planes primero.'
+      });
+    }
+
     const servicio = await Servicio.eliminar(id);
 
     if (!servicio) {
       return res.status(404).json({ 
         success: false,
-        error: 'Servicio no encontrado' 
+        message: 'Servicio no encontrado' 
       });
     }
 
@@ -144,7 +246,8 @@ exports.eliminarServicio = async (req, res) => {
     console.error('Error al eliminar servicio:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al eliminar servicio' 
+      message: 'Error interno del servidor al eliminar servicio',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -159,6 +262,14 @@ exports.eliminarServicio = async (req, res) => {
 exports.listarPlanes = async (req, res) => {
   try {
     const { id_servicio } = req.query;
+    
+    // Validar id_servicio si se proporciona
+    if (id_servicio && isNaN(id_servicio)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de servicio inválido'
+      });
+    }
     
     let planes;
     if (id_servicio) {
@@ -188,7 +299,8 @@ exports.listarPlanes = async (req, res) => {
     console.error('Error al listar planes:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al obtener planes' 
+      message: 'Error interno del servidor al obtener planes',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -198,37 +310,65 @@ exports.listarPlanes = async (req, res) => {
  */
 exports.crearPlan = async (req, res) => {
   try {
-    // El frontend envía: servicio_id, nombre, precio, duracion_meses, slots_disponibles, activo
-    // El backend espera: id_servicio, nombre_plan, costo, margen_ganancia, duracion_meses, descripcion
-    const { 
-      servicio_id, 
-      nombre, 
-      precio, 
-      duracion_meses, 
-      slots_disponibles, 
-      activo,
-      descripcion 
-    } = req.body;
+    // Preparar datos para validación
+    const planData = {
+      servicio_id: req.body.servicio_id,
+      id_servicio: req.body.id_servicio || req.body.servicio_id,
+      nombre: req.body.nombre,
+      nombre_plan: req.body.nombre_plan || req.body.nombre,
+      duracion_meses: req.body.duracion_meses,
+      precio: req.body.precio,
+      descripcion: req.body.descripcion
+    };
 
-    // Validación
-    if (!servicio_id || !nombre || !duracion_meses || precio === undefined) {
+    // Validar datos de entrada
+    const validation = validatePlanData(planData);
+    
+    if (!validation.valid) {
       return res.status(400).json({ 
         success: false,
-        error: 'Todos los campos obligatorios son requeridos' 
+        message: 'Errores de validación',
+        errors: validation.errors
       });
     }
 
-    // Calcular costo y margen (por defecto, asumir un margen del 30%)
-    const margen_ganancia = 30;
-    const costo = Math.round(precio / (1 + margen_ganancia / 100));
+    // Verificar que el servicio existe
+    const servicioExiste = await pool.query(
+      'SELECT id_servicio FROM servicios WHERE id_servicio = $1',
+      [validation.sanitized.id_servicio]
+    );
+
+    if (servicioExiste.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'El servicio especificado no existe'
+      });
+    }
+
+    // Verificar que no exista un plan con la misma duración para este servicio
+    const planDuplicado = await pool.query(
+      'SELECT id_plan FROM service_plans WHERE id_servicio = $1 AND duracion_meses = $2',
+      [validation.sanitized.id_servicio, validation.sanitized.duracion_meses]
+    );
+
+    if (planDuplicado.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya existe un plan con esta duración para este servicio'
+      });
+    }
+
+    // Calcular costo y margen
+    const margen_ganancia = validation.sanitized.margen_ganancia || 30;
+    const costo = validation.sanitized.costo || Math.round(validation.sanitized.precio / (1 + margen_ganancia / 100));
 
     const plan = await ServicePlan.crear({
-      id_servicio: servicio_id,
-      nombre_plan: nombre,
-      duracion_meses,
+      id_servicio: validation.sanitized.id_servicio,
+      nombre_plan: validation.sanitized.nombre_plan,
+      duracion_meses: validation.sanitized.duracion_meses,
       costo,
       margen_ganancia,
-      descripcion: descripcion || ''
+      descripcion: validation.sanitized.descripcion || ''
     });
 
     // Formatear respuesta para el frontend
@@ -237,8 +377,8 @@ exports.crearPlan = async (req, res) => {
       servicio_id: plan.id_servicio,
       nombre: plan.nombre_plan,
       duracion_meses: plan.duracion_meses,
-      precio: precio,
-      slots_disponibles: slots_disponibles || 0,
+      precio: validation.sanitized.precio,
+      slots_disponibles: 0,
       activo: plan.activo,
       created_at: plan.created_at
     };
@@ -252,7 +392,8 @@ exports.crearPlan = async (req, res) => {
     console.error('Error al crear plan:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al crear plan' 
+      message: 'Error interno del servidor al crear plan',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -264,30 +405,100 @@ exports.actualizarPlan = async (req, res) => {
   try {
     const { id } = req.params;
     
-    // Mapear campos del frontend al backend
-    const { 
-      servicio_id, 
-      nombre, 
-      precio, 
-      duracion_meses, 
-      slots_disponibles,
-      activo,
-      descripcion 
-    } = req.body;
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de plan inválido'
+      });
+    }
+
+    // Preparar datos para validación
+    const planData = {
+      servicio_id: req.body.servicio_id,
+      id_servicio: req.body.id_servicio || req.body.servicio_id,
+      nombre: req.body.nombre,
+      nombre_plan: req.body.nombre_plan || req.body.nombre,
+      duracion_meses: req.body.duracion_meses,
+      precio: req.body.precio,
+      descripcion: req.body.descripcion,
+      activo: req.body.activo
+    };
+
+    // Solo validar campos que se están actualizando
+    if (!planData.nombre && !planData.nombre_plan) {
+      planData.nombre = 'Temporal'; // Para pasar validación
+    }
+    if (planData.precio === undefined) {
+      planData.precio = 1; // Para pasar validación
+    }
+    if (planData.duracion_meses === undefined) {
+      planData.duracion_meses = 1; // Para pasar validación
+    }
+
+    // Validar datos de entrada
+    const validation = validatePlanData(planData);
+    
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Errores de validación',
+        errors: validation.errors
+      });
+    }
+
+    // Verificar que el plan existe
+    const planExiste = await pool.query(
+      'SELECT id_plan, id_servicio FROM service_plans WHERE id_plan = $1',
+      [id]
+    );
+
+    if (planExiste.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plan no encontrado'
+      });
+    }
+
+    // Si se cambia el servicio, verificar que existe
+    if (req.body.servicio_id || req.body.id_servicio) {
+      const servicioId = req.body.servicio_id || req.body.id_servicio;
+      const servicioExiste = await pool.query(
+        'SELECT id_servicio FROM servicios WHERE id_servicio = $1',
+        [servicioId]
+      );
+
+      if (servicioExiste.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'El servicio especificado no existe'
+        });
+      }
+    }
 
     // Preparar datos para actualización
     const datosActualizacion = {};
     
-    if (servicio_id !== undefined) datosActualizacion.id_servicio = servicio_id;
-    if (nombre !== undefined) datosActualizacion.nombre_plan = nombre;
-    if (duracion_meses !== undefined) datosActualizacion.duracion_meses = duracion_meses;
-    if (activo !== undefined) datosActualizacion.activo = activo;
-    if (descripcion !== undefined) datosActualizacion.descripcion = descripcion;
+    if (req.body.servicio_id || req.body.id_servicio) {
+      datosActualizacion.id_servicio = req.body.servicio_id || req.body.id_servicio;
+    }
+    if (req.body.nombre || req.body.nombre_plan) {
+      datosActualizacion.nombre_plan = (req.body.nombre || req.body.nombre_plan).trim();
+    }
+    if (req.body.duracion_meses !== undefined) {
+      datosActualizacion.duracion_meses = validation.sanitized.duracion_meses;
+    }
+    if (req.body.activo !== undefined) {
+      datosActualizacion.activo = req.body.activo;
+    }
+    if (req.body.descripcion !== undefined) {
+      datosActualizacion.descripcion = validation.sanitized.descripcion;
+    }
     
     // Si se proporciona precio, calcular costo y margen
-    if (precio !== undefined) {
+    if (req.body.precio !== undefined) {
       const margen_ganancia = 30;
-      datosActualizacion.costo = Math.round(precio / (1 + margen_ganancia / 100));
+      datosActualizacion.costo = Math.round(req.body.precio / (1 + margen_ganancia / 100));
       datosActualizacion.margen_ganancia = margen_ganancia;
     }
 
@@ -296,7 +507,7 @@ exports.actualizarPlan = async (req, res) => {
     if (!plan) {
       return res.status(404).json({ 
         success: false,
-        error: 'Plan no encontrado' 
+        message: 'Plan no encontrado' 
       });
     }
 
@@ -306,8 +517,8 @@ exports.actualizarPlan = async (req, res) => {
       servicio_id: plan.id_servicio,
       nombre: plan.nombre_plan,
       duracion_meses: plan.duracion_meses,
-      precio: precio || (plan.costo + (plan.costo * (plan.margen_ganancia / 100))),
-      slots_disponibles: slots_disponibles || 0,
+      precio: req.body.precio || (plan.costo + (plan.costo * (plan.margen_ganancia / 100))),
+      slots_disponibles: 0,
       activo: plan.activo,
       created_at: plan.created_at
     };
@@ -321,7 +532,8 @@ exports.actualizarPlan = async (req, res) => {
     console.error('Error al actualizar plan:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al actualizar plan' 
+      message: 'Error interno del servidor al actualizar plan',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -332,12 +544,39 @@ exports.actualizarPlan = async (req, res) => {
 exports.eliminarPlan = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de plan inválido'
+      });
+    }
+
+    // Verificar que el plan no tenga pedidos activos
+    const pedidosActivos = await pool.query(
+      `SELECT oi.id_order_item 
+       FROM order_items oi
+       JOIN ordenes o ON oi.id_orden = o.id_orden
+       WHERE oi.id_plan = $1 
+       AND o.estado IN ('pendiente_pago', 'pagada', 'en_proceso')
+       LIMIT 1`,
+      [id]
+    );
+
+    if (pedidosActivos.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar un plan con pedidos activos'
+      });
+    }
+
     const plan = await ServicePlan.eliminar(id);
 
     if (!plan) {
       return res.status(404).json({ 
         success: false,
-        error: 'Plan no encontrado' 
+        message: 'Plan no encontrado' 
       });
     }
 
@@ -349,7 +588,8 @@ exports.eliminarPlan = async (req, res) => {
     console.error('Error al eliminar plan:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al eliminar plan' 
+      message: 'Error interno del servidor al eliminar plan',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -518,12 +758,47 @@ exports.actualizarEstadoOrden = async (req, res) => {
     const { id } = req.params;
     const { estado, notas_admin } = req.body;
     
-    const estadosValidos = ['pendiente', 'pendiente_pago', 'pagada', 'en_proceso', 'entregada', 'cancelada'];
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de orden inválido'
+      });
+    }
+
+    // Validar datos de entrada
+    const validation = validateOrdenUpdate({ estado, notas_admin });
     
-    if (!estado || !estadosValidos.includes(estado)) {
+    if (!validation.valid) {
       return res.status(400).json({ 
         success: false,
-        error: 'Estado inválido' 
+        message: 'Errores de validación',
+        errors: validation.errors
+      });
+    }
+
+    // Obtener el estado actual de la orden
+    const ordenActual = await pool.query(
+      'SELECT estado FROM ordenes WHERE id_orden = $1',
+      [id]
+    );
+
+    if (ordenActual.rows.length === 0) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Orden no encontrada' 
+      });
+    }
+
+    const estadoActual = ordenActual.rows[0].estado;
+
+    // Validar transición de estado
+    const transicionValidation = validateOrdenEstado(estadoActual, estado);
+    
+    if (!transicionValidation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        message: transicionValidation.message
       });
     }
     
@@ -533,15 +808,16 @@ exports.actualizarEstadoOrden = async (req, res) => {
     
     if (notas_admin !== undefined) {
       updateFields.push(`notas_admin = $${paramCount}`);
-      values.push(notas_admin);
+      values.push(validation.sanitized.notas_admin);
       paramCount++;
     }
     
-    if (estado === 'pagada') {
+    // Actualizar timestamps según el estado
+    if (estado === 'pagada' && estadoActual !== 'pagada') {
       updateFields.push(`fecha_pago = NOW()`);
     }
     
-    if (estado === 'entregada') {
+    if (estado === 'entregada' && estadoActual !== 'entregada') {
       updateFields.push(`fecha_entrega = NOW()`);
     }
     
@@ -559,20 +835,21 @@ exports.actualizarEstadoOrden = async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({ 
         success: false,
-        error: 'Orden no encontrada' 
+        message: 'Orden no encontrada' 
       });
     }
     
     res.json({
       success: true,
-      message: 'Estado de orden actualizado correctamente',
+      message: `Orden actualizada a estado "${estado}" correctamente`,
       data: result.rows[0]
     });
   } catch (error) {
     console.error('Error al actualizar orden:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al actualizar orden' 
+      message: 'Error interno del servidor al actualizar orden',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -588,22 +865,48 @@ exports.listarCuentas = async (req, res) => {
   try {
     const { id_plan, estado, limit = 50, offset = 0 } = req.query;
     
+    // Validar parámetros
+    if (id_plan && isNaN(id_plan)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de plan inválido'
+      });
+    }
+    
+    if (estado) {
+      const estadosValidos = ['disponible', 'asignada', 'mantenimiento', 'bloqueada'];
+      if (!estadosValidos.includes(estado)) {
+        return res.status(400).json({
+          success: false,
+          message: `Estado inválido. Debe ser uno de: ${estadosValidos.join(', ')}`
+        });
+      }
+    }
+    
+    const limitNum = Math.min(parseInt(limit) || 50, 100); // Máximo 100
+    const offsetNum = Math.max(parseInt(offset) || 0, 0);
+    
     const cuentas = await Cuenta.listarTodas({ 
       id_plan: id_plan ? parseInt(id_plan) : null, 
       estado, 
-      limit: parseInt(limit), 
-      offset: parseInt(offset) 
+      limit: limitNum, 
+      offset: offsetNum 
     });
     
     res.json({
       success: true,
-      data: cuentas
+      data: cuentas,
+      pagination: {
+        limit: limitNum,
+        offset: offsetNum
+      }
     });
   } catch (error) {
     console.error('Error al listar cuentas:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al obtener cuentas' 
+      message: 'Error interno del servidor al obtener cuentas',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -613,23 +916,44 @@ exports.listarCuentas = async (req, res) => {
  */
 exports.crearCuenta = async (req, res) => {
   try {
-    const { id_plan, correo, contrasena, perfil, pin, notas } = req.body;
-
-    if (!id_plan || !correo || !contrasena) {
+    // Validar datos de entrada
+    const validation = validateCuentaData(req.body);
+    
+    if (!validation.valid) {
       return res.status(400).json({ 
         success: false,
-        error: 'id_plan, correo y contraseña son requeridos' 
+        message: 'Errores de validación',
+        errors: validation.errors
       });
     }
 
-    const cuenta = await Cuenta.crear({
-      id_plan,
-      correo,
-      contrasena,
-      perfil,
-      pin,
-      notas
-    });
+    // Verificar que el plan existe
+    const planExiste = await pool.query(
+      'SELECT id_plan FROM service_plans WHERE id_plan = $1',
+      [validation.sanitized.id_plan]
+    );
+
+    if (planExiste.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'El plan especificado no existe'
+      });
+    }
+
+    // Verificar que no exista una cuenta duplicada (mismo correo y plan)
+    const cuentaDuplicada = await pool.query(
+      'SELECT id_cuenta FROM inventario_cuentas WHERE id_plan = $1 AND correo_encriptado = $2',
+      [validation.sanitized.id_plan, validation.sanitized.correo]
+    );
+
+    if (cuentaDuplicada.rows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ya existe una cuenta con ese correo para este plan'
+      });
+    }
+
+    const cuenta = await Cuenta.crear(validation.sanitized);
 
     res.status(201).json({
       success: true,
@@ -640,7 +964,8 @@ exports.crearCuenta = async (req, res) => {
     console.error('Error al crear cuenta:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al crear cuenta' 
+      message: 'Error interno del servidor al crear cuenta',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -651,12 +976,83 @@ exports.crearCuenta = async (req, res) => {
 exports.actualizarCuenta = async (req, res) => {
   try {
     const { id } = req.params;
-    const cuenta = await Cuenta.actualizar(id, req.body);
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de cuenta inválido'
+      });
+    }
+
+    // Verificar que la cuenta existe
+    const cuentaExiste = await pool.query(
+      'SELECT id_cuenta, estado FROM inventario_cuentas WHERE id_cuenta = $1',
+      [id]
+    );
+
+    if (cuentaExiste.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Cuenta no encontrada'
+      });
+    }
+
+    // Si se intenta actualizar una cuenta asignada, validar
+    const estadoActual = cuentaExiste.rows[0].estado;
+    if (estadoActual === 'asignada' && req.body.estado && req.body.estado !== 'asignada') {
+      // Verificar que no esté en uso en un pedido activo
+      const enUso = await pool.query(
+        `SELECT oi.id_order_item 
+         FROM order_items oi
+         JOIN ordenes o ON oi.id_orden = o.id_orden
+         WHERE oi.id_cuenta_asignada = $1 
+         AND o.estado IN ('pendiente_pago', 'pagada', 'en_proceso')
+         LIMIT 1`,
+        [id]
+      );
+
+      if (enUso.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No se puede cambiar el estado de una cuenta asignada a un pedido activo'
+        });
+      }
+    }
+
+    // Validar solo los campos que se están actualizando
+    const updateData = { ...req.body };
+    
+    // Si no incluye campos obligatorios, agregar valores temporales para validación
+    if (!updateData.correo) updateData.correo = 'temp@temp.com';
+    if (!updateData.contrasena) updateData.contrasena = 'temporal123';
+    if (!updateData.id_plan) updateData.id_plan = cuentaExiste.rows[0].id_plan || 1;
+
+    const validation = validateCuentaData(updateData);
+    
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Errores de validación',
+        errors: validation.errors
+      });
+    }
+
+    // Preparar solo los campos que realmente se están actualizando
+    const datosActualizacion = {};
+    if (req.body.correo !== undefined) datosActualizacion.correo = req.body.correo;
+    if (req.body.contrasena !== undefined) datosActualizacion.contrasena = req.body.contrasena;
+    if (req.body.perfil !== undefined) datosActualizacion.perfil = validation.sanitized.perfil;
+    if (req.body.pin !== undefined) datosActualizacion.pin = validation.sanitized.pin;
+    if (req.body.notas !== undefined) datosActualizacion.notas = validation.sanitized.notas;
+    if (req.body.estado !== undefined) datosActualizacion.estado = validation.sanitized.estado;
+
+    const cuenta = await Cuenta.actualizar(id, datosActualizacion);
 
     if (!cuenta) {
       return res.status(404).json({ 
         success: false,
-        error: 'Cuenta no encontrada' 
+        message: 'Cuenta no encontrada' 
       });
     }
 
@@ -669,7 +1065,8 @@ exports.actualizarCuenta = async (req, res) => {
     console.error('Error al actualizar cuenta:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al actualizar cuenta' 
+      message: 'Error interno del servidor al actualizar cuenta',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -680,12 +1077,39 @@ exports.actualizarCuenta = async (req, res) => {
 exports.eliminarCuenta = async (req, res) => {
   try {
     const { id } = req.params;
+    
+    // Validar que el ID sea un número
+    if (isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID de cuenta inválido'
+      });
+    }
+
+    // Verificar que la cuenta no esté asignada a un pedido activo
+    const enUso = await pool.query(
+      `SELECT oi.id_order_item 
+       FROM order_items oi
+       JOIN ordenes o ON oi.id_orden = o.id_orden
+       WHERE oi.id_cuenta_asignada = $1 
+       AND o.estado IN ('pendiente_pago', 'pagada', 'en_proceso')
+       LIMIT 1`,
+      [id]
+    );
+
+    if (enUso.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No se puede eliminar una cuenta asignada a un pedido activo'
+      });
+    }
+
     const cuenta = await Cuenta.eliminar(id);
 
     if (!cuenta) {
       return res.status(404).json({ 
         success: false,
-        error: 'Cuenta no encontrada' 
+        message: 'Cuenta no encontrada' 
       });
     }
 
@@ -697,7 +1121,8 @@ exports.eliminarCuenta = async (req, res) => {
     console.error('Error al eliminar cuenta:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Error al eliminar cuenta' 
+      message: 'Error interno del servidor al eliminar cuenta',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

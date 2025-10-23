@@ -389,12 +389,44 @@ function PlanModal({ plan, services, onClose, onSuccess }: PlanModalProps) {
     activo: plan?.activo ?? true
   })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.servicio_id || !formData.nombre || formData.precio <= 0) {
-      toast.error('Por favor completa todos los campos requeridos')
+    // Limpiar errores previos
+    setErrors({})
+
+    // Validaciones
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.servicio_id) {
+      newErrors.servicio_id = 'Debe seleccionar un servicio'
+    }
+
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'Nombre del plan es requerido'
+    } else if (formData.nombre.trim().length < 3) {
+      newErrors.nombre = 'Nombre debe tener al menos 3 caracteres'
+    } else if (formData.nombre.trim().length > 100) {
+      newErrors.nombre = 'Nombre no puede exceder 100 caracteres'
+    }
+
+    if (formData.duracion_meses < 1 || formData.duracion_meses > 36) {
+      newErrors.duracion_meses = 'Duración debe estar entre 1 y 36 meses'
+    }
+
+    if (formData.precio <= 0) {
+      newErrors.precio = 'Precio debe ser mayor a 0'
+    }
+
+    if (formData.slots_disponibles < 1 || formData.slots_disponibles > 10) {
+      newErrors.slots_disponibles = 'Slots debe estar entre 1 y 10'
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      toast.error('Por favor corrige los errores en el formulario')
       return
     }
 
@@ -410,10 +442,14 @@ function PlanModal({ plan, services, onClose, onSuccess }: PlanModalProps) {
         onSuccess()
         onClose()
       } else {
-        toast.error(result.message || `Error al ${plan ? 'actualizar' : 'crear'} plan`)
+        if (result.errors && Array.isArray(result.errors)) {
+          result.errors.forEach((error: string) => toast.error(error))
+        } else {
+          toast.error(result.message || `Error al ${plan ? 'actualizar' : 'crear'} plan`)
+        }
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      toast.error('Error de conexión con el servidor')
     } finally {
       setLoading(false)
     }

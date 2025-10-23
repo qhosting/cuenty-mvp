@@ -335,12 +335,45 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
     activo: service?.activo ?? true
   })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.nombre || !formData.descripcion) {
-      toast.error('Por favor completa todos los campos requeridos')
+    // Limpiar errores previos
+    setErrors({})
+
+    // Validaciones
+    const newErrors: Record<string, string> = {}
+
+    if (!formData.nombre.trim()) {
+      newErrors.nombre = 'Nombre del servicio es requerido'
+    } else if (formData.nombre.trim().length < 3) {
+      newErrors.nombre = 'Nombre debe tener al menos 3 caracteres'
+    } else if (formData.nombre.trim().length > 100) {
+      newErrors.nombre = 'Nombre no puede exceder 100 caracteres'
+    }
+
+    if (!formData.descripcion.trim()) {
+      newErrors.descripcion = 'Descripción es requerida'
+    } else if (formData.descripcion.trim().length > 500) {
+      newErrors.descripcion = 'Descripción no puede exceder 500 caracteres'
+    }
+
+    if (formData.logo_url.trim()) {
+      try {
+        const url = new URL(formData.logo_url.trim())
+        if (!['http:', 'https:'].includes(url.protocol)) {
+          newErrors.logo_url = 'URL debe ser HTTP o HTTPS'
+        }
+      } catch {
+        newErrors.logo_url = 'URL no es válida'
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors)
+      toast.error('Por favor corrige los errores en el formulario')
       return
     }
 
@@ -356,10 +389,14 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
         onSuccess()
         onClose()
       } else {
-        toast.error(result.message || `Error al ${service ? 'actualizar' : 'crear'} servicio`)
+        if (result.errors && Array.isArray(result.errors)) {
+          result.errors.forEach((error: string) => toast.error(error))
+        } else {
+          toast.error(result.message || `Error al ${service ? 'actualizar' : 'crear'} servicio`)
+        }
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      toast.error('Error de conexión con el servidor')
     } finally {
       setLoading(false)
     }
@@ -384,11 +421,22 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
             <input
               type="text"
               value={formData.nombre}
-              onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              onChange={(e) => {
+                setFormData({ ...formData, nombre: e.target.value })
+                if (errors.nombre) {
+                  setErrors({ ...errors, nombre: '' })
+                }
+              }}
+              className={`w-full px-3 py-2 bg-slate-900 border rounded-lg text-white placeholder-slate-400 focus:outline-none transition-colors ${
+                errors.nombre 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-slate-600 focus:border-blue-500'
+              }`}
               placeholder="Ej: Netflix"
-              required
             />
+            {errors.nombre && (
+              <p className="mt-1 text-sm text-red-400">{errors.nombre}</p>
+            )}
           </div>
 
           <div>
@@ -397,11 +445,22 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
             </label>
             <textarea
               value={formData.descripcion}
-              onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 h-24 resize-none"
+              onChange={(e) => {
+                setFormData({ ...formData, descripcion: e.target.value })
+                if (errors.descripcion) {
+                  setErrors({ ...errors, descripcion: '' })
+                }
+              }}
+              className={`w-full px-3 py-2 bg-slate-900 border rounded-lg text-white placeholder-slate-400 focus:outline-none h-24 resize-none transition-colors ${
+                errors.descripcion 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-slate-600 focus:border-blue-500'
+              }`}
               placeholder="Descripción del servicio..."
-              required
             />
+            {errors.descripcion && (
+              <p className="mt-1 text-sm text-red-400">{errors.descripcion}</p>
+            )}
           </div>
 
           <div>
@@ -411,10 +470,22 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
             <input
               type="url"
               value={formData.logo_url}
-              onChange={(e) => setFormData({ ...formData, logo_url: e.target.value })}
-              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              onChange={(e) => {
+                setFormData({ ...formData, logo_url: e.target.value })
+                if (errors.logo_url) {
+                  setErrors({ ...errors, logo_url: '' })
+                }
+              }}
+              className={`w-full px-3 py-2 bg-slate-900 border rounded-lg text-white placeholder-slate-400 focus:outline-none transition-colors ${
+                errors.logo_url 
+                  ? 'border-red-500 focus:border-red-500' 
+                  : 'border-slate-600 focus:border-blue-500'
+              }`}
               placeholder="https://i.pinimg.com/736x/19/63/c8/1963c80b8983da5f3be640ca7473b098.jpg"
             />
+            {errors.logo_url && (
+              <p className="mt-1 text-sm text-red-400">{errors.logo_url}</p>
+            )}
           </div>
 
           <div className="flex items-center space-x-3">
