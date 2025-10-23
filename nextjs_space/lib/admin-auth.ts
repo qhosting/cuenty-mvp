@@ -309,5 +309,26 @@ export const adminApiService = {
       const message = error.response?.data?.message || 'Error al guardar configuración'
       return { success: false, message }
     }
+  },
+
+  // Generic methods for custom API calls
+  get: async (url: string) => {
+    try {
+      const response = await adminApi.get(url)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error en la solicitud GET'
+      return { success: false, message }
+    }
+  },
+
+  post: async (url: string, data: any) => {
+    try {
+      const response = await adminApi.post(url, data)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error en la solicitud POST'
+      return { success: false, message }
+    }
   }
 }

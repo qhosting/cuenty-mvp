@@ -1,9 +1,13 @@
 
+'use client'
+
 /**
  * Funciones para consumir la API del panel de clientes
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+import axios from 'axios'
+
+const API_URL = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000');
 
 export interface DashboardData {
   cliente: {
@@ -196,4 +200,93 @@ export async function getOrdenById(token: string, id: number): Promise<{ orden: 
   }
 
   return response.json();
+}
+
+/**
+ * Cliente API Service - Axios instance con auth interceptor
+ */
+const clientAxios = axios.create({
+  baseURL: API_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
+
+// Add auth interceptor
+clientAxios.interceptors.request.use(
+  (config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('clienteToken')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
+  }
+)
+
+// Response interceptor para manejar errores de auth
+clientAxios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('clienteToken')
+        window.location.href = '/client/login'
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+/**
+ * Cliente API object with methods for subscriptions
+ */
+export const clientApi = {
+  // Suscripciones
+  getSuscripciones: async () => {
+    try {
+      const response = await clientAxios.get('/api/suscripciones/cliente')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al obtener suscripciones'
+      return { success: false, message }
+    }
+  },
+
+  renovarSuscripcion: async (id: number) => {
+    try {
+      const response = await clientAxios.post(`/api/suscripciones/cliente/${id}/renovar`)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al renovar suscripción'
+      return { success: false, message }
+    }
+  },
+
+  actualizarConfigSuscripcion: async (id: number, config: any) => {
+    try {
+      const response = await clientAxios.put(`/api/suscripciones/cliente/${id}/configuracion`, config)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al actualizar configuración'
+      return { success: false, message }
+    }
+  },
+
+  cancelarSuscripcion: async (id: number, motivoCancelacion: string) => {
+    try {
+      const response = await clientAxios.post(`/api/suscripciones/cliente/${id}/cancelar`, {
+        motivoCancelacion
+      })
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al cancelar suscripción'
+      return { success: false, message }
+    }
+  }
 }

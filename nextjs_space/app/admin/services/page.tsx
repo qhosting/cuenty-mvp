@@ -389,11 +389,7 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
         onSuccess()
         onClose()
       } else {
-        if (result.errors && Array.isArray(result.errors)) {
-          result.errors.forEach((error: string) => toast.error(error))
-        } else {
-          toast.error(result.message || `Error al ${service ? 'actualizar' : 'crear'} servicio`)
-        }
+        toast.error(result.message || `Error al ${service ? 'actualizar' : 'crear'} servicio`)
       }
     } catch (error) {
       toast.error('Error de conexión con el servidor')

@@ -442,11 +442,7 @@ function PlanModal({ plan, services, onClose, onSuccess }: PlanModalProps) {
         onSuccess()
         onClose()
       } else {
-        if (result.errors && Array.isArray(result.errors)) {
-          result.errors.forEach((error: string) => toast.error(error))
-        } else {
-          toast.error(result.message || `Error al ${plan ? 'actualizar' : 'crear'} plan`)
-        }
+        toast.error(result.message || `Error al ${plan ? 'actualizar' : 'crear'} plan`)
       }
     } catch (error) {
       toast.error('Error de conexión con el servidor')
