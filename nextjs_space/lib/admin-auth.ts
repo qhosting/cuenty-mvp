@@ -239,6 +239,16 @@ export const adminApiService = {
     }
   },
 
+  confirmPayment: async (id: string) => {
+    try {
+      const response = await adminApi.post(`/api/admin/orders/${id}/confirm-payment`)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al confirmar pago'
+      return { success: false, message }
+    }
+  },
+
   // Accounts
   getAccounts: async (filters?: any) => {
     try {

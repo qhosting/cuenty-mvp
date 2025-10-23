@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -14,7 +13,12 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  CreditCard,
+  CheckCircle2,
+  XOctagon,
+  HelpCircle,
+  Shield
 } from 'lucide-react'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { adminApiService } from '@/lib/admin-auth'
@@ -28,6 +32,14 @@ interface Order {
   plan_duracion_meses: number
   total: number
   estado: 'pendiente' | 'pagado' | 'entregado' | 'cancelado'
+  payment_status?: 'pending' | 'confirmed' | 'failed'
+  payment_confirmed_at?: string
+  payment_confirmed_by?: number
+  admin_confirmador?: {
+    id: number
+    username: string
+    email?: string
+  }
   created_at: string
   updated_at: string
   comprobante_url?: string
@@ -62,26 +74,61 @@ const statusConfig = {
   }
 }
 
+const paymentStatusConfig = {
+  pending: {
+    label: 'Pago Pendiente',
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/20',
+    borderColor: 'border-orange-500/50',
+    icon: HelpCircle,
+    tooltip: 'El pago aún no ha sido confirmado por un administrador'
+  },
+  confirmed: {
+    label: 'Pago Confirmado',
+    color: 'text-green-400',
+    bgColor: 'bg-green-500/20',
+    borderColor: 'border-green-500/50',
+    icon: CheckCircle2,
+    tooltip: 'El pago ha sido verificado y confirmado'
+  },
+  failed: {
+    label: 'Pago Fallido',
+    color: 'text-red-400',
+    bgColor: 'bg-red-500/20',
+    borderColor: 'border-red-500/50',
+    icon: XOctagon,
+    tooltip: 'Hubo un problema con el pago'
+  }
+}
+
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('')
   const [dateFilter, setDateFilter] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [showOrderModal, setShowOrderModal] = useState(false)
+  const [showConfirmPaymentModal, setShowConfirmPaymentModal] = useState(false)
+  const [orderToConfirm, setOrderToConfirm] = useState<Order | null>(null)
+  const [confirmingPayment, setConfirmingPayment] = useState(false)
 
   useEffect(() => {
     fetchOrders()
-  }, [])
+  }, [paymentStatusFilter])
 
   const fetchOrders = async () => {
     try {
       setLoading(true)
-      const filters = {
+      const filters: any = {
         celular: searchTerm,
         estado: statusFilter,
         fecha: dateFilter
+      }
+      
+      if (paymentStatusFilter) {
+        filters.payment_status = paymentStatusFilter
       }
       
       const result = await adminApiService.getOrders(filters)
@@ -89,7 +136,7 @@ export default function AdminOrdersPage() {
       if (result.success) {
         setOrders(result.data)
       } else {
-        // Mock data for demo
+        // Mock data for demo con payment_status
         setOrders([
           {
             id: '1',
@@ -101,6 +148,14 @@ export default function AdminOrdersPage() {
             plan_duracion_meses: 1,
             total: 15990,
             estado: 'entregado',
+            payment_status: 'confirmed',
+            payment_confirmed_at: '2024-01-15T12:30:00Z',
+            payment_confirmed_by: 1,
+            admin_confirmador: {
+              id: 1,
+              username: 'admin',
+              email: 'admin@cuenty.cl'
+            },
             created_at: '2024-01-15T10:30:00Z',
             updated_at: '2024-01-15T14:30:00Z',
             comprobante_url: '/comprobantes/orden-1.jpg'
@@ -115,6 +170,7 @@ export default function AdminOrdersPage() {
             plan_duracion_meses: 3,
             total: 35990,
             estado: 'pagado',
+            payment_status: 'pending',
             created_at: '2024-01-14T09:15:00Z',
             updated_at: '2024-01-14T11:20:00Z',
             comprobante_url: '/comprobantes/orden-2.jpg'
@@ -129,6 +185,7 @@ export default function AdminOrdersPage() {
             plan_duracion_meses: 1,
             total: 12990,
             estado: 'pendiente',
+            payment_status: 'pending',
             created_at: '2024-01-13T14:45:00Z',
             updated_at: '2024-01-13T14:45:00Z'
           },
@@ -142,6 +199,7 @@ export default function AdminOrdersPage() {
             plan_duracion_meses: 6,
             total: 29990,
             estado: 'cancelado',
+            payment_status: 'failed',
             created_at: '2024-01-12T16:20:00Z',
             updated_at: '2024-01-12T18:30:00Z'
           }
@@ -174,6 +232,42 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const handleConfirmPayment = async () => {
+    if (!orderToConfirm) return
+
+    try {
+      setConfirmingPayment(true)
+      const result = await adminApiService.confirmPayment(orderToConfirm.id)
+      
+      if (result.success) {
+        // Actualizar la orden en el estado
+        setOrders(orders.map(order => 
+          order.id === orderToConfirm.id 
+            ? { 
+                ...order, 
+                payment_status: 'confirmed', 
+                payment_confirmed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString() 
+              }
+            : order
+        ))
+        
+        toast.success('¡Pago confirmado exitosamente! ✅')
+        setShowConfirmPaymentModal(false)
+        setOrderToConfirm(null)
+        
+        // Actualizar la lista de órdenes
+        fetchOrders()
+      } else {
+        toast.error(result.message || 'Error al confirmar pago')
+      }
+    } catch (error) {
+      toast.error('Error de conexión al confirmar pago')
+    } finally {
+      setConfirmingPayment(false)
+    }
+  }
+
   const handleViewOrder = async (orderId: string) => {
     try {
       const result = await adminApiService.getOrder(orderId)
@@ -191,6 +285,11 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const openConfirmPaymentModal = (order: Order) => {
+    setOrderToConfirm(order)
+    setShowConfirmPaymentModal(true)
+  }
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.usuario_celular.includes(searchTerm) ||
@@ -198,9 +297,18 @@ export default function AdminOrdersPage() {
       order.id.toLowerCase().includes(searchTerm.toLowerCase())
     
     const matchesStatus = !statusFilter || order.estado === statusFilter
+    const matchesPaymentStatus = !paymentStatusFilter || order.payment_status === paymentStatusFilter
     
-    return matchesSearch && matchesStatus
+    return matchesSearch && matchesStatus && matchesPaymentStatus
   })
+
+  // Contadores para las tabs
+  const paymentStatusCounts = {
+    all: orders.length,
+    pending: orders.filter(o => o.payment_status === 'pending').length,
+    confirmed: orders.filter(o => o.payment_status === 'confirmed').length,
+    failed: orders.filter(o => o.payment_status === 'failed').length
+  }
 
   return (
     <AdminLayout currentPath="/admin/orders">
@@ -209,8 +317,85 @@ export default function AdminOrdersPage() {
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Gestión de Pedidos</h1>
           <p className="text-slate-400">
-            Administra y controla el estado de los pedidos de los clientes
+            Administra y controla el estado de los pedidos y pagos de los clientes
           </p>
+        </div>
+
+        {/* Payment Status Tabs */}
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+          <div className="flex items-center space-x-2 mb-4">
+            <CreditCard className="w-5 h-5 text-blue-400" />
+            <h3 className="text-lg font-semibold text-white">Estado de Pago</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <button
+              onClick={() => setPaymentStatusFilter('')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                paymentStatusFilter === ''
+                  ? 'border-blue-500 bg-blue-500/10'
+                  : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <Shield className="w-5 h-5 text-slate-400" />
+                <span className={`text-2xl font-bold ${paymentStatusFilter === '' ? 'text-blue-400' : 'text-white'}`}>
+                  {paymentStatusCounts.all}
+                </span>
+              </div>
+              <p className="text-sm text-slate-400">Todas las órdenes</p>
+            </button>
+
+            <button
+              onClick={() => setPaymentStatusFilter('pending')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                paymentStatusFilter === 'pending'
+                  ? 'border-orange-500 bg-orange-500/10'
+                  : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <HelpCircle className="w-5 h-5 text-orange-400" />
+                <span className={`text-2xl font-bold ${paymentStatusFilter === 'pending' ? 'text-orange-400' : 'text-white'}`}>
+                  {paymentStatusCounts.pending}
+                </span>
+              </div>
+              <p className="text-sm text-slate-400">Pago Pendiente</p>
+            </button>
+
+            <button
+              onClick={() => setPaymentStatusFilter('confirmed')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                paymentStatusFilter === 'confirmed'
+                  ? 'border-green-500 bg-green-500/10'
+                  : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <CheckCircle2 className="w-5 h-5 text-green-400" />
+                <span className={`text-2xl font-bold ${paymentStatusFilter === 'confirmed' ? 'text-green-400' : 'text-white'}`}>
+                  {paymentStatusCounts.confirmed}
+                </span>
+              </div>
+              <p className="text-sm text-slate-400">Pago Confirmado</p>
+            </button>
+
+            <button
+              onClick={() => setPaymentStatusFilter('failed')}
+              className={`p-4 rounded-xl border-2 transition-all ${
+                paymentStatusFilter === 'failed'
+                  ? 'border-red-500 bg-red-500/10'
+                  : 'border-slate-600 bg-slate-900/50 hover:border-slate-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <XOctagon className="w-5 h-5 text-red-400" />
+                <span className={`text-2xl font-bold ${paymentStatusFilter === 'failed' ? 'text-red-400' : 'text-white'}`}>
+                  {paymentStatusCounts.failed}
+                </span>
+              </div>
+              <p className="text-sm text-slate-400">Pago Fallido</p>
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -259,6 +444,7 @@ export default function AdminOrdersPage() {
                   <th className="text-left py-4 px-6 text-slate-300 font-medium">Cliente</th>
                   <th className="text-left py-4 px-6 text-slate-300 font-medium">Servicio</th>
                   <th className="text-right py-4 px-6 text-slate-300 font-medium">Total</th>
+                  <th className="text-center py-4 px-6 text-slate-300 font-medium">Estado Pago</th>
                   <th className="text-center py-4 px-6 text-slate-300 font-medium">Estado</th>
                   <th className="text-center py-4 px-6 text-slate-300 font-medium">Fecha</th>
                   <th className="text-center py-4 px-6 text-slate-300 font-medium">Acciones</th>
@@ -268,6 +454,8 @@ export default function AdminOrdersPage() {
                 {filteredOrders.map((order, index) => {
                   const status = statusConfig[order.estado]
                   const StatusIcon = status.icon
+                  const paymentStatus = order.payment_status ? paymentStatusConfig[order.payment_status] : null
+                  const PaymentStatusIcon = paymentStatus?.icon
                   
                   return (
                     <motion.tr
@@ -314,6 +502,21 @@ export default function AdminOrdersPage() {
                         </div>
                       </td>
                       <td className="py-4 px-6">
+                        {paymentStatus && PaymentStatusIcon && (
+                          <div className="flex items-center justify-center">
+                            <div 
+                              className={`flex items-center space-x-2 px-3 py-1 rounded-full border ${paymentStatus.bgColor} ${paymentStatus.borderColor}`}
+                              title={paymentStatus.tooltip}
+                            >
+                              <PaymentStatusIcon className={`w-4 h-4 ${paymentStatus.color}`} />
+                              <span className={`text-sm font-medium ${paymentStatus.color}`}>
+                                {paymentStatus.label}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-4 px-6">
                         <div className="flex items-center justify-center">
                           <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${status.bgColor}`}>
                             <StatusIcon className={`w-4 h-4 ${status.color}`} />
@@ -340,10 +543,24 @@ export default function AdminOrdersPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
+                          
+                          {/* Botón Confirmar Pago - Solo visible si payment_status es pending */}
+                          {order.payment_status === 'pending' && (
+                            <button
+                              onClick={() => openConfirmPaymentModal(order)}
+                              className="px-3 py-1 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium flex items-center space-x-1"
+                              title="Confirmar pago manualmente"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Confirmar</span>
+                            </button>
+                          )}
+                          
                           <select
                             value={order.estado}
                             onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
                             className="bg-slate-700 text-white text-xs px-2 py-1 rounded border border-slate-600 focus:outline-none focus:border-blue-500"
+                            title="Cambiar estado de la orden"
                           >
                             <option value="pendiente">Pendiente</option>
                             <option value="pagado">Pagado</option>
@@ -365,10 +582,10 @@ export default function AdminOrdersPage() {
           <div className="text-center py-12">
             <ShoppingBag className="w-16 h-16 text-slate-600 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-slate-400 mb-2">
-              {searchTerm || statusFilter ? 'No se encontraron pedidos' : 'No hay pedidos registrados'}
+              {searchTerm || statusFilter || paymentStatusFilter ? 'No se encontraron pedidos' : 'No hay pedidos registrados'}
             </h3>
             <p className="text-slate-500">
-              {searchTerm || statusFilter
+              {searchTerm || statusFilter || paymentStatusFilter
                 ? 'Intenta con otros filtros de búsqueda'
                 : 'Los pedidos de los clientes aparecerán aquí'
               }
@@ -397,6 +614,23 @@ export default function AdminOrdersPage() {
             handleStatusUpdate(orderId, newStatus)
             setSelectedOrder({ ...selectedOrder, estado: newStatus as any })
           }}
+          onConfirmPayment={(order) => {
+            setShowOrderModal(false)
+            openConfirmPaymentModal(order)
+          }}
+        />
+      )}
+
+      {/* Confirm Payment Modal */}
+      {showConfirmPaymentModal && orderToConfirm && (
+        <ConfirmPaymentModal
+          order={orderToConfirm}
+          onConfirm={handleConfirmPayment}
+          onClose={() => {
+            setShowConfirmPaymentModal(false)
+            setOrderToConfirm(null)
+          }}
+          isConfirming={confirmingPayment}
         />
       )}
     </AdminLayout>
@@ -407,12 +641,15 @@ interface OrderDetailsModalProps {
   order: Order
   onClose: () => void
   onStatusUpdate: (orderId: string, status: string) => void
+  onConfirmPayment: (order: Order) => void
 }
 
-function OrderDetailsModal({ order, onClose, onStatusUpdate }: OrderDetailsModalProps) {
+function OrderDetailsModal({ order, onClose, onStatusUpdate, onConfirmPayment }: OrderDetailsModalProps) {
   const [newStatus, setNewStatus] = useState(order.estado)
   const status = statusConfig[order.estado]
   const StatusIcon = status.icon
+  const paymentStatus = order.payment_status ? paymentStatusConfig[order.payment_status] : null
+  const PaymentStatusIcon = paymentStatus?.icon
 
   const handleStatusChange = () => {
     if (newStatus !== order.estado) {
@@ -435,11 +672,13 @@ function OrderDetailsModal({ order, onClose, onStatusUpdate }: OrderDetailsModal
             </div>
             <div>
               <h3 className="text-xl font-semibold text-white">Pedido #{order.id}</h3>
-              <div className={`flex items-center space-x-2 mt-1 px-3 py-1 rounded-full ${status.bgColor} inline-flex`}>
-                <StatusIcon className={`w-4 h-4 ${status.color}`} />
-                <span className={`text-sm font-medium ${status.color}`}>
-                  {status.label}
-                </span>
+              <div className="flex items-center space-x-2 mt-1">
+                <div className={`flex items-center space-x-2 px-3 py-1 rounded-full ${status.bgColor} inline-flex`}>
+                  <StatusIcon className={`w-4 h-4 ${status.color}`} />
+                  <span className={`text-sm font-medium ${status.color}`}>
+                    {status.label}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -453,6 +692,57 @@ function OrderDetailsModal({ order, onClose, onStatusUpdate }: OrderDetailsModal
 
         {/* Order Details */}
         <div className="space-y-6">
+          {/* Payment Status Section */}
+          {paymentStatus && PaymentStatusIcon && (
+            <div className="bg-slate-900/50 rounded-xl p-4 border-2 border-slate-700">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <CreditCard className="w-5 h-5 text-blue-400" />
+                  <h4 className="text-lg font-medium text-white">Estado de Pago</h4>
+                </div>
+                {order.payment_status === 'pending' && (
+                  <button
+                    onClick={() => onConfirmPayment(order)}
+                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-sm rounded-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium flex items-center space-x-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Confirmar Pago</span>
+                  </button>
+                )}
+              </div>
+              
+              <div className={`flex items-center space-x-3 p-4 rounded-lg border-2 ${paymentStatus.bgColor} ${paymentStatus.borderColor}`}>
+                <PaymentStatusIcon className={`w-8 h-8 ${paymentStatus.color}`} />
+                <div className="flex-1">
+                  <p className={`font-semibold ${paymentStatus.color}`}>{paymentStatus.label}</p>
+                  <p className="text-sm text-slate-400">{paymentStatus.tooltip}</p>
+                </div>
+              </div>
+
+              {order.payment_confirmed_at && (
+                <div className="mt-3 p-3 bg-slate-800 rounded-lg">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <label className="text-slate-400">Confirmado el:</label>
+                      <p className="text-white font-medium">
+                        {new Date(order.payment_confirmed_at).toLocaleString('es-ES', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short'
+                        })}
+                      </p>
+                    </div>
+                    {order.admin_confirmador && (
+                      <div>
+                        <label className="text-slate-400">Confirmado por:</label>
+                        <p className="text-white font-medium">{order.admin_confirmador.username}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Customer Info */}
           <div className="bg-slate-900/50 rounded-xl p-4">
             <h4 className="text-lg font-medium text-white mb-3">Información del Cliente</h4>
@@ -542,7 +832,7 @@ function OrderDetailsModal({ order, onClose, onStatusUpdate }: OrderDetailsModal
 
           {/* Status Update */}
           <div className="bg-slate-900/50 rounded-xl p-4">
-            <h4 className="text-lg font-medium text-white mb-3">Actualizar Estado</h4>
+            <h4 className="text-lg font-medium text-white mb-3">Actualizar Estado de Orden</h4>
             <div className="flex items-center space-x-4">
               <select
                 value={newStatus}
@@ -564,6 +854,96 @@ function OrderDetailsModal({ order, onClose, onStatusUpdate }: OrderDetailsModal
               )}
             </div>
           </div>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
+
+interface ConfirmPaymentModalProps {
+  order: Order
+  onConfirm: () => void
+  onClose: () => void
+  isConfirming: boolean
+}
+
+function ConfirmPaymentModal({ order, onConfirm, onClose, isConfirming }: ConfirmPaymentModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-slate-800 rounded-2xl p-8 border-2 border-green-500/30 max-w-md w-full"
+      >
+        {/* Icon */}
+        <div className="flex justify-center mb-6">
+          <div className="p-4 bg-gradient-to-r from-green-500/20 to-emerald-600/20 rounded-full">
+            <CheckCircle2 className="w-12 h-12 text-green-400" />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="text-center mb-6">
+          <h3 className="text-2xl font-bold text-white mb-2">
+            Confirmar Pago
+          </h3>
+          <p className="text-slate-400 mb-4">
+            ¿Estás seguro de que deseas confirmar el pago para esta orden?
+          </p>
+          
+          {/* Order Info */}
+          <div className="bg-slate-900/50 rounded-xl p-4 text-left space-y-2">
+            <div className="flex justify-between">
+              <span className="text-slate-400">Orden:</span>
+              <span className="text-white font-medium">#{order.id}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Cliente:</span>
+              <span className="text-white font-medium">{order.usuario_celular}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-400">Servicio:</span>
+              <span className="text-white font-medium">{order.servicio_nombre}</span>
+            </div>
+            <div className="flex justify-between border-t border-slate-700 pt-2 mt-2">
+              <span className="text-slate-400">Total:</span>
+              <span className="text-green-400 font-bold">${order.total.toLocaleString('es-CL')}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-400 text-sm">
+              ⚠️ Esta acción marcará el pago como confirmado y no se puede deshacer.
+            </p>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex space-x-3">
+          <button
+            onClick={onClose}
+            disabled={isConfirming}
+            className="flex-1 px-4 py-3 bg-slate-700 text-white rounded-xl hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isConfirming}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isConfirming ? (
+              <>
+                <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+                <span>Confirmando...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Confirmar Pago</span>
+              </>
+            )}
+          </button>
         </div>
       </motion.div>
     </div>
