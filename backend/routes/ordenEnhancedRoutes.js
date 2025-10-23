@@ -3,10 +3,18 @@ const express = require('express');
 const router = express.Router();
 const ordenEnhancedController = require('../controllers/ordenEnhancedController');
 const { verifyToken, verifyUser, verifyAdmin, optionalToken } = require('../middleware/auth');
+const { optionalClientToken } = require('../middleware/clientAuth');
 const { validateOrden, validateOrdenEstado } = require('../middleware/validation');
 
-// Rutas de usuario
-router.post('/', verifyToken, verifyUser, validateOrden, ordenEnhancedController.crearDesdeCarrito);
+// Middleware combinado: permite autenticación de usuario regular o cliente
+const optionalCombinedAuth = (req, res, next) => {
+  optionalToken(req, res, () => {
+    optionalClientToken(req, res, next);
+  });
+};
+
+// Rutas de usuario - Ahora con soporte para clientes registrados
+router.post('/', verifyToken, verifyUser, optionalCombinedAuth, validateOrden, ordenEnhancedController.crearDesdeCarrito);
 router.get('/mis-ordenes', verifyToken, verifyUser, ordenEnhancedController.listarMisOrdenes);
 router.get('/:id', verifyToken, ordenEnhancedController.obtenerPorId);
 

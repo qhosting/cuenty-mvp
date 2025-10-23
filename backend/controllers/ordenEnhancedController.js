@@ -9,6 +9,9 @@ exports.crearDesdeCarrito = async (req, res) => {
   try {
     const celular = req.user.celular;
     const { metodo_entrega } = req.body;
+    
+    // Obtener clienteId si el usuario está autenticado como cliente
+    const clienteId = req.user.clienteId || null;
 
     // Verificar que el carrito no esté vacío
     const carrito = await ShoppingCart.obtenerCarrito(celular);
@@ -30,8 +33,8 @@ exports.crearDesdeCarrito = async (req, res) => {
       });
     }
 
-    // Crear orden
-    const orden = await OrdenEnhanced.crearDesdeCarrito(celular, metodo_entrega);
+    // Crear orden (asociar con cliente si está autenticado)
+    const orden = await OrdenEnhanced.crearDesdeCarrito(celular, metodo_entrega, clienteId);
 
     res.status(201).json({
       success: true,

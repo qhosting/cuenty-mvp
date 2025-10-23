@@ -3,8 +3,11 @@ const pool = require('../config/database');
 class OrdenEnhanced {
   /**
    * Crear una nueva orden desde el carrito
+   * @param {string} celular_usuario - Celular del usuario
+   * @param {string} metodo_entrega - Método de entrega (whatsapp, email, web)
+   * @param {number|null} cliente_id - ID del cliente registrado (opcional)
    */
-  static async crearDesdeCarrito(celular_usuario, metodo_entrega = 'whatsapp') {
+  static async crearDesdeCarrito(celular_usuario, metodo_entrega = 'whatsapp', cliente_id = null) {
     const client = await pool.connect();
     
     try {
@@ -37,15 +40,16 @@ class OrdenEnhanced {
       const paymentResult = await client.query(paymentQuery);
       const paymentInfo = paymentResult.rows[0];
 
-      // Crear orden con payment_status en 'pending' (FASE 4.1)
+      // Crear orden con payment_status en 'pending' (FASE 4.1) y asociar cliente_id si está disponible (FASE 4.2)
       const ordenQuery = `
         INSERT INTO ordenes 
-        (celular_usuario, monto_total, metodo_entrega, estado, payment_status)
-        VALUES ($1, $2, $3, 'pendiente_pago', 'pending')
+        (celular_usuario, cliente_id, monto_total, metodo_entrega, estado, payment_status)
+        VALUES ($1, $2, $3, $4, 'pendiente_pago', 'pending')
         RETURNING *
       `;
       const ordenResult = await client.query(ordenQuery, [
         celular_usuario,
+        cliente_id, // Asociar con cliente si está registrado
         montoTotal,
         metodo_entrega
       ]);
