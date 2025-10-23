@@ -103,6 +103,9 @@ function showSection(section) {
         case 'tickets':
             cargarTickets();
             break;
+        case 'configuracion':
+            cargarConfiguracion();
+            break;
     }
 }
 
@@ -948,3 +951,193 @@ window.onclick = function(event) {
         cerrarModal();
     }
 }
+
+// ============================================================================
+// CONFIGURACIÓN DEL SISTEMA
+// ============================================================================
+
+/**
+ * Cargar configuración actual del sistema
+ */
+async function cargarConfiguracion() {
+    try {
+        mostrarNotificacionConfig('info', '⏳ Cargando configuración...');
+        
+        const response = await fetch(`${API_URL}/admin/config`, {
+            headers: getAuthHeaders()
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            const { evolution, chatwoot } = data.data;
+            
+            // Cargar configuración de Evolution API
+            document.getElementById('evolution-api-url').value = evolution.api_url || '';
+            document.getElementById('evolution-api-key').value = evolution.api_key || '';
+            document.getElementById('evolution-instance-name').value = evolution.instance_name || '';
+            document.getElementById('evolution-activo').checked = evolution.activo || false;
+            
+            // Cargar configuración de Chatwoot
+            document.getElementById('chatwoot-url').value = chatwoot.chatwoot_url || '';
+            document.getElementById('chatwoot-access-token').value = chatwoot.access_token || '';
+            document.getElementById('chatwoot-account-id').value = chatwoot.account_id || '';
+            document.getElementById('chatwoot-activo').checked = chatwoot.activo || false;
+            
+            mostrarNotificacionConfig('success', '✅ Configuración cargada correctamente');
+            setTimeout(() => {
+                ocultarNotificacionConfig();
+            }, 3000);
+        } else {
+            mostrarNotificacionConfig('error', '❌ Error al cargar configuración: ' + data.error);
+        }
+    } catch (error) {
+        console.error('Error al cargar configuración:', error);
+        mostrarNotificacionConfig('error', '❌ Error al cargar configuración. Por favor, intenta de nuevo.');
+    }
+}
+
+/**
+ * Guardar configuración del sistema
+ */
+async function guardarConfiguracion() {
+    try {
+        const btnGuardar = document.getElementById('btn-guardar-config');
+        btnGuardar.disabled = true;
+        btnGuardar.innerHTML = '⏳ Guardando...';
+        
+        mostrarNotificacionConfig('info', '⏳ Guardando configuración...');
+        
+        const configuracion = {
+            evolution: {
+                api_url: document.getElementById('evolution-api-url').value,
+                api_key: document.getElementById('evolution-api-key').value,
+                instance_name: document.getElementById('evolution-instance-name').value,
+                activo: document.getElementById('evolution-activo').checked
+            },
+            chatwoot: {
+                chatwoot_url: document.getElementById('chatwoot-url').value,
+                access_token: document.getElementById('chatwoot-access-token').value,
+                account_id: document.getElementById('chatwoot-account-id').value,
+                activo: document.getElementById('chatwoot-activo').checked
+            }
+        };
+        
+        const response = await fetch(`${API_URL}/admin/config`, {
+            method: 'POST',
+            headers: getAuthHeaders(),
+            body: JSON.stringify(configuracion)
+        });
+        const data = await response.json();
+        
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = '💾 Guardar Configuración';
+        
+        if (data.success) {
+            mostrarNotificacionConfig('success', '✅ Configuración guardada correctamente');
+            
+            // Mostrar detalles de lo que se guardó
+            let detalles = '<ul style="margin: 10px 0; padding-left: 20px;">';
+            if (configuracion.evolution.activo) {
+                detalles += '<li>Evolution API: Activado ✓</li>';
+            }
+            if (configuracion.chatwoot.activo) {
+                detalles += '<li>Chatwoot: Activado ✓</li>';
+            }
+            detalles += '</ul>';
+            
+            setTimeout(() => {
+                mostrarNotificacionConfig('success', '✅ Configuración guardada correctamente' + detalles);
+            }, 100);
+            
+            setTimeout(() => {
+                ocultarNotificacionConfig();
+            }, 5000);
+        } else {
+            mostrarNotificacionConfig('error', '❌ Error al guardar: ' + data.error);
+        }
+    } catch (error) {
+        const btnGuardar = document.getElementById('btn-guardar-config');
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = '💾 Guardar Configuración';
+        
+        console.error('Error al guardar configuración:', error);
+        mostrarNotificacionConfig('error', '❌ Error al guardar configuración. Por favor, verifica los datos e intenta de nuevo.');
+    }
+}
+
+/**
+ * Mostrar notificación en la sección de configuración
+ */
+function mostrarNotificacionConfig(tipo, mensaje) {
+    const container = document.getElementById('config-notifications');
+    
+    let bgColor, borderColor, icon;
+    switch(tipo) {
+        case 'success':
+            bgColor = '#d1fae5';
+            borderColor = '#10b981';
+            icon = '✅';
+            break;
+        case 'error':
+            bgColor = '#fee2e2';
+            borderColor = '#ef4444';
+            icon = '❌';
+            break;
+        case 'info':
+            bgColor = '#dbeafe';
+            borderColor = '#3b82f6';
+            icon = 'ℹ️';
+            break;
+        case 'warning':
+            bgColor = '#fef3c7';
+            borderColor = '#f59e0b';
+            icon = '⚠️';
+            break;
+        default:
+            bgColor = '#f3f4f6';
+            borderColor = '#6b7280';
+            icon = '';
+    }
+    
+    container.innerHTML = `
+        <div style="
+            background: ${bgColor};
+            border-left: 4px solid ${borderColor};
+            padding: 15px 20px;
+            border-radius: 8px;
+            animation: slideDown 0.3s ease;
+        ">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 20px;">${icon}</span>
+                <div style="flex: 1;">${mensaje}</div>
+            </div>
+        </div>
+    `;
+    
+    container.style.display = 'block';
+}
+
+/**
+ * Ocultar notificación de configuración
+ */
+function ocultarNotificacionConfig() {
+    const container = document.getElementById('config-notifications');
+    container.style.display = 'none';
+    container.innerHTML = '';
+}
+
+// Agregar animación CSS para las notificaciones
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+`;
+document.head.appendChild(style);

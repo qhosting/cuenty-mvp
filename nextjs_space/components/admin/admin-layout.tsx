@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { DynamicLogo } from '@/components/dynamic-logo'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { NotificationPanel } from '@/components/admin/notification-panel'
 import {
   LayoutDashboard,
   Package,
@@ -74,6 +75,8 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
   const [mounted, setMounted] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [apiVersion, setApiVersion] = useState<string | null>(null)
+  const [notificationPanelOpen, setNotificationPanelOpen] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(0)
   const router = useRouter()
 
   useEffect(() => {
@@ -116,6 +119,31 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
         }
       }
       fetchApiVersion()
+
+      // Obtener contador de notificaciones
+      const fetchNotificationCount = async () => {
+        try {
+          const token = localStorage.getItem('admin_token')
+          const response = await fetch('/api/admin/notifications', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          })
+          if (response.ok) {
+            const data = await response.json()
+            if (data.success) {
+              setNotificationCount(data.unreadCount || 0)
+            }
+          }
+        } catch (error) {
+          console.error('[AdminLayout] Error al obtener contador de notificaciones:', error)
+        }
+      }
+      fetchNotificationCount()
+
+      // Actualizar contador cada 2 minutos
+      const intervalId = setInterval(fetchNotificationCount, 120000)
+      return () => clearInterval(intervalId)
     }
   }, [])
 
@@ -346,12 +374,27 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
               </div>
               
               <div className="flex items-center space-x-2 lg:space-x-4">
-                <button className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors">
-                  <Bell className="w-5 h-5" />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
-                    3
-                  </span>
-                </button>
+                {/* Notification Bell */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setNotificationPanelOpen(!notificationPanelOpen)}
+                    className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+                  >
+                    <Bell className="w-5 h-5" />
+                    {notificationCount > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] rounded-full flex items-center justify-center font-medium">
+                        {notificationCount > 9 ? '9+' : notificationCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {/* Notification Panel */}
+                  <NotificationPanel
+                    isOpen={notificationPanelOpen}
+                    onClose={() => setNotificationPanelOpen(false)}
+                    onNotificationCountUpdate={(count) => setNotificationCount(count)}
+                  />
+                </div>
                 
                 <div className="w-9 h-9 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm shadow-lg">
                   A

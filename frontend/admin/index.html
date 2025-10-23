@@ -54,6 +54,9 @@
                 <a href="#" class="nav-item" onclick="showSection('tickets')">
                     <span class="nav-icon">🎫</span> Soporte
                 </a>
+                <a href="#" class="nav-item" onclick="showSection('configuracion')">
+                    <span class="nav-icon">⚙️</span> Configuración
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <button onclick="logout()" class="btn btn-secondary btn-block">Cerrar Sesión</button>
@@ -164,6 +167,94 @@
                     <button onclick="cargarTickets()" class="btn btn-secondary">🔄 Actualizar</button>
                 </div>
                 <div id="tickets-container" class="table-container"></div>
+            </section>
+
+            <!-- Configuración Section -->
+            <section id="section-configuracion" class="content-section" style="display: none;">
+                <h1 class="page-title">⚙️ Configuración del Sistema</h1>
+                
+                <!-- Notificaciones -->
+                <div id="config-notifications" style="margin-bottom: 20px;"></div>
+                
+                <!-- Evolution API Config -->
+                <div class="config-section" style="background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; color: #1f2937; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 24px;">📱</span> Evolution API (WhatsApp)
+                    </h3>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Configura la conexión con Evolution API para envío de WhatsApp</p>
+                    
+                    <form id="form-evolution-config">
+                        <div class="form-group">
+                            <label>URL de la API *</label>
+                            <input type="url" id="evolution-api-url" class="input" placeholder="https://api.evolution.com" required>
+                            <small style="color: #6b7280;">URL completa de tu instancia de Evolution API</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>API Key *</label>
+                            <input type="text" id="evolution-api-key" class="input" placeholder="tu-api-key" required>
+                            <small style="color: #6b7280;">Token de autenticación de Evolution API</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Nombre de la Instancia *</label>
+                            <input type="text" id="evolution-instance-name" class="input" placeholder="cuenty-instance" required>
+                            <small style="color: #6b7280;">Nombre de tu instancia configurada</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="evolution-activo" style="width: auto;">
+                                <span>Activar Evolution API</span>
+                            </label>
+                            <small style="color: #6b7280;">Habilita el envío de mensajes por WhatsApp</small>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Chatwoot Config -->
+                <div class="config-section" style="background: white; padding: 25px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; color: #1f2937; display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 24px;">💬</span> Chatwoot
+                    </h3>
+                    <p style="color: #6b7280; margin-bottom: 20px;">Configura la integración con Chatwoot para soporte al cliente</p>
+                    
+                    <form id="form-chatwoot-config">
+                        <div class="form-group">
+                            <label>URL de Chatwoot *</label>
+                            <input type="url" id="chatwoot-url" class="input" placeholder="https://chat.ejemplo.com" required>
+                            <small style="color: #6b7280;">URL completa de tu instancia de Chatwoot</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Access Token *</label>
+                            <input type="text" id="chatwoot-access-token" class="input" placeholder="tu-access-token" required>
+                            <small style="color: #6b7280;">Token de acceso de tu cuenta de Chatwoot</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Account ID *</label>
+                            <input type="text" id="chatwoot-account-id" class="input" placeholder="1" required>
+                            <small style="color: #6b7280;">ID de la cuenta en Chatwoot</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                                <input type="checkbox" id="chatwoot-activo" style="width: auto;">
+                                <span>Activar Chatwoot</span>
+                            </label>
+                            <small style="color: #6b7280;">Habilita la integración con Chatwoot</small>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Botones de acción -->
+                <div style="display: flex; gap: 15px; justify-content: flex-end;">
+                    <button onclick="cargarConfiguracion()" class="btn btn-secondary">🔄 Recargar</button>
+                    <button onclick="guardarConfiguracion()" class="btn btn-primary" id="btn-guardar-config">
+                        💾 Guardar Configuración
+                    </button>
+                </div>
             </section>
         </main>
     </div>
