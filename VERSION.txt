@@ -1,24 +1,23 @@
 CUENTY MVP - Version Control
 ============================
 
-Current Version: 1.0.6
-Release Date: October 22, 2025
+Current Version: 1.0.8
+Release Date: October 23, 2025
 
 Components:
 -----------
-- Frontend (Next.js):  v1.0.6
-- Backend (Node.js):   v1.0.6
+- Frontend (Next.js):  v1.0.8
+- Backend (Node.js):   v1.0.8
 
-Last Updated: October 22, 2025
+Last Updated: October 23, 2025
 
 Changes in this version:
 ------------------------
-- New PostgreSQL connectivity verification system with wait-for-postgres.sh
-- Improved migrate.js with smart Prisma migrations management
-- Updated start-docker.sh with integrated verification system
-- Optimized Dockerfile with new verification scripts
-- Fixed critical connectivity issues in Docker containers
-- Sanitized logs to hide sensitive information
+- Applied Prisma migrations: init and add_password_to_usuario
+- Synchronized database schema with Prisma schema
+- Generated updated Prisma Client (v6.17.1)
+- Resolved migration baseline for production database
+- Updated version numbers across all components
 
 For detailed changelog, see CHANGELOG.md
 For versioning documentation, see VERSIONING.md
