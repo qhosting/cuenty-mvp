@@ -12,7 +12,8 @@ import {
   DollarSign,
   Calendar,
   ArrowUpRight,
-  Star
+  Star,
+  RefreshCw
 } from 'lucide-react'
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { adminApiService } from '@/lib/admin-auth'
@@ -163,11 +164,21 @@ export default function AdminDashboardPage() {
     <AdminLayout currentPath="/admin">
       <div className="space-y-5">
         {/* Page Header */}
-        <div>
-          <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1">Dashboard</h1>
-          <p className="text-slate-400 text-sm">
-            Resumen general de la plataforma CUENTY
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1">Dashboard</h1>
+            <p className="text-slate-400 text-sm">
+              Resumen general de la plataforma CUENTY
+            </p>
+          </div>
+          <button
+            onClick={fetchDashboardData}
+            disabled={loading}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 text-white rounded-lg transition-colors duration-200"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Actualizar</span>
+          </button>
         </div>
 
         {/* Stats Cards */}
@@ -247,37 +258,43 @@ export default function AdminDashboardPage() {
             <h3 className="text-lg lg:text-xl font-semibold text-white">Top 5 Servicios</h3>
             <Star className="w-5 h-5 text-blue-400" />
           </div>
-          <div className="overflow-x-auto -mx-4 lg:mx-0">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-600">
-                  <th className="text-left py-2.5 px-4 text-slate-400 font-medium text-sm">Servicio</th>
-                  <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ventas</th>
-                  <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ingresos</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stats.topServices.map((service, index) => (
-                  <tr key={service.name} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4">
-                      <div className="flex items-center space-x-2 lg:space-x-3">
-                        <div className="w-7 h-7 lg:w-8 lg:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-medium text-xs lg:text-sm">
-                          {index + 1}
-                        </div>
-                        <span className="text-white font-medium text-sm lg:text-base">{service.name}</span>
-                      </div>
-                    </td>
-                    <td className="text-right py-3 px-4 text-slate-300 text-sm">
-                      {service.sales} ventas
-                    </td>
-                    <td className="text-right py-3 px-4 text-green-400 font-medium text-sm">
-                      ${service.revenue.toLocaleString()}
-                    </td>
+          {stats.topServices.length === 0 ? (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-slate-400 text-sm">No hay servicios vendidos aún</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-4 lg:mx-0">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-600">
+                    <th className="text-left py-2.5 px-4 text-slate-400 font-medium text-sm">Servicio</th>
+                    <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ventas</th>
+                    <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ingresos</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {stats.topServices.map((service, index) => (
+                    <tr key={service.name} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2 lg:space-x-3">
+                          <div className="w-7 h-7 lg:w-8 lg:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-medium text-xs lg:text-sm">
+                            {index + 1}
+                          </div>
+                          <span className="text-white font-medium text-sm lg:text-base">{service.name}</span>
+                        </div>
+                      </td>
+                      <td className="text-right py-3 px-4 text-slate-300 text-sm">
+                        {service.sales} ventas
+                      </td>
+                      <td className="text-right py-3 px-4 text-green-400 font-medium text-sm">
+                        ${service.revenue.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </motion.div>
       </div>
     </AdminLayout>

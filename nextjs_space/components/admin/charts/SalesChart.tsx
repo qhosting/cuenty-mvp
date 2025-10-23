@@ -7,7 +7,8 @@ import {
   XAxis,
   YAxis,
   ResponsiveContainer,
-  Tooltip
+  Tooltip,
+  CartesianGrid
 } from 'recharts'
 
 interface SalesChartProps {
@@ -15,9 +16,19 @@ interface SalesChartProps {
 }
 
 export function SalesChart({ data }: SalesChartProps) {
+  // Si no hay datos, mostrar mensaje
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <p className="text-slate-400 text-sm">No hay datos de ventas disponibles</p>
+      </div>
+    )
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
         <XAxis 
           dataKey="day" 
           axisLine={false}
@@ -28,6 +39,7 @@ export function SalesChart({ data }: SalesChartProps) {
           axisLine={false}
           tickLine={false}
           tick={{ fontSize: 12, fill: '#94a3b8' }}
+          tickFormatter={(value) => `$${value.toLocaleString()}`}
         />
         <Tooltip 
           contentStyle={{
@@ -36,6 +48,8 @@ export function SalesChart({ data }: SalesChartProps) {
             borderRadius: '12px',
             color: '#fff'
           }}
+          formatter={(value: any) => [`$${value.toLocaleString()}`, 'Ventas']}
+          labelFormatter={(label) => `${label}`}
         />
         <Line 
           type="monotone" 
