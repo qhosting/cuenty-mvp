@@ -16,9 +16,20 @@ exports.listarServicios = async (req, res) => {
   try {
     const servicios = await Servicio.listarTodos(false);
     
+    // Mapear los campos del backend al formato esperado por el frontend
+    const serviciosFormateados = servicios.map(s => ({
+      id: s.id_servicio,
+      nombre: s.nombre,
+      descripcion: s.descripcion,
+      logo_url: s.logo_url,
+      categoria: s.categoria,
+      activo: s.activo,
+      created_at: s.created_at
+    }));
+    
     res.json({
       success: true,
-      data: servicios
+      data: serviciosFormateados
     });
   } catch (error) {
     console.error('Error al listar servicios:', error);
@@ -34,7 +45,7 @@ exports.listarServicios = async (req, res) => {
  */
 exports.crearServicio = async (req, res) => {
   try {
-    const { nombre, descripcion, logo_url, categoria } = req.body;
+    const { nombre, descripcion, logo_url, categoria, activo } = req.body;
 
     if (!nombre) {
       return res.status(400).json({ 
@@ -45,10 +56,21 @@ exports.crearServicio = async (req, res) => {
 
     const servicio = await Servicio.crear(nombre, descripcion, logo_url, categoria);
 
+    // Formatear respuesta para el frontend
+    const servicioFormateado = {
+      id: servicio.id_servicio,
+      nombre: servicio.nombre,
+      descripcion: servicio.descripcion,
+      logo_url: servicio.logo_url,
+      categoria: servicio.categoria,
+      activo: servicio.activo,
+      created_at: servicio.created_at
+    };
+
     res.status(201).json({
       success: true,
       message: 'Servicio creado correctamente',
-      data: servicio
+      data: servicioFormateado
     });
   } catch (error) {
     console.error('Error al crear servicio:', error);
@@ -74,10 +96,21 @@ exports.actualizarServicio = async (req, res) => {
       });
     }
 
+    // Formatear respuesta para el frontend
+    const servicioFormateado = {
+      id: servicio.id_servicio,
+      nombre: servicio.nombre,
+      descripcion: servicio.descripcion,
+      logo_url: servicio.logo_url,
+      categoria: servicio.categoria,
+      activo: servicio.activo,
+      created_at: servicio.created_at
+    };
+
     res.json({
       success: true,
       message: 'Servicio actualizado correctamente',
-      data: servicio
+      data: servicioFormateado
     });
   } catch (error) {
     console.error('Error al actualizar servicio:', error);
@@ -131,12 +164,25 @@ exports.listarPlanes = async (req, res) => {
     if (id_servicio) {
       planes = await ServicePlan.obtenerPorServicio(id_servicio, false);
     } else {
-      planes = await ServicePlan.listarTodos(false);
+      planes = await ServicePlan.listarTodos();
     }
+    
+    // Mapear los campos del backend al formato esperado por el frontend
+    const planesFormateados = planes.map(p => ({
+      id: p.id_plan,
+      servicio_id: p.id_servicio,
+      servicio_nombre: p.nombre_servicio,
+      nombre: p.nombre_plan,
+      duracion_meses: p.duracion_meses,
+      precio: p.precio_venta || (p.costo + (p.costo * (p.margen_ganancia / 100))),
+      slots_disponibles: p.cuentas_disponibles || 0,
+      activo: p.activo,
+      created_at: p.created_at
+    }));
     
     res.json({
       success: true,
-      data: planes
+      data: planesFormateados
     });
   } catch (error) {
     console.error('Error al listar planes:', error);
@@ -152,28 +198,55 @@ exports.listarPlanes = async (req, res) => {
  */
 exports.crearPlan = async (req, res) => {
   try {
-    const { id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion } = req.body;
+    // El frontend envía: servicio_id, nombre, precio, duracion_meses, slots_disponibles, activo
+    // El backend espera: id_servicio, nombre_plan, costo, margen_ganancia, duracion_meses, descripcion
+    const { 
+      servicio_id, 
+      nombre, 
+      precio, 
+      duracion_meses, 
+      slots_disponibles, 
+      activo,
+      descripcion 
+    } = req.body;
 
-    if (!id_servicio || !nombre_plan || !duracion_meses || costo === undefined || margen_ganancia === undefined) {
+    // Validación
+    if (!servicio_id || !nombre || !duracion_meses || precio === undefined) {
       return res.status(400).json({ 
         success: false,
         error: 'Todos los campos obligatorios son requeridos' 
       });
     }
 
+    // Calcular costo y margen (por defecto, asumir un margen del 30%)
+    const margen_ganancia = 30;
+    const costo = Math.round(precio / (1 + margen_ganancia / 100));
+
     const plan = await ServicePlan.crear({
-      id_servicio,
-      nombre_plan,
+      id_servicio: servicio_id,
+      nombre_plan: nombre,
       duracion_meses,
       costo,
       margen_ganancia,
-      descripcion
+      descripcion: descripcion || ''
     });
+
+    // Formatear respuesta para el frontend
+    const planFormateado = {
+      id: plan.id_plan,
+      servicio_id: plan.id_servicio,
+      nombre: plan.nombre_plan,
+      duracion_meses: plan.duracion_meses,
+      precio: precio,
+      slots_disponibles: slots_disponibles || 0,
+      activo: plan.activo,
+      created_at: plan.created_at
+    };
 
     res.status(201).json({
       success: true,
       message: 'Plan creado correctamente',
-      data: plan
+      data: planFormateado
     });
   } catch (error) {
     console.error('Error al crear plan:', error);
@@ -190,7 +263,35 @@ exports.crearPlan = async (req, res) => {
 exports.actualizarPlan = async (req, res) => {
   try {
     const { id } = req.params;
-    const plan = await ServicePlan.actualizar(id, req.body);
+    
+    // Mapear campos del frontend al backend
+    const { 
+      servicio_id, 
+      nombre, 
+      precio, 
+      duracion_meses, 
+      slots_disponibles,
+      activo,
+      descripcion 
+    } = req.body;
+
+    // Preparar datos para actualización
+    const datosActualizacion = {};
+    
+    if (servicio_id !== undefined) datosActualizacion.id_servicio = servicio_id;
+    if (nombre !== undefined) datosActualizacion.nombre_plan = nombre;
+    if (duracion_meses !== undefined) datosActualizacion.duracion_meses = duracion_meses;
+    if (activo !== undefined) datosActualizacion.activo = activo;
+    if (descripcion !== undefined) datosActualizacion.descripcion = descripcion;
+    
+    // Si se proporciona precio, calcular costo y margen
+    if (precio !== undefined) {
+      const margen_ganancia = 30;
+      datosActualizacion.costo = Math.round(precio / (1 + margen_ganancia / 100));
+      datosActualizacion.margen_ganancia = margen_ganancia;
+    }
+
+    const plan = await ServicePlan.actualizar(id, datosActualizacion);
 
     if (!plan) {
       return res.status(404).json({ 
@@ -199,10 +300,22 @@ exports.actualizarPlan = async (req, res) => {
       });
     }
 
+    // Formatear respuesta para el frontend
+    const planFormateado = {
+      id: plan.id_plan,
+      servicio_id: plan.id_servicio,
+      nombre: plan.nombre_plan,
+      duracion_meses: plan.duracion_meses,
+      precio: precio || (plan.costo + (plan.costo * (plan.margen_ganancia / 100))),
+      slots_disponibles: slots_disponibles || 0,
+      activo: plan.activo,
+      created_at: plan.created_at
+    };
+
     res.json({
       success: true,
       message: 'Plan actualizado correctamente',
-      data: plan
+      data: planFormateado
     });
   } catch (error) {
     console.error('Error al actualizar plan:', error);

@@ -43,15 +43,29 @@ export default function AdminLoginPage() {
       const result = await adminAuth.login(email, password)
       
       if (result.success) {
-        console.log('[AdminLogin] Login exitoso')
+        console.log('[AdminLogin] Login exitoso, token:', result.token ? 'recibido' : 'no recibido')
+        
+        // Verificar que el token se guardó correctamente
+        const savedToken = localStorage.getItem('admin_token')
+        console.log('[AdminLogin] Token guardado en localStorage:', savedToken ? 'sí' : 'no')
+        
+        if (!savedToken) {
+          console.error('[AdminLogin] Token no se guardó correctamente')
+          toast.error('Error al guardar sesión. Intenta de nuevo.')
+          setLoading(false)
+          return
+        }
+        
         toast.success('¡Bienvenido al panel de administración!')
         
-        // Pequeño delay para asegurar que el token se guarde en localStorage
-        // antes de la redirección
-        await new Promise(resolve => setTimeout(resolve, 100))
+        // Delay de 300ms para asegurar que:
+        // 1. El token está completamente guardado en localStorage
+        // 2. Los toasts se muestren correctamente
+        await new Promise(resolve => setTimeout(resolve, 300))
         
         // Usar window.location para forzar una recarga completa
         // y asegurar que el nuevo token sea reconocido
+        console.log('[AdminLogin] Redirigiendo a /admin...')
         window.location.href = '/admin'
       } else {
         console.warn('[AdminLogin] Login fallido:', result.message)

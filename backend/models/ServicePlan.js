@@ -5,7 +5,8 @@ class ServicePlan {
   /**
    * Crear un nuevo plan de servicio
    */
-  static async crear(id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion) {
+  static async crear(datos) {
+    const { id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion } = datos;
     const query = `
       INSERT INTO service_plans 
       (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion)
@@ -40,6 +41,37 @@ class ServicePlan {
     `;
     const result = await pool.query(query, [id_plan]);
     return result.rows[0];
+  }
+
+  /**
+   * Obtener planes por servicio
+   */
+  static async obtenerPorServicio(id_servicio, soloActivos = true) {
+    let query = `
+      SELECT 
+        sp.*,
+        s.nombre as nombre_servicio,
+        s.descripcion as descripcion_servicio,
+        s.logo_url,
+        s.categoria,
+        COUNT(ic.id_cuenta) FILTER (WHERE ic.estado = 'disponible') as cuentas_disponibles
+      FROM service_plans sp
+      JOIN servicios s ON sp.id_servicio = s.id_servicio
+      LEFT JOIN inventario_cuentas ic ON sp.id_plan = ic.id_plan
+      WHERE sp.id_servicio = $1
+    `;
+    
+    if (soloActivos) {
+      query += ' AND sp.activo = true AND s.activo = true';
+    }
+    
+    query += `
+      GROUP BY sp.id_plan, s.id_servicio
+      ORDER BY sp.duracion_meses
+    `;
+    
+    const result = await pool.query(query, [id_servicio]);
+    return result.rows;
   }
 
   /**

@@ -74,19 +74,24 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check authentication only once
+    // Check authentication only once on mount
     const checkAuth = () => {
-      const isAuth = adminAuth.isAuthenticated()
-      console.log('[AdminLayout] Verificando autenticación:', isAuth)
+      console.log('[AdminLayout] Iniciando verificación de autenticación...')
+      const token = localStorage.getItem('admin_token')
+      console.log('[AdminLayout] Token encontrado:', token ? 'sí' : 'no')
+      
+      const isAuth = !!token
       
       if (!isAuth) {
         console.log('[AdminLayout] No autenticado, redirigiendo a login...')
-        // Usar window.location para evitar problemas con el router de Next.js
-        window.location.href = '/admin/login'
+        // Prevenir loops de redirección verificando la URL actual
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/admin/login')) {
+          window.location.href = '/admin/login'
+        }
         return false
       }
 
-      console.log('[AdminLayout] Usuario autenticado, cargando dashboard...')
+      console.log('[AdminLayout] Usuario autenticado correctamente')
       return true
     }
 
@@ -104,12 +109,12 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
             setApiVersion(data.version)
           }
         } catch (error) {
-          console.error('Error al obtener versión de API:', error)
+          console.error('[AdminLayout] Error al obtener versión de API:', error)
         }
       }
       fetchApiVersion()
     }
-  }, [router])
+  }, [])
 
   const handleLogout = () => {
     toast.success('Sesión cerrada correctamente')
