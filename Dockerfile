@@ -167,6 +167,7 @@ COPY --from=frontend-builder /app/frontend/public ./public
 # - Todas las rutas API (/app/api/*)
 # - Todas las páginas y componentes necesarios
 # - Las dependencias mínimas requeridas
+# - Un server.js optimizado que respeta HOSTNAME=0.0.0.0
 # No necesitamos copiar manualmente app/, components/, lib/, types/ ya que
 # están incluidos en el bundle standalone optimizado
 
