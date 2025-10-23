@@ -995,6 +995,96 @@ exports.confirmarPago = async (req, res) => {
         }
       }
 
+      // FASE 4.3: Crear suscripciones automáticamente si el pago fue confirmado
+      // Solo si la orden tiene un clienteId (cliente registrado)
+      if (ordenActualizada.cliente_id) {
+        try {
+          console.log(`📝 Creando suscripciones para orden ${id}...`);
+          
+          // Obtener items con cuentas asignadas y plan info
+          const itemsConCuentaQuery = `
+            SELECT 
+              oi.*,
+              sp.id_servicio,
+              sp.duracion_meses,
+              sp.duracion_dias
+            FROM order_items oi
+            JOIN service_plans sp ON oi.id_plan = sp.id_plan
+            WHERE oi.id_orden = $1 
+            AND oi.id_cuenta_asignada IS NOT NULL
+          `;
+          
+          const itemsConCuentaResult = await client.query(itemsConCuentaQuery, [id]);
+          const itemsConCuenta = itemsConCuentaResult.rows;
+          
+          // Importar servicios necesarios
+          const renovacionService = require('../services/renovacionService');
+          
+          // Crear suscripción por cada item con cuenta asignada
+          for (const item of itemsConCuenta) {
+            // Verificar si ya existe una suscripción para este item
+            const suscripcionExistenteQuery = `
+              SELECT id FROM suscripciones
+              WHERE orden_id = $1 
+              AND cliente_id = $2 
+              AND plan_id = $3 
+              AND cuenta_id = $4
+            `;
+            
+            const suscripcionExiste = await client.query(suscripcionExistenteQuery, [
+              id,
+              ordenActualizada.cliente_id,
+              item.id_plan,
+              item.id_cuenta_asignada
+            ]);
+            
+            if (suscripcionExiste.rows.length === 0) {
+              // Calcular fecha de próxima renovación
+              const duracionDias = item.duracion_dias || (item.duracion_meses * 30);
+              const fechaProximaRenovacion = new Date();
+              fechaProximaRenovacion.setDate(fechaProximaRenovacion.getDate() + duracionDias);
+              
+              // Crear suscripción
+              const crearSuscripcionQuery = `
+                INSERT INTO suscripciones (
+                  cliente_id,
+                  servicio_id,
+                  plan_id,
+                  orden_id,
+                  cuenta_id,
+                  estado,
+                  fecha_proxima_renovacion,
+                  renovacion_automatica,
+                  created_at,
+                  updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+                RETURNING id
+              `;
+              
+              const nuevaSuscripcion = await client.query(crearSuscripcionQuery, [
+                ordenActualizada.cliente_id,
+                item.id_servicio,
+                item.id_plan,
+                id,
+                item.id_cuenta_asignada,
+                'activa',
+                fechaProximaRenovacion,
+                false // Por defecto, renovación manual
+              ]);
+              
+              console.log(`✅ Suscripción ${nuevaSuscripcion.rows[0].id} creada para orden ${id}`);
+            } else {
+              console.log(`⚠️  Suscripción ya existe para item ${item.id_order_item}`);
+            }
+          }
+          
+        } catch (errorSuscripcion) {
+          console.error('❌ Error al crear suscripciones:', errorSuscripcion);
+          // No fallar la transacción por errores en suscripciones
+          // Las suscripciones se pueden crear manualmente después
+        }
+      }
+
       await client.query('COMMIT');
 
       // Obtener orden actualizada con detalles

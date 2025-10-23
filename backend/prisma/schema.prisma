@@ -72,7 +72,8 @@ model Cliente {
   resetPasswordExpires    DateTime? @map("reset_password_expires")
   
   // Relations
-  ordenesCliente          Orden[]  @relation("ClienteOrdenes")
+  ordenesCliente          Orden[]         @relation("ClienteOrdenes")
+  suscripciones           Suscripcion[]
 
   @@index([email], name: "idx_clientes_email")
   @@index([activo], name: "idx_clientes_activo")
@@ -112,6 +113,7 @@ model Servicio {
   
   // Relations
   planes         ServicePlan[]
+  suscripciones  Suscripcion[]
 
   @@map("servicios")
 }
@@ -138,6 +140,7 @@ model ServicePlan {
   cuentas         InventarioCuenta[]
   shoppingCart    ShoppingCart[]
   orderItems      OrderItem[]
+  suscripciones   Suscripcion[]
 
   @@unique([idServicio, duracionMeses])
   @@index([idServicio], name: "idx_service_plans_servicio")
@@ -162,8 +165,9 @@ model InventarioCuenta {
   fechaUltimaAsignacion  DateTime?    @map("fecha_ultima_asignacion")
   
   // Relations
-  plan                   ServicePlan  @relation(fields: [idPlan], references: [idPlan])
+  plan                   ServicePlan     @relation(fields: [idPlan], references: [idPlan])
   orderItems             OrderItem[]
+  suscripciones          Suscripcion[]
 
   @@index([idPlan, estado], name: "idx_inventario_plan_estado")
   @@map("inventario_cuentas")
@@ -228,6 +232,7 @@ model Orden {
   cliente              Cliente?         @relation("ClienteOrdenes", fields: [clienteId], references: [id])
   items                OrderItem[]
   adminConfirmador     Admin?           @relation(fields: [paymentConfirmedBy], references: [id])
+  suscripciones        Suscripcion[]
 
   @@index([celularUsuario], name: "idx_ordenes_usuario")
   @@index([clienteId], name: "idx_ordenes_cliente")
@@ -354,4 +359,84 @@ model TicketMensaje {
 enum RemitenteTicket {
   usuario
   agente
+}
+
+// ============================================================================
+// SISTEMA DE SUSCRIPCIONES
+// ============================================================================
+
+model Suscripcion {
+  id                     Int                        @id @default(autoincrement())
+  clienteId              Int                        @map("cliente_id")
+  servicioId             Int                        @map("servicio_id")
+  planId                 Int                        @map("plan_id")
+  ordenId                Int?                       @map("orden_id")
+  cuentaId               Int?                       @map("cuenta_id")
+  
+  estado                 EstadoSuscripcion          @default(activa)
+  
+  fechaInicio            DateTime                   @default(now()) @map("fecha_inicio")
+  fechaProximaRenovacion DateTime                   @map("fecha_proxima_renovacion")
+  fechaCancelacion       DateTime?                  @map("fecha_cancelacion")
+  fechaUltimaRenovacion  DateTime?                  @map("fecha_ultima_renovacion")
+  
+  renovacionAutomatica   Boolean                    @default(false) @map("renovacion_automatica")
+  metodoPago             String?                    @db.VarChar(50)
+  
+  notasAdmin             String?                    @map("notas_admin") @db.Text
+  motivoCancelacion      String?                    @map("motivo_cancelacion") @db.Text
+  
+  createdAt              DateTime                   @default(now()) @map("created_at")
+  updatedAt              DateTime                   @updatedAt @map("updated_at")
+  
+  // Relations
+  cliente                Cliente                    @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  servicio               Servicio                   @relation(fields: [servicioId], references: [idServicio])
+  plan                   ServicePlan                @relation(fields: [planId], references: [idPlan])
+  orden                  Orden?                     @relation(fields: [ordenId], references: [idOrden])
+  cuenta                 InventarioCuenta?          @relation(fields: [cuentaId], references: [idCuenta])
+  notificaciones         NotificacionVencimiento[]
+  
+  @@index([clienteId], name: "idx_suscripciones_cliente")
+  @@index([estado], name: "idx_suscripciones_estado")
+  @@index([fechaProximaRenovacion], name: "idx_suscripciones_proxima_renovacion")
+  @@index([servicioId], name: "idx_suscripciones_servicio")
+  @@map("suscripciones")
+}
+
+enum EstadoSuscripcion {
+  activa
+  pausada
+  cancelada
+  vencida
+}
+
+model NotificacionVencimiento {
+  id             Int           @id @default(autoincrement())
+  suscripcionId  Int           @map("suscripcion_id")
+  tipo           TipoNotificacion
+  enviada        Boolean       @default(false)
+  fechaEnvio     DateTime?     @map("fecha_envio")
+  canal          CanalNotificacion?
+  error          String?       @db.Text
+  createdAt      DateTime      @default(now()) @map("created_at")
+  
+  // Relations
+  suscripcion    Suscripcion   @relation(fields: [suscripcionId], references: [id], onDelete: Cascade)
+  
+  @@index([suscripcionId], name: "idx_notificaciones_suscripcion")
+  @@index([tipo, enviada], name: "idx_notificaciones_tipo_enviada")
+  @@map("notificaciones_vencimiento")
+}
+
+enum TipoNotificacion {
+  siete_dias
+  tres_dias
+  un_dia
+  vencido
+}
+
+enum CanalNotificacion {
+  whatsapp
+  email
 }

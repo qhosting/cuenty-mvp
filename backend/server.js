@@ -51,6 +51,9 @@ app.use('/api/client', require('./routes/clientRoutes'));
 app.use('/api/servicios', require('./routes/servicioRoutes'));
 app.use('/api/planes', require('./routes/servicePlanRoutes'));
 
+// Suscripciones (Fase 4.3)
+app.use('/api/suscripciones', require('./routes/suscripcionRoutes'));
+
 // Carrito de compras
 app.use('/api/cart', require('./routes/cartRoutes'));
 
@@ -199,11 +202,17 @@ const PORT = process.env.PORT || 3000;
 // Inicializar administrador al arrancar
 const { initAdmin } = require('./scripts/init-admin');
 
+// Importar cron job de suscripciones
+const { inicializarCronJob } = require('./jobs/suscripcionesJob');
+
 // Función para iniciar el servidor
 async function startServer() {
   try {
     // Inicializar administrador
     await initAdmin();
+    
+    // Inicializar cron job de suscripciones
+    inicializarCronJob();
     
     // Iniciar servidor escuchando en 0.0.0.0 para acceso público
     // CRÍTICO: Sin '0.0.0.0', Express escucha solo en localhost
