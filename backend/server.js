@@ -57,6 +57,9 @@ app.use('/api/cart', require('./routes/cartRoutes'));
 // Órdenes (enhanced)
 app.use('/api/ordenes-new', require('./routes/ordenEnhancedRoutes'));
 
+// Suscripciones
+app.use('/api/suscripciones', require('./routes/suscripcionRoutes'));
+
 // Legacy routes (mantener compatibilidad)
 app.use('/api/productos', require('./routes/productoRoutes'));
 app.use('/api/ordenes', require('./routes/ordenRoutes'));
@@ -108,6 +111,7 @@ app.get('/api-info', (req, res) => {
       'planes': '/api/planes',
       'carrito': '/api/cart',
       'ordenes_new': '/api/ordenes-new',
+      'suscripciones': '/api/suscripciones',
       
       // Legacy (compatibilidad)
       'productos': '/api/productos',
@@ -199,11 +203,17 @@ const PORT = process.env.PORT || 3000;
 // Inicializar administrador al arrancar
 const { initAdmin } = require('./scripts/init-admin');
 
+// Inicializar cron jobs de suscripciones
+const { iniciarCronJobs } = require('./utils/cronJobs');
+
 // Función para iniciar el servidor
 async function startServer() {
   try {
     // Inicializar administrador
     await initAdmin();
+    
+    // Iniciar cron jobs de suscripciones
+    iniciarCronJobs();
     
     // Iniciar servidor escuchando en 0.0.0.0 para acceso público
     // CRÍTICO: Sin '0.0.0.0', Express escucha solo en localhost

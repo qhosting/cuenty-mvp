@@ -355,3 +355,67 @@ enum RemitenteTicket {
   usuario
   agente
 }
+
+// ============================================================================
+// SUSCRIPCIONES
+// ============================================================================
+
+model Suscripcion {
+  idSuscripcion           Int                         @id @default(autoincrement()) @map("id_suscripcion")
+  celularUsuario          String                      @map("celular_usuario") @db.VarChar(15)
+  idPlan                  Int                         @map("id_plan")
+  idOrden                 Int?                        @map("id_orden")
+  estado                  EstadoSuscripcion           @default(activa)
+  fechaInicio             DateTime                    @default(now()) @map("fecha_inicio")
+  fechaVencimiento        DateTime                    @map("fecha_vencimiento")
+  fechaCancelacion        DateTime?                   @map("fecha_cancelacion")
+  renovacionAutomatica    Boolean                     @default(false) @map("renovacion_automatica")
+  notasAdmin              String?                     @map("notas_admin") @db.Text
+  fechaCreacion           DateTime                    @default(now()) @map("fecha_creacion")
+  fechaActualizacion      DateTime                    @updatedAt @map("fecha_actualizacion")
+  
+  // Relations
+  notificaciones          NotificacionVencimiento[]
+
+  @@index([celularUsuario], name: "idx_suscripciones_usuario")
+  @@index([estado], name: "idx_suscripciones_estado")
+  @@index([fechaVencimiento], name: "idx_suscripciones_vencimiento")
+  @@map("suscripciones")
+}
+
+enum EstadoSuscripcion {
+  activa
+  vencida
+  cancelada
+  pausada
+}
+
+// ============================================================================
+// NOTIFICACIONES DE VENCIMIENTO
+// ============================================================================
+
+model NotificacionVencimiento {
+  idNotificacion        Int           @id @default(autoincrement()) @map("id_notificacion")
+  idSuscripcion         Int           @map("id_suscripcion")
+  tipoNotificacion      TipoNotificacion @map("tipo_notificacion")
+  enviada               Boolean       @default(false)
+  fechaEnvio            DateTime?     @map("fecha_envio")
+  metodoComunicacion    String        @default("whatsapp") @map("metodo_comunicacion") @db.VarChar(20)
+  mensaje               String?       @db.Text
+  fechaCreacion         DateTime      @default(now()) @map("fecha_creacion")
+  
+  // Relations
+  suscripcion           Suscripcion   @relation(fields: [idSuscripcion], references: [idSuscripcion], onDelete: Cascade)
+
+  @@index([idSuscripcion], name: "idx_notificaciones_suscripcion")
+  @@index([enviada], name: "idx_notificaciones_enviada")
+  @@map("notificaciones_vencimiento")
+}
+
+enum TipoNotificacion {
+  previo_7_dias
+  previo_3_dias
+  previo_1_dia
+  vencimiento
+  post_vencimiento
+}

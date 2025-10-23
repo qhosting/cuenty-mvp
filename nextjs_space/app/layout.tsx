@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { WhatsAppButton } from '@/components/whatsapp-button'
+import { ChatwootWidget } from '@/components/Chatwoot'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -34,6 +35,16 @@ export default function RootLayout({
         <SessionProvider>
           {children}
           <WhatsAppButton />
+          <ChatwootWidget 
+            websiteToken={process.env.NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN || 'your-website-token'}
+            baseUrl={process.env.NEXT_PUBLIC_CHATWOOT_BASE_URL || 'https://app.chatwoot.com'}
+            settings={{
+              hideMessageBubble: false,
+              position: 'right',
+              locale: 'es',
+              type: 'standard'
+            }}
+          />
           <Toaster
             position="top-right"
             toastOptions={{
