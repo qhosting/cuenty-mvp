@@ -134,12 +134,12 @@ export default function AdminServicesPage() {
 
   return (
     <AdminLayout currentPath="/admin/services">
-      <div className="space-y-8">
+      <div className="space-y-6 w-full">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Gestión de Servicios</h1>
-            <p className="text-slate-400">
+            <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Gestión de Servicios</h1>
+            <p className="text-slate-400 text-sm lg:text-base">
               Administra los servicios de streaming disponibles
             </p>
           </div>
@@ -150,7 +150,7 @@ export default function AdminServicesPage() {
               setEditingService(null)
               setShowModal(true)
             }}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center space-x-2"
+            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-5 py-2.5 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-blue-500/25 w-full sm:w-auto"
           >
             <Plus className="w-5 h-5" />
             <span>Nuevo Servicio</span>
@@ -158,42 +158,42 @@ export default function AdminServicesPage() {
         </div>
 
         {/* Search */}
-        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700">
+        <div className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />
             <input
               type="text"
-              placeholder="Buscar servicios..."
+              placeholder="Buscar servicios por nombre o descripción..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+              className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
             />
           </div>
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5 lg:gap-6">
           {filteredServices.map((service, index) => (
             <motion.div
               key={service.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700 hover:bg-slate-800/70 transition-all duration-200 group"
+              transition={{ delay: index * 0.05 }}
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700 hover:bg-slate-800/70 hover:border-slate-600 transition-all duration-200 group hover:shadow-xl hover:shadow-blue-500/10"
             >
               {/* Service Header */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                    <Package className="w-6 h-6 text-white" />
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start space-x-3 flex-1 min-w-0">
+                  <div className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                    <Package className="w-6 h-6 lg:w-7 lg:h-7 text-white" />
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{service.nombre}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-base lg:text-lg font-semibold text-white mb-1.5 truncate">{service.nombre}</h3>
                     <div className="flex items-center space-x-2">
-                      <div className={`w-2 h-2 rounded-full ${
-                        service.activo ? 'bg-green-400' : 'bg-red-400'
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                        service.activo ? 'bg-green-400 animate-pulse' : 'bg-red-400'
                       }`} />
-                      <span className={`text-sm ${
+                      <span className={`text-xs lg:text-sm font-medium ${
                         service.activo ? 'text-green-400' : 'text-red-400'
                       }`}>
                         {service.activo ? 'Activo' : 'Inactivo'}
@@ -202,10 +202,10 @@ export default function AdminServicesPage() {
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-200 ml-2">
                   <button
                     onClick={() => handleToggleStatus(service)}
-                    className="p-2 text-slate-400 hover:text-yellow-400 transition-colors"
+                    className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-yellow-400/10 rounded-lg transition-all duration-200"
                     title={service.activo ? 'Desactivar' : 'Activar'}
                   >
                     {service.activo ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -215,14 +215,14 @@ export default function AdminServicesPage() {
                       setEditingService(service)
                       setShowModal(true)
                     }}
-                    className="p-2 text-slate-400 hover:text-blue-400 transition-colors"
+                    className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-400/10 rounded-lg transition-all duration-200"
                     title="Editar"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(service.id)}
-                    className="p-2 text-slate-400 hover:text-red-400 transition-colors"
+                    className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all duration-200"
                     title="Eliminar"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -231,12 +231,12 @@ export default function AdminServicesPage() {
               </div>
 
               {/* Service Info */}
-              <div className="space-y-3">
-                <p className="text-slate-400 text-sm line-clamp-2">
+              <div className="space-y-3 pt-3 border-t border-slate-700">
+                <p className="text-slate-400 text-sm lg:text-base line-clamp-2">
                   {service.descripcion}
                 </p>
-                <div className="text-xs text-slate-500">
-                  Creado: {new Date(service.created_at).toLocaleDateString('es-ES')}
+                <div className="flex items-center justify-between text-xs text-slate-500">
+                  <span>Creado: {new Date(service.created_at).toLocaleDateString('es-ES')}</span>
                 </div>
               </div>
             </motion.div>

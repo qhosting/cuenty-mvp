@@ -162,49 +162,49 @@ export default function AdminDashboardPage() {
 
   return (
     <AdminLayout currentPath="/admin">
-      <div className="space-y-5">
+      <div className="space-y-6 w-full">
         {/* Page Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-white mb-1">Dashboard</h1>
-            <p className="text-slate-400 text-sm">
+            <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-1.5">Dashboard</h1>
+            <p className="text-slate-400 text-sm lg:text-base">
               Resumen general de la plataforma CUENTY
             </p>
           </div>
           <button
             onClick={fetchDashboardData}
             disabled={loading}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 text-white rounded-lg transition-colors duration-200"
+            className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-slate-600 disabled:cursor-not-allowed text-white rounded-xl transition-colors duration-200 font-medium shadow-lg hover:shadow-blue-500/25 w-full sm:w-auto"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Actualizar</span>
+            <span>Actualizar</span>
           </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-5">
           {statCards.map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-4 lg:p-5 border border-slate-700 hover:bg-slate-800/70 transition-all duration-200"
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:bg-slate-800/70 hover:border-slate-600 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/10"
             >
-              <div className="flex items-center justify-between mb-3">
-                <div className="p-2.5 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-lg">
-                  <stat.icon className="w-5 h-5 text-blue-400" />
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-xl">
+                  <stat.icon className="w-5 h-5 lg:w-6 lg:h-6 text-blue-400" />
                 </div>
-                <div className={`flex items-center text-xs lg:text-sm ${
+                <div className={`flex items-center text-xs lg:text-sm font-medium ${
                   stat.changeType === 'positive' ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  <ArrowUpRight className="w-3 h-3 lg:w-4 lg:h-4 mr-1" />
+                  <ArrowUpRight className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-1" />
                   {stat.change}
                 </div>
               </div>
               <div>
-                <h3 className="text-xl lg:text-2xl font-bold text-white mb-1">{stat.value}</h3>
-                <p className="text-slate-400 text-xs lg:text-sm">{stat.title}</p>
+                <h3 className="text-2xl lg:text-3xl font-bold text-white mb-1.5">{stat.value}</h3>
+                <p className="text-slate-400 text-sm lg:text-base">{stat.title}</p>
               </div>
             </motion.div>
           ))}
@@ -212,19 +212,21 @@ export default function AdminDashboardPage() {
 
         {/* Charts Row */}
         {mounted && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
             {/* Sales Chart */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-4 lg:p-5 border border-slate-700"
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg lg:text-xl font-semibold text-white">Ventas por Día</h3>
-                <TrendingUp className="w-5 h-5 text-blue-400" />
+                <div className="p-2 bg-blue-500/10 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-blue-400" />
+                </div>
               </div>
-              <div className="h-64 lg:h-80">
+              <div className="h-72 lg:h-80">
                 <SalesChart data={stats.salesData} />
               </div>
             </motion.div>
@@ -234,13 +236,15 @@ export default function AdminDashboardPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-4 lg:p-5 border border-slate-700"
+              className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-5">
                 <h3 className="text-lg lg:text-xl font-semibold text-white">Estado de Pedidos</h3>
-                <Calendar className="w-5 h-5 text-blue-400" />
+                <div className="p-2 bg-purple-500/10 rounded-lg">
+                  <Calendar className="w-5 h-5 text-purple-400" />
+                </div>
               </div>
-              <div className="h-64 lg:h-80">
+              <div className="h-72 lg:h-80">
                 <OrdersStatusChart data={stats.ordersByStatus} />
               </div>
             </motion.div>
@@ -252,42 +256,49 @@ export default function AdminDashboardPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-slate-800/50 backdrop-blur-xl rounded-xl p-4 lg:p-5 border border-slate-700"
+          className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
         >
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-5">
             <h3 className="text-lg lg:text-xl font-semibold text-white">Top 5 Servicios</h3>
-            <Star className="w-5 h-5 text-blue-400" />
+            <div className="p-2 bg-yellow-500/10 rounded-lg">
+              <Star className="w-5 h-5 text-yellow-400" />
+            </div>
           </div>
           {stats.topServices.length === 0 ? (
-            <div className="flex items-center justify-center py-8">
-              <p className="text-slate-400 text-sm">No hay servicios vendidos aún</p>
+            <div className="flex flex-col items-center justify-center py-12">
+              <Package className="w-16 h-16 text-slate-600 mb-3" />
+              <p className="text-slate-400 text-base">No hay servicios vendidos aún</p>
             </div>
           ) : (
-            <div className="overflow-x-auto -mx-4 lg:mx-0">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-5 px-5 lg:mx-0 lg:px-0">
+              <table className="w-full min-w-[500px]">
                 <thead>
                   <tr className="border-b border-slate-600">
-                    <th className="text-left py-2.5 px-4 text-slate-400 font-medium text-sm">Servicio</th>
-                    <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ventas</th>
-                    <th className="text-right py-2.5 px-4 text-slate-400 font-medium text-sm">Ingresos</th>
+                    <th className="text-left py-3 px-4 text-slate-400 font-semibold text-sm uppercase tracking-wider">Servicio</th>
+                    <th className="text-right py-3 px-4 text-slate-400 font-semibold text-sm uppercase tracking-wider">Ventas</th>
+                    <th className="text-right py-3 px-4 text-slate-400 font-semibold text-sm uppercase tracking-wider">Ingresos</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.topServices.map((service, index) => (
                     <tr key={service.name} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2 lg:space-x-3">
-                          <div className="w-7 h-7 lg:w-8 lg:h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-medium text-xs lg:text-sm">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 lg:w-9 lg:h-9 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-semibold text-sm lg:text-base shadow-lg">
                             {index + 1}
                           </div>
                           <span className="text-white font-medium text-sm lg:text-base">{service.name}</span>
                         </div>
                       </td>
-                      <td className="text-right py-3 px-4 text-slate-300 text-sm">
-                        {service.sales} ventas
+                      <td className="text-right py-4 px-4 text-slate-300 text-sm lg:text-base">
+                        <span className="inline-flex items-center justify-center px-3 py-1 bg-blue-500/10 text-blue-400 rounded-lg font-medium">
+                          {service.sales} ventas
+                        </span>
                       </td>
-                      <td className="text-right py-3 px-4 text-green-400 font-medium text-sm">
-                        ${service.revenue.toLocaleString()}
+                      <td className="text-right py-4 px-4">
+                        <span className="inline-flex items-center justify-center px-3 py-1 bg-green-500/10 text-green-400 rounded-lg font-semibold text-sm lg:text-base">
+                          ${service.revenue.toLocaleString()}
+                        </span>
                       </td>
                     </tr>
                   ))}

@@ -113,11 +113,11 @@ export default function AdminConfigPage() {
 
   return (
     <AdminLayout currentPath="/admin/config">
-      <div className="space-y-8">
+      <div className="space-y-6 w-full">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Configuración del Sistema</h1>
-          <p className="text-slate-400">
+          <h1 className="text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-2">Configuración del Sistema</h1>
+          <p className="text-slate-400 text-sm lg:text-base">
             Configura la integración con Evolution API para el envío automático de credenciales
           </p>
         </div>
@@ -126,16 +126,16 @@ export default function AdminConfigPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+          className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-xl">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start sm:items-center space-x-3">
+              <div className="p-3 bg-gradient-to-r from-blue-500/20 to-purple-600/20 rounded-xl flex-shrink-0">
                 <Settings className="w-6 h-6 text-blue-400" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-white">Estado de la API</h3>
-                <p className="text-slate-400 text-sm">
+                <h3 className="text-base lg:text-lg font-semibold text-white mb-1">Estado de la API</h3>
+                <p className="text-slate-400 text-xs lg:text-sm">
                   Estado actual de la conexión con Evolution API
                 </p>
               </div>
@@ -175,11 +175,11 @@ export default function AdminConfigPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+          className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
         >
           <div className="mb-6">
-            <h2 className="text-xl font-semibold text-white mb-2">Configuración de Evolution API</h2>
-            <p className="text-slate-400">
+            <h2 className="text-lg lg:text-xl font-semibold text-white mb-2">Configuración de Evolution API</h2>
+            <p className="text-slate-400 text-sm lg:text-base">
               Ingresa los datos de conexión para tu instancia de Evolution API
             </p>
           </div>
@@ -246,13 +246,13 @@ export default function AdminConfigPage() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex items-center space-x-4 pt-6">
+            <div className="flex flex-col sm:flex-row items-center gap-3 pt-6">
               <motion.button
                 type="submit"
                 disabled={loading || saving}
                 whileHover={{ scale: saving ? 1 : 1.02 }}
                 whileTap={{ scale: saving ? 1 : 0.98 }}
-                className="flex items-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center justify-center space-x-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-blue-500/25 w-full sm:w-auto"
               >
                 {saving ? (
                   <>
@@ -271,7 +271,7 @@ export default function AdminConfigPage() {
                 type="button"
                 onClick={fetchConfig}
                 disabled={loading || saving}
-                className="flex items-center space-x-2 bg-slate-700 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600 transition-colors disabled:opacity-50"
+                className="flex items-center justify-center space-x-2 bg-slate-700 text-slate-300 px-6 py-3 rounded-xl font-medium hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
               >
                 <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                 <span>Recargar</span>
@@ -281,19 +281,19 @@ export default function AdminConfigPage() {
         </motion.div>
 
         {/* Information Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
           {/* What is Evolution API */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-blue-500/20 rounded-lg">
+              <div className="p-2.5 bg-blue-500/20 rounded-xl">
                 <Smartphone className="w-5 h-5 text-blue-400" />
               </div>
-              <h3 className="text-lg font-semibold text-white">¿Qué es Evolution API?</h3>
+              <h3 className="text-base lg:text-lg font-semibold text-white">¿Qué es Evolution API?</h3>
             </div>
             <div className="space-y-3 text-slate-400 text-sm">
               <p>
@@ -312,13 +312,13 @@ export default function AdminConfigPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-6 border border-slate-700"
+            className="bg-slate-800/50 backdrop-blur-xl rounded-2xl p-5 lg:p-6 border border-slate-700 hover:border-slate-600 transition-all duration-200"
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="p-2 bg-purple-500/20 rounded-lg">
+              <div className="p-2.5 bg-purple-500/20 rounded-xl">
                 <Settings className="w-5 h-5 text-purple-400" />
               </div>
-              <h3 className="text-lg font-semibold text-white">Instrucciones de Configuración</h3>
+              <h3 className="text-base lg:text-lg font-semibold text-white">Instrucciones de Configuración</h3>
             </div>
             <div className="space-y-3 text-slate-400 text-sm">
               <div className="flex items-start space-x-2">
