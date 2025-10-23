@@ -150,25 +150,25 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
       <motion.div
         initial={false}
         animate={{
-          x: sidebarOpen ? 0 : -320
+          x: sidebarOpen ? 0 : -256
         }}
-        className="fixed inset-y-0 left-0 z-50 w-80 bg-slate-900/90 backdrop-blur-xl border-r border-slate-700 lg:translate-x-0 lg:static lg:inset-0"
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900/90 backdrop-blur-xl border-r border-slate-700 lg:translate-x-0 lg:static lg:inset-0"
       >
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex items-center justify-between px-6 py-6 border-b border-slate-700">
+          <div className="flex items-center justify-between px-4 py-4 border-b border-slate-700">
             <DynamicLogo linkTo="/" size="medium" showText={false} />
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden p-2 text-slate-400 hover:text-white"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <nav className="flex-1 px-3 py-4 space-y-1">
+            <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
               Panel de Administración
             </p>
             {navigation.map((item) => {
@@ -177,7 +177,7 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className={`flex items-center space-x-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
+                  className={`flex items-center space-x-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-gradient-to-r from-blue-500/20 to-purple-600/20 text-white border border-blue-500/30'
                       : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
@@ -192,17 +192,17 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
           </nav>
 
           {/* Bottom section */}
-          <div className="p-4 border-t border-slate-700 space-y-3">
+          <div className="p-3 border-t border-slate-700 space-y-2">
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-xl transition-all duration-200 w-full"
+              className="flex items-center space-x-3 px-3 py-2.5 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200 w-full"
             >
               <LogOut className="w-5 h-5" />
               <span>Cerrar Sesión</span>
             </button>
             
             {apiVersion && (
-              <div className="flex items-center justify-center px-4 py-2 text-xs text-slate-500 bg-slate-800/30 rounded-lg border border-slate-700/50">
+              <div className="flex items-center justify-center px-3 py-2 text-xs text-slate-500 bg-slate-800/30 rounded-lg border border-slate-700/50">
                 <span className="font-mono">API v{apiVersion}</span>
               </div>
             )}
@@ -211,10 +211,10 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
       </motion.div>
 
       {/* Main content */}
-      <div className="lg:pl-80">
+      <div className="lg:pl-64">
         {/* Top header */}
         <div className="sticky top-0 z-40 bg-slate-900/80 backdrop-blur-xl border-b border-slate-700">
-          <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center justify-between px-4 py-3 lg:px-6 lg:py-4">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 text-slate-400 hover:text-white"
@@ -222,11 +222,11 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
               <Menu className="w-6 h-6" />
             </button>
             
-            <h1 className="text-lg font-semibold text-white lg:ml-0 ml-2">
+            <h1 className="text-base lg:text-lg font-semibold text-white lg:ml-0 ml-2">
               Panel de Administración
             </h1>
             
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 lg:space-x-4">
               <button className="relative p-2 text-slate-400 hover:text-white">
                 <Bell className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
@@ -242,7 +242,7 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
         </div>
 
         {/* Page content */}
-        <main className="p-6">
+        <main className="p-4 lg:p-6 max-w-7xl mx-auto">
           {children}
         </main>
       </div>
