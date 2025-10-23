@@ -79,7 +79,7 @@ function listMigrations() {
     
     if (!fs.existsSync(migrationsDir)) {
       logger.warning('No se encontró el directorio prisma/migrations/');
-      return;
+      return { total: 0, list: [] };
     }
     
     const migrations = fs.readdirSync(migrationsDir)
@@ -92,13 +92,16 @@ function listMigrations() {
     if (migrations.length === 0) {
       logger.warning('No se encontraron migraciones en el directorio');
     } else {
-      logger.info(`📋 Migraciones encontradas en FRONTEND: ${migrations.length}`);
+      logger.info(`📋 Total de migraciones encontradas en FRONTEND: ${migrations.length}`);
       migrations.forEach((migration, index) => {
         logger.info(`   ${index + 1}. ${migration}`);
       });
     }
+    
+    return { total: migrations.length, list: migrations };
   } catch (error) {
     logger.warning('No se pudo listar las migraciones: ' + error.message);
+    return { total: 0, list: [] };
   }
 }
 
@@ -111,15 +114,17 @@ async function runMigration(attempt = 1) {
     logger.warning('Usando "prisma migrate deploy" - Modo SEGURO (no resetea datos)');
     
     // Listar migraciones disponibles
-    listMigrations();
+    const migrationInfo = listMigrations();
     
     logger.info('');
     logger.info('🚀 Aplicando migraciones pendientes...');
+    logger.info('   → Esto solo aplicará las migraciones que NO estén en la base de datos');
+    logger.info('   → Si todas ya están aplicadas, no hará cambios');
     
     // Ejecutar migrate deploy (NO usa migrate dev que puede resetear)
     const output = execSync('npx prisma migrate deploy', {
       encoding: 'utf8',
-      stdio: 'inherit',
+      stdio: 'pipe',
       cwd: path.join(__dirname, '..'),
       env: {
         ...process.env,
@@ -127,7 +132,18 @@ async function runMigration(attempt = 1) {
       }
     });
     
-    logger.success('Migraciones del FRONTEND aplicadas exitosamente');
+    // Mostrar output de Prisma
+    console.log(output);
+    
+    // Analizar si se aplicaron migraciones
+    if (output.includes('No pending migrations')) {
+      logger.success('✅ Base de datos del FRONTEND está al día - no hay migraciones pendientes');
+    } else if (output.includes('migration') || output.includes('applied')) {
+      logger.success('✅ Migraciones del FRONTEND aplicadas exitosamente');
+    } else {
+      logger.success('✅ Comando de migración completado');
+    }
+    
     return true;
     
   } catch (error) {
