@@ -30,8 +30,8 @@ export function Header() {
 
   const navigation = [
     { name: 'Catálogo', href: '/catalogo' },
-    { name: 'Cómo Funciona', href: '#como-funciona' },
-    { name: 'Soporte', href: '#faq' },
+    { name: 'Cómo Funciona', href: '/como-funciona' },
+    { name: 'Soporte', href: '/soporte' },
   ]
 
   const handleLogout = async () => {
