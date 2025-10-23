@@ -202,17 +202,20 @@ async function startServer() {
     // Inicializar administrador
     await initAdmin();
     
-    // Iniciar servidor
-    app.listen(PORT, () => {
+    // Iniciar servidor escuchando en 0.0.0.0 para acceso público
+    // CRÍTICO: Sin '0.0.0.0', Express escucha solo en localhost
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║              🚀 CUENTY API - Sistema Iniciado             ║
 ╚═══════════════════════════════════════════════════════════╝
   📦 Versión: ${packageJson.version}
   🌐 Puerto: ${PORT}
+  🌐 Hostname: 0.0.0.0 (accesible públicamente)
   📊 Entorno: ${process.env.NODE_ENV || 'development'}
   ⏰ Timestamp: ${new Date().toISOString()}
   🔗 API Version: http://localhost:${PORT}/api/version
+  🔀 Proxy Frontend: ${NEXTJS_URL}
 ╔═══════════════════════════════════════════════════════════╗
       `);
     });
