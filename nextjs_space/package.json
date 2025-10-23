@@ -1,6 +1,6 @@
 {
   "name": "nextjs_space",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "next.config.js",
   "directories": {
     "lib": "lib"
@@ -20,7 +20,11 @@
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "lint": "next lint",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "verify:api": "node scripts/verify-api.js",
+    "clean:cache": "rm -rf .next",
+    "clean:rebuild": "npm run clean:cache && npm run dev",
+    "kill:port": "lsof -ti:3001 | xargs kill -9 || echo 'No process found on port 3001'"
   },
   "keywords": [],
   "author": "",

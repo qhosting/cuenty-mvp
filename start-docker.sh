@@ -337,13 +337,17 @@ echo "   → El modo standalone incluye todas las rutas API automáticamente"
 
 # Iniciar frontend en background usando el servidor standalone
 # En modo standalone, Next.js genera un server.js optimizado
+# IMPORTANTE: HOSTNAME=0.0.0.0 hace que Next.js escuche en todas las interfaces
+# (no solo localhost), permitiendo acceso desde fuera del contenedor
 PORT=$FRONTEND_PORT \
+HOSTNAME=0.0.0.0 \
 NODE_ENV=production \
 node server.js > "$FRONTEND_LOG" 2>&1 &
 FRONTEND_PID=$!
 
 echo "✅ Frontend iniciado (PID: $FRONTEND_PID)"
 echo "📝 Logs: $FRONTEND_LOG"
+echo "🌐 Escuchando en: 0.0.0.0:$FRONTEND_PORT (accesible públicamente)"
 
 # Dar tiempo al frontend para iniciar
 echo "⏳ Esperando 10s para que Frontend inicie..."
