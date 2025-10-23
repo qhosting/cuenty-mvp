@@ -69,6 +69,9 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api/webhooks/n8n', require('./routes/webhookRoutes'));
 
+// Integración con Chatwoot
+app.use('/api/chatwoot', require('./routes/chatwootRoutes'));
+
 // Alias para compatibilidad con Next.js frontend  
 // Proxy /api/products to Next.js API
 app.use('/api/products', createProxyMiddleware({
