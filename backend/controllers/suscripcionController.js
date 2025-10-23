@@ -1,170 +1,91 @@
+const { PrismaClient } = require('@prisma/client');
+const notificationService = require('../services/notificationService');
+const renovacionService = require('../services/renovacionService');
+
+const prisma = new PrismaClient();
+
 /**
  * Controlador de Suscripciones
- * Maneja todas las operaciones CRUD de suscripciones
+ * Maneja todas las operaciones CRUD y lógica de negocio para suscripciones
  */
-
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-const renovacionService = require('../services/renovacionService');
-const notificationService = require('../services/notificationService');
 
 /**
- * Crear nueva suscripción (generalmente desde una orden completada)
+ * Obtener todas las suscripciones (con filtros opcionales)
  */
-exports.crearSuscripcion = async (req, res) => {
+exports.obtenerSuscripciones = async (req, res) => {
   try {
-    const { clienteId, servicioId, planId, ordenId, cuentaId, renovacionAutomatica, metodoPago } = req.body;
-
-    // Validar campos requeridos
-    if (!clienteId || !servicioId || !planId) {
-      return res.status(400).json({
-        success: false,
-        error: 'clienteId, servicioId y planId son requeridos'
-      });
-    }
-
-    // Obtener plan para calcular fecha de renovación
-    const plan = await prisma.servicePlan.findUnique({
-      where: { idPlan: planId }
-    });
-
-    if (!plan) {
-      return res.status(404).json({
-        success: false,
-        error: 'Plan no encontrado'
-      });
-    }
-
-    // Calcular fecha de próxima renovación
-    const fechaProximaRenovacion = renovacionService.calcularProximaRenovacion(plan);
-
-    // Crear suscripción
-    const suscripcion = await prisma.suscripcion.create({
-      data: {
-        clienteId,
-        servicioId,
-        planId,
-        ordenId,
-        cuentaId,
-        renovacionAutomatica: renovacionAutomatica || false,
-        metodoPago,
-        fechaProximaRenovacion,
-        estado: 'activa'
-      },
-      include: {
-        cliente: true,
-        servicio: true,
-        plan: true,
-        cuenta: true
-      }
-    });
-
-    console.log(`✅ Suscripción ${suscripcion.id} creada para cliente ${clienteId}`);
-
-    res.status(201).json({
-      success: true,
-      message: 'Suscripción creada correctamente',
-      data: suscripcion
-    });
-
-  } catch (error) {
-    console.error('❌ Error al crear suscripción:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al crear suscripción'
-    });
-  }
-};
-
-/**
- * Listar todas las suscripciones (Admin)
- */
-exports.listarSuscripciones = async (req, res) => {
-  try {
-    const { estado, clienteId, servicioId, limit = 100, offset = 0 } = req.query;
+    const { 
+      estado, 
+      celularUsuario, 
+      idPlan,
+      page = 1, 
+      limit = 10 
+    } = req.query;
 
     // Construir filtros
     const where = {};
     if (estado) where.estado = estado;
-    if (clienteId) where.clienteId = parseInt(clienteId);
-    if (servicioId) where.servicioId = parseInt(servicioId);
+    if (celularUsuario) where.celularUsuario = celularUsuario;
+    if (idPlan) where.idPlan = parseInt(idPlan);
 
-    // Obtener suscripciones
-    const suscripciones = await prisma.suscripcion.findMany({
-      where,
-      include: {
-        cliente: {
-          select: {
-            id: true,
-            nombre: true,
-            apellido: true,
-            email: true,
-            whatsapp: true
-          }
+    // Calcular paginación
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const take = parseInt(limit);
+
+    // Obtener suscripciones con paginación
+    const [suscripciones, total] = await Promise.all([
+      prisma.suscripcion.findMany({
+        where,
+        skip,
+        take,
+        orderBy: {
+          fechaCreacion: 'desc'
         },
-        servicio: {
-          select: {
-            idServicio: true,
-            nombre: true,
-            logoUrl: true
-          }
-        },
-        plan: {
-          select: {
-            idPlan: true,
-            nombrePlan: true,
-            duracionMeses: true,
-            duracionDias: true,
-            precioVenta: true
+        include: {
+          notificaciones: {
+            orderBy: {
+              fechaCreacion: 'desc'
+            },
+            take: 5
           }
         }
-      },
-      orderBy: {
-        fechaProximaRenovacion: 'asc'
-      },
-      take: parseInt(limit),
-      skip: parseInt(offset)
-    });
-
-    // Calcular días restantes para cada suscripción
-    const suscripcionesConDias = suscripciones.map(sub => ({
-      ...sub,
-      diasRestantes: renovacionService.calcularDiasRestantes(sub.fechaProximaRenovacion)
-    }));
+      }),
+      prisma.suscripcion.count({ where })
+    ]);
 
     res.json({
       success: true,
-      data: suscripcionesConDias,
-      total: suscripcionesConDias.length
+      data: suscripciones,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit))
+      }
     });
-
   } catch (error) {
-    console.error('❌ Error al listar suscripciones:', error);
+    console.error('Error obteniendo suscripciones:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener suscripciones'
+      message: 'Error al obtener suscripciones',
+      error: error.message
     });
   }
 };
 
 /**
- * Obtener detalle de una suscripción
+ * Obtener una suscripción por ID
  */
-exports.obtenerSuscripcion = async (req, res) => {
+exports.obtenerSuscripcionPorId = async (req, res) => {
   try {
     const { id } = req.params;
 
     const suscripcion = await prisma.suscripcion.findUnique({
-      where: { id: parseInt(id) },
+      where: { idSuscripcion: parseInt(id) },
       include: {
-        cliente: true,
-        servicio: true,
-        plan: true,
-        cuenta: true,
-        orden: true,
         notificaciones: {
           orderBy: {
-            createdAt: 'desc'
+            fechaCreacion: 'desc'
           }
         }
       }
@@ -173,433 +94,346 @@ exports.obtenerSuscripcion = async (req, res) => {
     if (!suscripcion) {
       return res.status(404).json({
         success: false,
-        error: 'Suscripción no encontrada'
+        message: 'Suscripción no encontrada'
       });
     }
 
-    // Calcular días restantes
-    const diasRestantes = renovacionService.calcularDiasRestantes(suscripcion.fechaProximaRenovacion);
-
     res.json({
       success: true,
-      data: {
-        ...suscripcion,
-        diasRestantes
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error al obtener suscripción:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al obtener suscripción'
-    });
-  }
-};
-
-/**
- * Pausar suscripción (Admin)
- */
-exports.pausarSuscripcion = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { notasAdmin } = req.body;
-
-    const suscripcion = await prisma.suscripcion.update({
-      where: { id: parseInt(id) },
-      data: {
-        estado: 'pausada',
-        notasAdmin: notasAdmin || 'Pausada por administrador'
-      },
-      include: {
-        cliente: true,
-        servicio: true,
-        plan: true
-      }
-    });
-
-    console.log(`⏸️ Suscripción ${id} pausada`);
-
-    res.json({
-      success: true,
-      message: 'Suscripción pausada correctamente',
       data: suscripcion
     });
-
   } catch (error) {
-    console.error('❌ Error al pausar suscripción:', error);
+    console.error('Error obteniendo suscripción:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al pausar suscripción'
+      message: 'Error al obtener suscripción',
+      error: error.message
     });
   }
 };
 
 /**
- * Reanudar suscripción (Admin)
+ * Crear una nueva suscripción
  */
-exports.reanudarSuscripcion = async (req, res) => {
+exports.crearSuscripcion = async (req, res) => {
   try {
-    const { id } = req.params;
+    const {
+      celularUsuario,
+      idPlan,
+      idOrden,
+      fechaInicio,
+      duracionMeses,
+      duracionDias,
+      renovacionAutomatica,
+      notasAdmin
+    } = req.body;
 
-    const suscripcion = await prisma.suscripcion.update({
-      where: { id: parseInt(id) },
+    // Validaciones
+    if (!celularUsuario || !idPlan) {
+      return res.status(400).json({
+        success: false,
+        message: 'celularUsuario y idPlan son requeridos'
+      });
+    }
+
+    // Verificar que el plan existe
+    const plan = await prisma.servicePlan.findUnique({
+      where: { idPlan: parseInt(idPlan) }
+    });
+
+    if (!plan) {
+      return res.status(404).json({
+        success: false,
+        message: 'Plan no encontrado'
+      });
+    }
+
+    // Calcular fecha de vencimiento
+    const inicio = fechaInicio ? new Date(fechaInicio) : new Date();
+    const fechaVencimiento = new Date(inicio);
+    
+    if (duracionDias) {
+      fechaVencimiento.setDate(fechaVencimiento.getDate() + parseInt(duracionDias));
+    } else if (duracionMeses) {
+      fechaVencimiento.setMonth(fechaVencimiento.getMonth() + parseInt(duracionMeses));
+    } else {
+      // Usar la duración del plan
+      if (plan.duracionDias) {
+        fechaVencimiento.setDate(fechaVencimiento.getDate() + plan.duracionDias);
+      } else {
+        fechaVencimiento.setMonth(fechaVencimiento.getMonth() + plan.duracionMeses);
+      }
+    }
+
+    // Crear la suscripción
+    const nuevaSuscripcion = await prisma.suscripcion.create({
       data: {
+        celularUsuario,
+        idPlan: parseInt(idPlan),
+        idOrden: idOrden ? parseInt(idOrden) : null,
+        fechaInicio: inicio,
+        fechaVencimiento,
+        renovacionAutomatica: renovacionAutomatica || false,
+        notasAdmin: notasAdmin || null,
         estado: 'activa'
       },
       include: {
-        cliente: true,
-        servicio: true,
-        plan: true
+        notificaciones: true
       }
     });
 
-    console.log(`▶️ Suscripción ${id} reanudada`);
+    // Crear notificaciones programadas
+    await notificationService.crearNotificacionesProgramadas(
+      nuevaSuscripcion.idSuscripcion,
+      fechaVencimiento,
+      celularUsuario
+    );
 
-    res.json({
+    res.status(201).json({
       success: true,
-      message: 'Suscripción reanudada correctamente',
-      data: suscripcion
+      message: 'Suscripción creada exitosamente',
+      data: nuevaSuscripcion
     });
-
   } catch (error) {
-    console.error('❌ Error al reanudar suscripción:', error);
+    console.error('Error creando suscripción:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al reanudar suscripción'
+      message: 'Error al crear suscripción',
+      error: error.message
     });
   }
 };
 
 /**
- * Cancelar suscripción
+ * Actualizar una suscripción
  */
-exports.cancelarSuscripcion = async (req, res) => {
+exports.actualizarSuscripcion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { motivoCancelacion } = req.body;
+    const {
+      estado,
+      fechaVencimiento,
+      renovacionAutomatica,
+      notasAdmin
+    } = req.body;
 
-    const suscripcion = await prisma.suscripcion.update({
-      where: { id: parseInt(id) },
-      data: {
-        estado: 'cancelada',
-        fechaCancelacion: new Date(),
-        motivoCancelacion
-      },
+    // Verificar que la suscripción existe
+    const suscripcionExistente = await prisma.suscripcion.findUnique({
+      where: { idSuscripcion: parseInt(id) }
+    });
+
+    if (!suscripcionExistente) {
+      return res.status(404).json({
+        success: false,
+        message: 'Suscripción no encontrada'
+      });
+    }
+
+    // Preparar datos de actualización
+    const dataActualizacion = {};
+    if (estado) dataActualizacion.estado = estado;
+    if (fechaVencimiento) dataActualizacion.fechaVencimiento = new Date(fechaVencimiento);
+    if (renovacionAutomatica !== undefined) dataActualizacion.renovacionAutomatica = renovacionAutomatica;
+    if (notasAdmin !== undefined) dataActualizacion.notasAdmin = notasAdmin;
+
+    // Si se cancela la suscripción, registrar la fecha
+    if (estado === 'cancelada') {
+      dataActualizacion.fechaCancelacion = new Date();
+    }
+
+    // Actualizar la suscripción
+    const suscripcionActualizada = await prisma.suscripcion.update({
+      where: { idSuscripcion: parseInt(id) },
+      data: dataActualizacion,
       include: {
-        cliente: true,
-        servicio: true,
-        plan: true
+        notificaciones: true
       }
     });
 
-    console.log(`❌ Suscripción ${id} cancelada`);
+    // Si se cambió la fecha de vencimiento, actualizar notificaciones
+    if (fechaVencimiento) {
+      await notificationService.eliminarNotificacionesSuscripcion(parseInt(id));
+      await notificationService.crearNotificacionesProgramadas(
+        parseInt(id),
+        new Date(fechaVencimiento),
+        suscripcionExistente.celularUsuario
+      );
+    }
 
     res.json({
       success: true,
-      message: 'Suscripción cancelada correctamente',
-      data: suscripcion
+      message: 'Suscripción actualizada exitosamente',
+      data: suscripcionActualizada
     });
-
   } catch (error) {
-    console.error('❌ Error al cancelar suscripción:', error);
+    console.error('Error actualizando suscripción:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al cancelar suscripción'
+      message: 'Error al actualizar suscripción',
+      error: error.message
     });
   }
 };
 
 /**
- * Renovar suscripción manualmente
+ * Eliminar una suscripción
+ */
+exports.eliminarSuscripcion = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar que la suscripción existe
+    const suscripcion = await prisma.suscripcion.findUnique({
+      where: { idSuscripcion: parseInt(id) }
+    });
+
+    if (!suscripcion) {
+      return res.status(404).json({
+        success: false,
+        message: 'Suscripción no encontrada'
+      });
+    }
+
+    // Eliminar la suscripción (las notificaciones se eliminan en cascada)
+    await prisma.suscripcion.delete({
+      where: { idSuscripcion: parseInt(id) }
+    });
+
+    res.json({
+      success: true,
+      message: 'Suscripción eliminada exitosamente'
+    });
+  } catch (error) {
+    console.error('Error eliminando suscripción:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar suscripción',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Renovar una suscripción manualmente
  */
 exports.renovarSuscripcion = async (req, res) => {
   try {
     const { id } = req.params;
-    const { ordenId } = req.body;
 
-    const suscripcion = await renovacionService.renovarSuscripcionManual(
-      parseInt(id),
-      ordenId ? parseInt(ordenId) : null
-    );
+    const resultado = await renovacionService.renovarSuscripcionManual(parseInt(id));
 
     res.json({
       success: true,
-      message: 'Suscripción renovada correctamente',
-      data: suscripcion
+      message: 'Suscripción renovada exitosamente',
+      data: resultado.suscripcion
     });
-
   } catch (error) {
-    console.error('❌ Error al renovar suscripción:', error);
+    console.error('Error renovando suscripción:', error);
     res.status(500).json({
       success: false,
-      error: error.message || 'Error al renovar suscripción'
+      message: error.message || 'Error al renovar suscripción',
+      error: error.message
     });
   }
 };
 
 /**
- * Verificar vencimientos y enviar notificaciones
+ * Obtener suscripciones de un usuario
  */
-exports.verificarVencimientos = async (req, res) => {
+exports.obtenerSuscripcionesUsuario = async (req, res) => {
   try {
-    console.log('🔍 Iniciando verificación de vencimientos...');
+    const { celular } = req.params;
 
-    const resultados = {
-      verificadas: 0,
-      notificaciones7dias: 0,
-      notificaciones3dias: 0,
-      notificaciones1dia: 0,
-      notificacionesVencidas: 0,
-      errores: []
-    };
-
-    // Verificar suscripciones vencidas
-    const resultadoVencidas = await renovacionService.verificarSuscripcionesVencidas();
-    console.log(`✅ Verificadas ${resultadoVencidas.total} suscripciones vencidas`);
-
-    // Obtener suscripciones que vencen en 7 días
-    const suscripciones7dias = await renovacionService.obtenerSuscripcionesProximasVencer(7);
-    for (const sub of suscripciones7dias) {
-      const diasRestantes = renovacionService.calcularDiasRestantes(sub.fechaProximaRenovacion);
-      if (diasRestantes === 7) {
-        try {
-          const yaEnviada = await notificationService.verificarNotificacionEnviada(sub.id, 'siete_dias');
-          if (!yaEnviada) {
-            await notificationService.enviarNotificacionVencimiento(sub.id, 'siete_dias');
-            resultados.notificaciones7dias++;
-          }
-        } catch (error) {
-          console.error(`Error al enviar notificación 7 días para suscripción ${sub.id}:`, error.message);
-          resultados.errores.push({ suscripcionId: sub.id, tipo: '7_dias', error: error.message });
-        }
-      }
-    }
-
-    // Obtener suscripciones que vencen en 3 días
-    const suscripciones3dias = await renovacionService.obtenerSuscripcionesProximasVencer(3);
-    for (const sub of suscripciones3dias) {
-      const diasRestantes = renovacionService.calcularDiasRestantes(sub.fechaProximaRenovacion);
-      if (diasRestantes === 3) {
-        try {
-          const yaEnviada = await notificationService.verificarNotificacionEnviada(sub.id, 'tres_dias');
-          if (!yaEnviada) {
-            await notificationService.enviarNotificacionVencimiento(sub.id, 'tres_dias');
-            resultados.notificaciones3dias++;
-          }
-        } catch (error) {
-          console.error(`Error al enviar notificación 3 días para suscripción ${sub.id}:`, error.message);
-          resultados.errores.push({ suscripcionId: sub.id, tipo: '3_dias', error: error.message });
-        }
-      }
-    }
-
-    // Obtener suscripciones que vencen en 1 día
-    const suscripciones1dia = await renovacionService.obtenerSuscripcionesProximasVencer(1);
-    for (const sub of suscripciones1dia) {
-      const diasRestantes = renovacionService.calcularDiasRestantes(sub.fechaProximaRenovacion);
-      if (diasRestantes === 1) {
-        try {
-          const yaEnviada = await notificationService.verificarNotificacionEnviada(sub.id, 'un_dia');
-          if (!yaEnviada) {
-            await notificationService.enviarNotificacionVencimiento(sub.id, 'un_dia');
-            resultados.notificaciones1dia++;
-          }
-        } catch (error) {
-          console.error(`Error al enviar notificación 1 día para suscripción ${sub.id}:`, error.message);
-          resultados.errores.push({ suscripcionId: sub.id, tipo: '1_dia', error: error.message });
-        }
-      }
-    }
-
-    // Enviar notificaciones de vencimiento para las que ya vencieron
-    const suscripcionesVencidas = await prisma.suscripcion.findMany({
-      where: {
-        estado: 'vencida'
+    const suscripciones = await prisma.suscripcion.findMany({
+      where: { celularUsuario: celular },
+      orderBy: {
+        fechaCreacion: 'desc'
       },
       include: {
-        cliente: true,
-        servicio: true,
-        plan: true
+        notificaciones: {
+          orderBy: {
+            fechaCreacion: 'desc'
+          },
+          take: 3
+        }
       }
     });
 
-    for (const sub of suscripcionesVencidas) {
-      try {
-        const yaEnviada = await notificationService.verificarNotificacionEnviada(sub.id, 'vencido');
-        if (!yaEnviada) {
-          await notificationService.enviarNotificacionVencimiento(sub.id, 'vencido');
-          resultados.notificacionesVencidas++;
-        }
-      } catch (error) {
-        console.error(`Error al enviar notificación vencida para suscripción ${sub.id}:`, error.message);
-        resultados.errores.push({ suscripcionId: sub.id, tipo: 'vencido', error: error.message });
-      }
-    }
+    res.json({
+      success: true,
+      data: suscripciones
+    });
+  } catch (error) {
+    console.error('Error obteniendo suscripciones del usuario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener suscripciones del usuario',
+      error: error.message
+    });
+  }
+};
 
-    resultados.verificadas = resultadoVencidas.total;
+/**
+ * Obtener estadísticas de suscripciones
+ */
+exports.obtenerEstadisticas = async (req, res) => {
+  try {
+    const estadisticas = await renovacionService.obtenerEstadisticasRenovacion();
 
-    console.log('✅ Verificación de vencimientos completada:', resultados);
+    res.json({
+      success: true,
+      data: estadisticas
+    });
+  } catch (error) {
+    console.error('Error obteniendo estadísticas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estadísticas',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Verificar suscripciones vencidas (endpoint manual para admin)
+ */
+exports.verificarVencimientos = async (req, res) => {
+  try {
+    const resultado = await renovacionService.verificarSuscripcionesVencidas();
 
     res.json({
       success: true,
       message: 'Verificación de vencimientos completada',
-      data: resultados
+      data: resultado
     });
-
   } catch (error) {
-    console.error('❌ Error al verificar vencimientos:', error);
+    console.error('Error verificando vencimientos:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al verificar vencimientos'
+      message: 'Error al verificar vencimientos',
+      error: error.message
     });
   }
 };
 
 /**
- * Listar suscripciones de un cliente específico
+ * Procesar renovaciones automáticas (endpoint manual para admin)
  */
-exports.listarMisSuscripciones = async (req, res) => {
+exports.procesarRenovacionesAutomaticas = async (req, res) => {
   try {
-    const clienteId = req.user.clienteId;
-
-    if (!clienteId) {
-      return res.status(401).json({
-        success: false,
-        error: 'Cliente no autenticado'
-      });
-    }
-
-    const suscripciones = await prisma.suscripcion.findMany({
-      where: {
-        clienteId
-      },
-      include: {
-        servicio: {
-          select: {
-            idServicio: true,
-            nombre: true,
-            logoUrl: true
-          }
-        },
-        plan: {
-          select: {
-            idPlan: true,
-            nombrePlan: true,
-            duracionMeses: true,
-            duracionDias: true,
-            precioVenta: true
-          }
-        },
-        cuenta: {
-          select: {
-            idCuenta: true,
-            perfil: true
-          }
-        }
-      },
-      orderBy: {
-        fechaProximaRenovacion: 'asc'
-      }
-    });
-
-    // Calcular días restantes para cada suscripción
-    const suscripcionesConDias = suscripciones.map(sub => ({
-      ...sub,
-      diasRestantes: renovacionService.calcularDiasRestantes(sub.fechaProximaRenovacion)
-    }));
+    const resultado = await renovacionService.procesarRenovacionesAutomaticas();
 
     res.json({
       success: true,
-      data: suscripcionesConDias
+      message: 'Procesamiento de renovaciones completado',
+      data: resultado
     });
-
   } catch (error) {
-    console.error('❌ Error al listar mis suscripciones:', error);
+    console.error('Error procesando renovaciones:', error);
     res.status(500).json({
       success: false,
-      error: 'Error al obtener suscripciones'
+      message: 'Error al procesar renovaciones',
+      error: error.message
     });
   }
 };
-
-/**
- * Actualizar configuración de una suscripción (cliente)
- */
-exports.actualizarConfiguracion = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const clienteId = req.user.clienteId;
-    const { renovacionAutomatica } = req.body;
-
-    // Verificar que la suscripción pertenezca al cliente
-    const suscripcionExistente = await prisma.suscripcion.findUnique({
-      where: { id: parseInt(id) }
-    });
-
-    if (!suscripcionExistente || suscripcionExistente.clienteId !== clienteId) {
-      return res.status(403).json({
-        success: false,
-        error: 'No tienes permiso para modificar esta suscripción'
-      });
-    }
-
-    // Actualizar configuración
-    const suscripcion = await prisma.suscripcion.update({
-      where: { id: parseInt(id) },
-      data: {
-        renovacionAutomatica: renovacionAutomatica !== undefined ? renovacionAutomatica : undefined
-      }
-    });
-
-    res.json({
-      success: true,
-      message: 'Configuración actualizada correctamente',
-      data: suscripcion
-    });
-
-  } catch (error) {
-    console.error('❌ Error al actualizar configuración:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al actualizar configuración'
-    });
-  }
-};
-
-/**
- * Obtener estadísticas de suscripciones (Admin)
- */
-exports.obtenerEstadisticas = async (req, res) => {
-  try {
-    // Total de suscripciones por estado
-    const activas = await prisma.suscripcion.count({ where: { estado: 'activa' } });
-    const pausadas = await prisma.suscripcion.count({ where: { estado: 'pausada' } });
-    const canceladas = await prisma.suscripcion.count({ where: { estado: 'cancelada' } });
-    const vencidas = await prisma.suscripcion.count({ where: { estado: 'vencida' } });
-
-    // Estadísticas de renovaciones
-    const estadisticasRenovaciones = await renovacionService.obtenerEstadisticasRenovaciones();
-
-    res.json({
-      success: true,
-      data: {
-        total: activas + pausadas + canceladas + vencidas,
-        activas,
-        pausadas,
-        canceladas,
-        vencidas,
-        renovaciones: estadisticasRenovaciones
-      }
-    });
-
-  } catch (error) {
-    console.error('❌ Error al obtener estadísticas:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error al obtener estadísticas'
-    });
-  }
-};
-
-module.exports = exports;

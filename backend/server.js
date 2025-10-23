@@ -51,14 +51,14 @@ app.use('/api/client', require('./routes/clientRoutes'));
 app.use('/api/servicios', require('./routes/servicioRoutes'));
 app.use('/api/planes', require('./routes/servicePlanRoutes'));
 
-// Suscripciones (Fase 4.3)
-app.use('/api/suscripciones', require('./routes/suscripcionRoutes'));
-
 // Carrito de compras
 app.use('/api/cart', require('./routes/cartRoutes'));
 
 // Órdenes (enhanced)
 app.use('/api/ordenes-new', require('./routes/ordenEnhancedRoutes'));
+
+// Suscripciones
+app.use('/api/suscripciones', require('./routes/suscripcionRoutes'));
 
 // Legacy routes (mantener compatibilidad)
 app.use('/api/productos', require('./routes/productoRoutes'));
@@ -111,6 +111,7 @@ app.get('/api-info', (req, res) => {
       'planes': '/api/planes',
       'carrito': '/api/cart',
       'ordenes_new': '/api/ordenes-new',
+      'suscripciones': '/api/suscripciones',
       
       // Legacy (compatibilidad)
       'productos': '/api/productos',
@@ -202,8 +203,8 @@ const PORT = process.env.PORT || 3000;
 // Inicializar administrador al arrancar
 const { initAdmin } = require('./scripts/init-admin');
 
-// Importar cron job de suscripciones
-const { inicializarCronJob } = require('./jobs/suscripcionesJob');
+// Inicializar cron jobs de suscripciones
+const { iniciarCronJobs } = require('./utils/cronJobs');
 
 // Función para iniciar el servidor
 async function startServer() {
@@ -211,8 +212,8 @@ async function startServer() {
     // Inicializar administrador
     await initAdmin();
     
-    // Inicializar cron job de suscripciones
-    inicializarCronJob();
+    // Iniciar cron jobs de suscripciones
+    iniciarCronJobs();
     
     // Iniciar servidor escuchando en 0.0.0.0 para acceso público
     // CRÍTICO: Sin '0.0.0.0', Express escucha solo en localhost

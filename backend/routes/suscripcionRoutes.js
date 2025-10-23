@@ -1,104 +1,82 @@
-/**
- * Rutas de Suscripciones
- * Define endpoints para administración y gestión de suscripciones
- */
-
 const express = require('express');
 const router = express.Router();
 const suscripcionController = require('../controllers/suscripcionController');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
-const { verifyClientToken } = require('../middleware/clientAuth');
-
-// ============================================================================
-// RUTAS DE ADMINISTRADOR
-// ============================================================================
 
 /**
- * GET /api/suscripciones/admin
- * Listar todas las suscripciones con filtros opcionales
+ * Rutas de Suscripciones
+ * Todas las rutas requieren autenticación
  */
-router.get('/admin', verifyToken, verifyAdmin, suscripcionController.listarSuscripciones);
+
+// ============================================================================
+// RUTAS PÚBLICAS (requieren autenticación de usuario)
+// ============================================================================
 
 /**
- * GET /api/suscripciones/admin/estadisticas
+ * GET /api/suscripciones/usuario/:celular
+ * Obtener suscripciones de un usuario específico
+ */
+router.get('/usuario/:celular', verifyToken, suscripcionController.obtenerSuscripcionesUsuario);
+
+// ============================================================================
+// RUTAS DE ADMINISTRACIÓN (requieren autenticación de admin)
+// ============================================================================
+
+/**
+ * GET /api/suscripciones
+ * Obtener todas las suscripciones (con filtros y paginación)
+ * Query params: estado, celularUsuario, idPlan, page, limit
+ */
+router.get('/', verifyAdmin, suscripcionController.obtenerSuscripciones);
+
+/**
+ * GET /api/suscripciones/estadisticas
  * Obtener estadísticas de suscripciones
  */
-router.get('/admin/estadisticas', verifyToken, verifyAdmin, suscripcionController.obtenerEstadisticas);
+router.get('/estadisticas', verifyAdmin, suscripcionController.obtenerEstadisticas);
 
 /**
- * GET /api/suscripciones/admin/:id
- * Obtener detalle de una suscripción específica
+ * GET /api/suscripciones/:id
+ * Obtener una suscripción por ID
  */
-router.get('/admin/:id', verifyToken, verifyAdmin, suscripcionController.obtenerSuscripcion);
+router.get('/:id', verifyAdmin, suscripcionController.obtenerSuscripcionPorId);
 
 /**
- * POST /api/suscripciones/admin
- * Crear nueva suscripción manualmente
+ * POST /api/suscripciones
+ * Crear una nueva suscripción
+ * Body: { celularUsuario, idPlan, idOrden?, fechaInicio?, duracionMeses?, duracionDias?, renovacionAutomatica?, notasAdmin? }
  */
-router.post('/admin', verifyToken, verifyAdmin, suscripcionController.crearSuscripcion);
+router.post('/', verifyAdmin, suscripcionController.crearSuscripcion);
 
 /**
- * POST /api/suscripciones/admin/:id/pausar
- * Pausar una suscripción activa
+ * PUT /api/suscripciones/:id
+ * Actualizar una suscripción
+ * Body: { estado?, fechaVencimiento?, renovacionAutomatica?, notasAdmin? }
  */
-router.post('/admin/:id/pausar', verifyToken, verifyAdmin, suscripcionController.pausarSuscripcion);
+router.put('/:id', verifyAdmin, suscripcionController.actualizarSuscripcion);
 
 /**
- * POST /api/suscripciones/admin/:id/reanudar
- * Reanudar una suscripción pausada
+ * DELETE /api/suscripciones/:id
+ * Eliminar una suscripción
  */
-router.post('/admin/:id/reanudar', verifyToken, verifyAdmin, suscripcionController.reanudarSuscripcion);
+router.delete('/:id', verifyAdmin, suscripcionController.eliminarSuscripcion);
 
 /**
- * POST /api/suscripciones/admin/:id/cancelar
- * Cancelar una suscripción
- */
-router.post('/admin/:id/cancelar', verifyToken, verifyAdmin, suscripcionController.cancelarSuscripcion);
-
-/**
- * POST /api/suscripciones/admin/:id/renovar
+ * POST /api/suscripciones/:id/renovar
  * Renovar una suscripción manualmente
  */
-router.post('/admin/:id/renovar', verifyToken, verifyAdmin, suscripcionController.renovarSuscripcion);
+router.post('/:id/renovar', verifyAdmin, suscripcionController.renovarSuscripcion);
 
 /**
- * POST /api/suscripciones/admin/verificar-vencimientos
- * Ejecutar verificación de vencimientos manualmente
+ * POST /api/suscripciones/verificar-vencimientos
+ * Verificar y actualizar suscripciones vencidas (proceso manual)
  */
-router.post('/admin/verificar-vencimientos', verifyToken, verifyAdmin, suscripcionController.verificarVencimientos);
-
-// ============================================================================
-// RUTAS DE CLIENTE
-// ============================================================================
+router.post('/verificar-vencimientos', verifyAdmin, suscripcionController.verificarVencimientos);
 
 /**
- * GET /api/suscripciones/client
- * Listar suscripciones del cliente autenticado
+ * POST /api/suscripciones/procesar-renovaciones
+ * Procesar renovaciones automáticas (proceso manual)
  */
-router.get('/client', verifyClientToken, suscripcionController.listarMisSuscripciones);
-
-/**
- * GET /api/suscripciones/client/:id
- * Obtener detalle de una suscripción del cliente
- */
-router.get('/client/:id', verifyClientToken, suscripcionController.obtenerSuscripcion);
-
-/**
- * POST /api/suscripciones/client/:id/renovar
- * Solicitar renovación de una suscripción
- */
-router.post('/client/:id/renovar', verifyClientToken, suscripcionController.renovarSuscripcion);
-
-/**
- * PUT /api/suscripciones/client/:id/config
- * Actualizar configuración de una suscripción (ej: renovación automática)
- */
-router.put('/client/:id/config', verifyClientToken, suscripcionController.actualizarConfiguracion);
-
-/**
- * POST /api/suscripciones/client/:id/cancelar
- * Cancelar una suscripción del cliente
- */
-router.post('/client/:id/cancelar', verifyClientToken, suscripcionController.cancelarSuscripcion);
+router.post('/procesar-renovaciones', verifyAdmin, suscripcionController.procesarRenovacionesAutomaticas);
 
 module.exports = router;

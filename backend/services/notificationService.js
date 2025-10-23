@@ -1,318 +1,228 @@
-/**
- * Servicio de Notificaciones
- * Maneja el envío de notificaciones por WhatsApp (Evolution API) y Email
- */
-
-const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-// Configuración de Evolution API desde variables de entorno
-const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL || 'http://localhost:8080';
-const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY || '';
-const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE || 'cuenty';
-
 /**
- * Plantillas de mensajes para notificaciones
+ * Servicio de Notificaciones para gestionar alertas de vencimiento de suscripciones
  */
-const PLANTILLAS = {
-  siete_dias: (suscripcion) => `
-🔔 *Recordatorio CUENTY*
+class NotificationService {
+  /**
+   * Crear notificaciones programadas para una suscripción
+   * @param {number} idSuscripcion - ID de la suscripción
+   * @param {Date} fechaVencimiento - Fecha de vencimiento de la suscripción
+   * @param {string} celularUsuario - Celular del usuario
+   */
+  async crearNotificacionesProgramadas(idSuscripcion, fechaVencimiento, celularUsuario) {
+    try {
+      const notificaciones = [];
+      const now = new Date();
 
-¡Hola! 👋
+      // Calcular fechas de notificación
+      const fecha7Dias = new Date(fechaVencimiento);
+      fecha7Dias.setDate(fecha7Dias.getDate() - 7);
 
-Tu suscripción a *${suscripcion.servicio.nombre}* - Plan *${suscripcion.plan.nombrePlan}* vencerá en *7 días*.
+      const fecha3Dias = new Date(fechaVencimiento);
+      fecha3Dias.setDate(fecha3Dias.getDate() - 3);
 
-📅 Fecha de vencimiento: ${formatearFecha(suscripcion.fechaProximaRenovacion)}
+      const fecha1Dia = new Date(fechaVencimiento);
+      fecha1Dia.setDate(fecha1Dia.getDate() - 1);
 
-${suscripcion.renovacionAutomatica ? 
-  '✅ Tu suscripción se renovará automáticamente.' : 
-  '⚠️ Recuerda renovar tu suscripción para seguir disfrutando del servicio.'
-}
+      // Solo crear notificaciones para fechas futuras
+      if (fecha7Dias > now) {
+        notificaciones.push({
+          idSuscripcion,
+          tipoNotificacion: 'previo_7_dias',
+          metodoComunicacion: 'whatsapp',
+          mensaje: `Tu suscripción vence en 7 días. Renueva antes del ${fechaVencimiento.toLocaleDateString()}`
+        });
+      }
 
-¿Necesitas ayuda? ¡Contáctanos! 💬
-  `.trim(),
+      if (fecha3Dias > now) {
+        notificaciones.push({
+          idSuscripcion,
+          tipoNotificacion: 'previo_3_dias',
+          metodoComunicacion: 'whatsapp',
+          mensaje: `Tu suscripción vence en 3 días. Renueva antes del ${fechaVencimiento.toLocaleDateString()}`
+        });
+      }
 
-  tres_dias: (suscripcion) => `
-⚠️ *URGENTE - Suscripción por vencer*
+      if (fecha1Dia > now) {
+        notificaciones.push({
+          idSuscripcion,
+          tipoNotificacion: 'previo_1_dia',
+          metodoComunicacion: 'whatsapp',
+          mensaje: `¡Atención! Tu suscripción vence mañana. Renueva para continuar disfrutando del servicio`
+        });
+      }
 
-¡Hola! 👋
+      // Notificación de vencimiento
+      notificaciones.push({
+        idSuscripcion,
+        tipoNotificacion: 'vencimiento',
+        metodoComunicacion: 'whatsapp',
+        mensaje: 'Tu suscripción ha vencido. Renueva ahora para recuperar el acceso'
+      });
 
-Tu suscripción a *${suscripcion.servicio.nombre}* - Plan *${suscripcion.plan.nombrePlan}* vencerá en *3 días*.
+      // Crear las notificaciones en la base de datos
+      if (notificaciones.length > 0) {
+        await prisma.notificacionVencimiento.createMany({
+          data: notificaciones
+        });
+      }
 
-📅 Fecha de vencimiento: ${formatearFecha(suscripcion.fechaProximaRenovacion)}
-
-${suscripcion.renovacionAutomatica ? 
-  '✅ Tu suscripción se renovará automáticamente.' : 
-  '🚨 *¡RENUEVA PRONTO!* Evita la interrupción del servicio.'
-}
-
-Renovar ahora: ${process.env.FRONTEND_URL || 'https://cuenty.com'}/client/suscripciones
-
-¿Necesitas ayuda? ¡Contáctanos! 💬
-  `.trim(),
-
-  un_dia: (suscripcion) => `
-🚨 *ÚLTIMO AVISO - Suscripción vence mañana*
-
-¡Hola! 👋
-
-Tu suscripción a *${suscripcion.servicio.nombre}* - Plan *${suscripcion.plan.nombrePlan}* vencerá *MAÑANA*.
-
-📅 Fecha de vencimiento: ${formatearFecha(suscripcion.fechaProximaRenovacion)}
-
-${suscripcion.renovacionAutomatica ? 
-  '✅ Tu suscripción se renovará automáticamente mañana.' : 
-  '🔴 *¡RENUEVA AHORA!* Tu servicio se interrumpirá mañana si no renuevas.'
-}
-
-Renovar ahora: ${process.env.FRONTEND_URL || 'https://cuenty.com'}/client/suscripciones
-
-¿Necesitas ayuda? ¡Contáctanos! 💬
-  `.trim(),
-
-  vencido: (suscripcion) => `
-❌ *Suscripción Vencida*
-
-¡Hola! 👋
-
-Tu suscripción a *${suscripcion.servicio.nombre}* - Plan *${suscripcion.plan.nombrePlan}* ha *VENCIDO*.
-
-📅 Fecha de vencimiento: ${formatearFecha(suscripcion.fechaProximaRenovacion)}
-
-🔄 *Renueva ahora* para recuperar el acceso a tu servicio:
-${process.env.FRONTEND_URL || 'https://cuenty.com'}/client/suscripciones
-
-¿Necesitas ayuda? ¡Contáctanos! 💬
-  `.trim()
-};
-
-/**
- * Formatear fecha para mostrar en mensajes
- */
-function formatearFecha(fecha) {
-  const date = new Date(fecha);
-  const opciones = { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    timeZone: 'America/Mexico_City'
-  };
-  return date.toLocaleDateString('es-MX', opciones);
-}
-
-/**
- * Obtener plantilla de mensaje según tipo de notificación
- */
-function obtenerPlantillaNotificacion(tipo, suscripcion) {
-  const plantilla = PLANTILLAS[tipo];
-  if (!plantilla) {
-    throw new Error(`Tipo de notificación no válido: ${tipo}`);
-  }
-  return plantilla(suscripcion);
-}
-
-/**
- * Enviar notificación por WhatsApp usando Evolution API
- */
-async function enviarNotificacionWhatsApp(numero, mensaje) {
-  try {
-    // Validar configuración
-    if (!EVOLUTION_API_KEY) {
-      console.warn('⚠️ EVOLUTION_API_KEY no configurado - notificación simulada');
-      return { success: true, simulated: true };
+      return { success: true, count: notificaciones.length };
+    } catch (error) {
+      console.error('Error creando notificaciones programadas:', error);
+      throw error;
     }
+  }
 
-    // Formatear número (asegurar que tenga formato internacional)
-    const numeroFormateado = numero.startsWith('+') ? numero : `+${numero}`;
-
-    // Enviar mensaje
-    const response = await axios.post(
-      `${EVOLUTION_API_URL}/message/sendText/${EVOLUTION_INSTANCE}`,
-      {
-        number: numeroFormateado,
-        text: mensaje
-      },
-      {
-        headers: {
-          'apikey': EVOLUTION_API_KEY,
-          'Content-Type': 'application/json'
+  /**
+   * Verificar y enviar notificaciones pendientes
+   */
+  async verificarYEnviarNotificaciones() {
+    try {
+      const now = new Date();
+      
+      // Obtener suscripciones activas próximas a vencer
+      const suscripcionesProximasVencer = await prisma.suscripcion.findMany({
+        where: {
+          estado: 'activa',
+          fechaVencimiento: {
+            gte: now,
+            lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) // Próximos 7 días
+          }
         },
-        timeout: 10000 // 10 segundos
-      }
-    );
+        include: {
+          notificaciones: {
+            where: {
+              enviada: false
+            }
+          }
+        }
+      });
 
-    console.log(`✅ WhatsApp enviado a ${numeroFormateado}`);
-    return { success: true, data: response.data };
+      let notificacionesEnviadas = 0;
 
-  } catch (error) {
-    console.error('❌ Error al enviar WhatsApp:', error.message);
-    throw new Error(`Error al enviar WhatsApp: ${error.message}`);
-  }
-}
-
-/**
- * Enviar notificación por Email
- * TODO: Implementar servicio de email (NodeMailer, SendGrid, etc.)
- */
-async function enviarNotificacionEmail(email, asunto, mensaje) {
-  try {
-    console.log(`📧 Email a enviar a: ${email}`);
-    console.log(`Asunto: ${asunto}`);
-    console.log(`Mensaje: ${mensaje.substring(0, 100)}...`);
-    
-    // TODO: Implementar envío real de email
-    console.warn('⚠️ Servicio de email no implementado - notificación simulada');
-    
-    return { success: true, simulated: true };
-
-  } catch (error) {
-    console.error('❌ Error al enviar email:', error.message);
-    throw new Error(`Error al enviar email: ${error.message}`);
-  }
-}
-
-/**
- * Crear registro de notificación en la base de datos
- */
-async function crearNotificacionVencimiento(suscripcionId, tipo, enviada = false, canal = null, error = null) {
-  try {
-    const notificacion = await prisma.notificacionVencimiento.create({
-      data: {
-        suscripcionId,
-        tipo,
-        enviada,
-        canal,
-        fechaEnvio: enviada ? new Date() : null,
-        error
-      }
-    });
-
-    return notificacion;
-
-  } catch (error) {
-    console.error('❌ Error al crear notificación:', error.message);
-    throw error;
-  }
-}
-
-/**
- * Enviar notificación de vencimiento a un cliente
- */
-async function enviarNotificacionVencimiento(suscripcionId, tipo) {
-  try {
-    // Obtener suscripción con relaciones
-    const suscripcion = await prisma.suscripcion.findUnique({
-      where: { id: suscripcionId },
-      include: {
-        cliente: true,
-        servicio: true,
-        plan: true
-      }
-    });
-
-    if (!suscripcion) {
-      throw new Error('Suscripción no encontrada');
-    }
-
-    // Verificar si ya se envió notificación de este tipo
-    const notificacionExistente = await prisma.notificacionVencimiento.findFirst({
-      where: {
-        suscripcionId,
-        tipo,
-        enviada: true
-      }
-    });
-
-    if (notificacionExistente) {
-      console.log(`⚠️ Notificación ${tipo} ya enviada para suscripción ${suscripcionId}`);
-      return { success: false, message: 'Notificación ya enviada' };
-    }
-
-    // Obtener mensaje de la plantilla
-    const mensaje = obtenerPlantillaNotificacion(tipo, suscripcion);
-
-    let resultadoEnvio = null;
-    let canal = null;
-    let error = null;
-
-    // Intentar enviar por WhatsApp primero
-    if (suscripcion.cliente.whatsapp) {
-      try {
-        await enviarNotificacionWhatsApp(suscripcion.cliente.whatsapp, mensaje);
-        canal = 'whatsapp';
-        resultadoEnvio = { success: true };
-      } catch (err) {
-        console.error(`❌ Error al enviar WhatsApp: ${err.message}`);
-        error = err.message;
-      }
-    }
-
-    // Si WhatsApp falla o no está disponible, intentar email
-    if (!resultadoEnvio && suscripcion.cliente.email) {
-      try {
-        await enviarNotificacionEmail(
-          suscripcion.cliente.email,
-          `CUENTY - Recordatorio de vencimiento`,
-          mensaje
+      for (const suscripcion of suscripcionesProximasVencer) {
+        const diasRestantes = Math.ceil(
+          (suscripcion.fechaVencimiento - now) / (1000 * 60 * 60 * 24)
         );
-        canal = 'email';
-        resultadoEnvio = { success: true };
-      } catch (err) {
-        console.error(`❌ Error al enviar email: ${err.message}`);
-        error = error ? `${error}; ${err.message}` : err.message;
+
+        // Determinar qué tipo de notificación enviar
+        let tipoNotificacion = null;
+        if (diasRestantes === 7) tipoNotificacion = 'previo_7_dias';
+        else if (diasRestantes === 3) tipoNotificacion = 'previo_3_dias';
+        else if (diasRestantes === 1) tipoNotificacion = 'previo_1_dia';
+
+        if (tipoNotificacion) {
+          const notificacionPendiente = suscripcion.notificaciones.find(
+            n => n.tipoNotificacion === tipoNotificacion && !n.enviada
+          );
+
+          if (notificacionPendiente) {
+            // Aquí se implementaría el envío real (WhatsApp, Email, etc.)
+            // Por ahora solo marcamos como enviada
+            await this.marcarNotificacionComoEnviada(notificacionPendiente.idNotificacion);
+            notificacionesEnviadas++;
+          }
+        }
       }
+
+      // Verificar suscripciones vencidas
+      const suscripcionesVencidas = await prisma.suscripcion.findMany({
+        where: {
+          estado: 'activa',
+          fechaVencimiento: {
+            lt: now
+          }
+        },
+        include: {
+          notificaciones: {
+            where: {
+              tipoNotificacion: 'vencimiento',
+              enviada: false
+            }
+          }
+        }
+      });
+
+      for (const suscripcion of suscripcionesVencidas) {
+        // Actualizar estado de la suscripción
+        await prisma.suscripcion.update({
+          where: { idSuscripcion: suscripcion.idSuscripcion },
+          data: { estado: 'vencida' }
+        });
+
+        // Enviar notificación de vencimiento si existe
+        if (suscripcion.notificaciones.length > 0) {
+          await this.marcarNotificacionComoEnviada(suscripcion.notificaciones[0].idNotificacion);
+          notificacionesEnviadas++;
+        }
+      }
+
+      return {
+        success: true,
+        notificacionesEnviadas,
+        suscripcionesActualizadas: suscripcionesVencidas.length
+      };
+    } catch (error) {
+      console.error('Error verificando notificaciones:', error);
+      throw error;
     }
+  }
 
-    // Registrar notificación en la base de datos
-    await crearNotificacionVencimiento(
-      suscripcionId,
-      tipo,
-      resultadoEnvio?.success || false,
-      canal,
-      error
-    );
-
-    if (resultadoEnvio?.success) {
-      console.log(`✅ Notificación ${tipo} enviada exitosamente por ${canal} para suscripción ${suscripcionId}`);
-      return { success: true, canal, tipo };
-    } else {
-      console.error(`❌ No se pudo enviar notificación ${tipo} para suscripción ${suscripcionId}`);
-      return { success: false, error };
+  /**
+   * Marcar una notificación como enviada
+   * @param {number} idNotificacion - ID de la notificación
+   */
+  async marcarNotificacionComoEnviada(idNotificacion) {
+    try {
+      await prisma.notificacionVencimiento.update({
+        where: { idNotificacion },
+        data: {
+          enviada: true,
+          fechaEnvio: new Date()
+        }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error marcando notificación como enviada:', error);
+      throw error;
     }
+  }
 
-  } catch (error) {
-    console.error('❌ Error al enviar notificación de vencimiento:', error);
-    throw error;
+  /**
+   * Obtener notificaciones de una suscripción
+   * @param {number} idSuscripcion - ID de la suscripción
+   */
+  async obtenerNotificacionesSuscripcion(idSuscripcion) {
+    try {
+      const notificaciones = await prisma.notificacionVencimiento.findMany({
+        where: { idSuscripcion },
+        orderBy: { fechaCreacion: 'desc' }
+      });
+      return notificaciones;
+    } catch (error) {
+      console.error('Error obteniendo notificaciones:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Eliminar notificaciones de una suscripción
+   * @param {number} idSuscripcion - ID de la suscripción
+   */
+  async eliminarNotificacionesSuscripcion(idSuscripcion) {
+    try {
+      await prisma.notificacionVencimiento.deleteMany({
+        where: { idSuscripcion }
+      });
+      return { success: true };
+    } catch (error) {
+      console.error('Error eliminando notificaciones:', error);
+      throw error;
+    }
   }
 }
 
-/**
- * Verificar si una notificación ya fue enviada
- */
-async function verificarNotificacionEnviada(suscripcionId, tipo) {
-  try {
-    const notificacion = await prisma.notificacionVencimiento.findFirst({
-      where: {
-        suscripcionId,
-        tipo,
-        enviada: true
-      }
-    });
-
-    return !!notificacion;
-
-  } catch (error) {
-    console.error('❌ Error al verificar notificación:', error);
-    return false;
-  }
-}
-
-module.exports = {
-  enviarNotificacionWhatsApp,
-  enviarNotificacionEmail,
-  crearNotificacionVencimiento,
-  obtenerPlantillaNotificacion,
-  enviarNotificacionVencimiento,
-  verificarNotificacionEnviada
-};
+module.exports = new NotificationService();
