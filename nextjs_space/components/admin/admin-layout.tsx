@@ -323,14 +323,10 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
         </motion.div>
 
         {/* Main content wrapper */}
-        <motion.div
-          initial={false}
-          animate={{
-            marginLeft: 0
-          }}
-          className="lg:ml-64 min-h-screen flex flex-col"
+        <div 
+          className="min-h-screen flex flex-col transition-all duration-300"
           style={{
-            marginLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 ? (sidebarCollapsed ? 80 : 256) : 0
+            marginLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 ? (sidebarCollapsed ? '80px' : '256px') : '0px'
           }}
         >
           {/* Top header */}
@@ -365,16 +361,16 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
           </div>
 
           {/* Page content */}
-          <main className="flex-1 p-4 lg:p-6 xl:p-8 max-w-[1600px] w-full mx-auto">
-            <div className="w-full">
+          <main className="flex-1 p-4 lg:p-6 xl:p-8 w-full">
+            <div className="w-full max-w-[1600px] mx-auto">
               {children}
             </div>
           </main>
 
           {/* Footer */}
           <footer className="border-t border-slate-700 bg-slate-900/50 backdrop-blur-xl mt-auto">
-            <div className="px-4 lg:px-6 xl:px-8 py-4 max-w-[1600px] w-full mx-auto">
-              <div className="flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 text-sm text-slate-400">
+            <div className="px-4 lg:px-6 xl:px-8 py-4 w-full">
+              <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0 text-sm text-slate-400">
                 <p>© 2024 CUENTY. Todos los derechos reservados.</p>
                 <p className="flex items-center space-x-2">
                   <span>Versión 1.0.0</span>
@@ -388,7 +384,7 @@ export function AdminLayout({ children, currentPath }: AdminLayoutProps) {
               </div>
             </div>
           </footer>
-        </motion.div>
+        </div>
       </div>
     </ErrorBoundary>
   )

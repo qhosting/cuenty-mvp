@@ -6,10 +6,17 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
   }
   
   body {
     @apply bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 text-white;
+    overflow-x: hidden;
+    width: 100%;
+  }
+
+  * {
+    box-sizing: border-box;
   }
 }
 
