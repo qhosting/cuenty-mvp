@@ -105,4 +105,26 @@ router.get('/config/evolution', verifyToken, verifyAdmin, adminController.obtene
 // Guardar/actualizar configuración de Evolution API
 router.post('/config/evolution', verifyToken, verifyAdmin, adminController.guardarConfigEvolution);
 
+// ============================================================================
+// CONFIGURACIÓN DE CHATWOOT
+// Requiere autenticación de administrador
+// ============================================================================
+
+// Obtener configuración actual de Chatwoot
+router.get('/config/chatwoot', verifyToken, verifyAdmin, adminController.obtenerConfigChatwoot);
+
+// Guardar/actualizar configuración de Chatwoot
+router.post('/config/chatwoot', verifyToken, verifyAdmin, adminController.guardarConfigChatwoot);
+
+// ============================================================================
+// CONFIGURACIÓN GENERAL (Evolution + Chatwoot)
+// Requiere autenticación de administrador
+// ============================================================================
+
+// Obtener todas las configuraciones
+router.get('/config', verifyToken, verifyAdmin, adminController.obtenerConfiguraciones);
+
+// Guardar todas las configuraciones
+router.post('/config', verifyToken, verifyAdmin, adminController.guardarConfiguraciones);
+
 module.exports = router;

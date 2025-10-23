@@ -1632,3 +1632,293 @@ exports.guardarConfigEvolution = async (req, res) => {
     });
   }
 };
+
+/**
+ * Obtener configuración de Chatwoot
+ */
+exports.obtenerConfigChatwoot = async (req, res) => {
+  try {
+    const query = `
+      SELECT * FROM chatwoot_config 
+      WHERE id = 1
+    `;
+    
+    const result = await pool.query(query);
+    
+    if (result.rows.length === 0) {
+      // Si no existe, crear una configuración por defecto
+      const defaultConfig = {
+        chatwoot_url: '',
+        access_token: '',
+        account_id: '',
+        activo: false
+      };
+      
+      return res.json({
+        success: true,
+        data: defaultConfig
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    // Si la tabla no existe, crearla
+    if (error.code === '42P01') {
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS chatwoot_config (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            chatwoot_url TEXT,
+            access_token TEXT,
+            account_id VARCHAR(50),
+            activo BOOLEAN DEFAULT false,
+            fecha_actualizacion TIMESTAMP DEFAULT NOW(),
+            CONSTRAINT single_row CHECK (id = 1)
+          )
+        `);
+        
+        return res.json({
+          success: true,
+          data: {
+            chatwoot_url: '',
+            access_token: '',
+            account_id: '',
+            activo: false
+          }
+        });
+      } catch (createError) {
+        console.error('Error al crear tabla chatwoot_config:', createError);
+        return res.status(500).json({ 
+          success: false,
+          error: 'Error al obtener configuración' 
+        });
+      }
+    }
+    
+    console.error('Error al obtener configuración Chatwoot:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al obtener configuración' 
+    });
+  }
+};
+
+/**
+ * Guardar/actualizar configuración de Chatwoot
+ */
+exports.guardarConfigChatwoot = async (req, res) => {
+  try {
+    const { chatwoot_url, access_token, account_id, activo } = req.body;
+    
+    // Crear tabla si no existe
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chatwoot_config (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        chatwoot_url TEXT,
+        access_token TEXT,
+        account_id VARCHAR(50),
+        activo BOOLEAN DEFAULT false,
+        fecha_actualizacion TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT single_row CHECK (id = 1)
+      )
+    `);
+    
+    const query = `
+      INSERT INTO chatwoot_config (id, chatwoot_url, access_token, account_id, activo, fecha_actualizacion)
+      VALUES (1, $1, $2, $3, $4, NOW())
+      ON CONFLICT (id) 
+      DO UPDATE SET 
+        chatwoot_url = $1,
+        access_token = $2,
+        account_id = $3,
+        activo = $4,
+        fecha_actualizacion = NOW()
+      RETURNING *
+    `;
+    
+    const result = await pool.query(query, [chatwoot_url, access_token, account_id, activo]);
+    
+    res.json({
+      success: true,
+      message: 'Configuración de Chatwoot guardada correctamente',
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error al guardar configuración Chatwoot:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al guardar configuración de Chatwoot' 
+    });
+  }
+};
+
+/**
+ * Obtener todas las configuraciones
+ */
+exports.obtenerConfiguraciones = async (req, res) => {
+  try {
+    // Obtener configuración de Evolution
+    let evolutionConfig = {
+      api_url: '',
+      api_key: '',
+      instance_name: '',
+      activo: false
+    };
+    
+    try {
+      const evolutionResult = await pool.query('SELECT * FROM evolution_config WHERE id = 1');
+      if (evolutionResult.rows.length > 0) {
+        evolutionConfig = evolutionResult.rows[0];
+      }
+    } catch (error) {
+      if (error.code === '42P01') {
+        // Tabla no existe, usar valores por defecto
+        console.log('Tabla evolution_config no existe, usando valores por defecto');
+      }
+    }
+    
+    // Obtener configuración de Chatwoot
+    let chatwootConfig = {
+      chatwoot_url: '',
+      access_token: '',
+      account_id: '',
+      activo: false
+    };
+    
+    try {
+      const chatwootResult = await pool.query('SELECT * FROM chatwoot_config WHERE id = 1');
+      if (chatwootResult.rows.length > 0) {
+        chatwootConfig = chatwootResult.rows[0];
+      }
+    } catch (error) {
+      if (error.code === '42P01') {
+        // Tabla no existe, usar valores por defecto
+        console.log('Tabla chatwoot_config no existe, usando valores por defecto');
+      }
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        evolution: evolutionConfig,
+        chatwoot: chatwootConfig
+      }
+    });
+  } catch (error) {
+    console.error('Error al obtener configuraciones:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al obtener configuraciones' 
+    });
+  }
+};
+
+/**
+ * Guardar todas las configuraciones
+ */
+exports.guardarConfiguraciones = async (req, res) => {
+  try {
+    const { evolution, chatwoot } = req.body;
+    
+    const results = {};
+    
+    // Guardar configuración de Evolution si se proporciona
+    if (evolution) {
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS evolution_config (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            api_url TEXT,
+            api_key TEXT,
+            instance_name VARCHAR(100),
+            activo BOOLEAN DEFAULT false,
+            fecha_actualizacion TIMESTAMP DEFAULT NOW(),
+            CONSTRAINT single_row CHECK (id = 1)
+          )
+        `);
+        
+        const evolutionQuery = `
+          INSERT INTO evolution_config (id, api_url, api_key, instance_name, activo, fecha_actualizacion)
+          VALUES (1, $1, $2, $3, $4, NOW())
+          ON CONFLICT (id) 
+          DO UPDATE SET 
+            api_url = $1,
+            api_key = $2,
+            instance_name = $3,
+            activo = $4,
+            fecha_actualizacion = NOW()
+          RETURNING *
+        `;
+        
+        const evolutionResult = await pool.query(evolutionQuery, [
+          evolution.api_url,
+          evolution.api_key,
+          evolution.instance_name,
+          evolution.activo
+        ]);
+        
+        results.evolution = evolutionResult.rows[0];
+      } catch (error) {
+        console.error('Error al guardar configuración Evolution:', error);
+        throw new Error('Error al guardar configuración de Evolution API');
+      }
+    }
+    
+    // Guardar configuración de Chatwoot si se proporciona
+    if (chatwoot) {
+      try {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS chatwoot_config (
+            id INTEGER PRIMARY KEY DEFAULT 1,
+            chatwoot_url TEXT,
+            access_token TEXT,
+            account_id VARCHAR(50),
+            activo BOOLEAN DEFAULT false,
+            fecha_actualizacion TIMESTAMP DEFAULT NOW(),
+            CONSTRAINT single_row CHECK (id = 1)
+          )
+        `);
+        
+        const chatwootQuery = `
+          INSERT INTO chatwoot_config (id, chatwoot_url, access_token, account_id, activo, fecha_actualizacion)
+          VALUES (1, $1, $2, $3, $4, NOW())
+          ON CONFLICT (id) 
+          DO UPDATE SET 
+            chatwoot_url = $1,
+            access_token = $2,
+            account_id = $3,
+            activo = $4,
+            fecha_actualizacion = NOW()
+          RETURNING *
+        `;
+        
+        const chatwootResult = await pool.query(chatwootQuery, [
+          chatwoot.chatwoot_url,
+          chatwoot.access_token,
+          chatwoot.account_id,
+          chatwoot.activo
+        ]);
+        
+        results.chatwoot = chatwootResult.rows[0];
+      } catch (error) {
+        console.error('Error al guardar configuración Chatwoot:', error);
+        throw new Error('Error al guardar configuración de Chatwoot');
+      }
+    }
+    
+    res.json({
+      success: true,
+      message: 'Configuraciones guardadas correctamente',
+      data: results
+    });
+  } catch (error) {
+    console.error('Error al guardar configuraciones:', error);
+    res.status(500).json({ 
+      success: false,
+      error: error.message || 'Error al guardar configuraciones' 
+    });
+  }
+};
