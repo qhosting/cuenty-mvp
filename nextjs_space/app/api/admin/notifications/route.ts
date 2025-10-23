@@ -39,29 +39,40 @@ export async function GET(request: NextRequest) {
 
     // 1. Obtener pedidos recientes (últimas 24 horas)
     try {
-      const recentOrders = await prisma.ordenes.findMany({
+      const recentOrders = await prisma.orden.findMany({
         where: {
-          created_at: {
+          fechaCreacion: {
             gte: new Date(now.getTime() - 24 * 60 * 60 * 1000)
           }
         },
         include: {
-          usuarios: true,
-          planes: true
+          usuario: true,
+          items: {
+            include: {
+              plan: {
+                include: {
+                  servicio: true
+                }
+              }
+            }
+          }
         },
         orderBy: {
-          created_at: 'desc'
+          fechaCreacion: 'desc'
         },
         take: 5
       })
 
       for (const order of recentOrders) {
+        const firstItem = order.items[0]
+        const serviceName = firstItem?.plan?.servicio?.nombre || 'servicio'
+        
         notifications.push({
-          id: `order-${order.id}`,
+          id: `order-${order.idOrden}`,
           type: 'new_order',
           title: 'Nuevo pedido',
-          message: `${order.usuarios?.nombre || 'Usuario'} realizó un pedido de ${order.planes?.nombre || 'plan'}`,
-          timestamp: order.created_at,
+          message: `${order.usuario?.nombre || 'Usuario'} realizó un pedido de ${serviceName}`,
+          timestamp: order.fechaCreacion,
           read: false,
           link: `/admin/orders`
         })
@@ -70,66 +81,76 @@ export async function GET(request: NextRequest) {
       console.error('[Admin Notifications API] Error obteniendo pedidos:', error)
     }
 
-    // 2. Obtener suscripciones próximas a vencer (7 días)
+    // 2. Obtener servicios próximos a vencer (7 días)
     try {
-      const expiringSubs = await prisma.suscripciones.findMany({
+      const expiringServices = await prisma.orderItem.findMany({
         where: {
-          estado: 'activa',
-          fecha_vencimiento: {
+          estado: 'entregada',
+          fechaVencimientoServicio: {
             gte: now,
             lte: sevenDaysFromNow
           }
         },
         include: {
-          usuarios: true,
-          planes: true
+          orden: {
+            include: {
+              usuario: true
+            }
+          },
+          plan: {
+            include: {
+              servicio: true
+            }
+          }
         },
         orderBy: {
-          fecha_vencimiento: 'asc'
+          fechaVencimientoServicio: 'asc'
         },
         take: 10
       })
 
-      for (const sub of expiringSubs) {
+      for (const item of expiringServices) {
+        if (!item.fechaVencimientoServicio) continue
+        
         const daysRemaining = Math.ceil(
-          (sub.fecha_vencimiento.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+          (item.fechaVencimientoServicio.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
         )
         
         notifications.push({
-          id: `sub-expiring-${sub.id}`,
+          id: `service-expiring-${item.idOrderItem}`,
           type: 'subscription_expiring',
-          title: 'Suscripción próxima a vencer',
-          message: `La suscripción de ${sub.usuarios?.nombre || 'usuario'} vence en ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}`,
-          timestamp: sub.updated_at || sub.created_at,
+          title: 'Servicio próximo a vencer',
+          message: `El servicio ${item.plan.servicio.nombre} de ${item.orden.usuario?.nombre || 'usuario'} vence en ${daysRemaining} día${daysRemaining !== 1 ? 's' : ''}`,
+          timestamp: item.fechaCreacion,
           read: false,
-          link: `/admin/accounts`
+          link: `/admin/orders`
         })
       }
     } catch (error) {
-      console.error('[Admin Notifications API] Error obteniendo suscripciones:', error)
+      console.error('[Admin Notifications API] Error obteniendo servicios próximos a vencer:', error)
     }
 
     // 3. Obtener nuevos usuarios (últimos 7 días)
     try {
-      const newUsers = await prisma.usuarios.findMany({
+      const newUsers = await prisma.usuario.findMany({
         where: {
-          created_at: {
+          fechaCreacion: {
             gte: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
           }
         },
         orderBy: {
-          created_at: 'desc'
+          fechaCreacion: 'desc'
         },
         take: 5
       })
 
       for (const user of newUsers) {
         notifications.push({
-          id: `user-${user.id}`,
+          id: `user-${user.celular}`,
           type: 'new_user',
           title: 'Nuevo usuario registrado',
-          message: `${user.nombre} se registró en la plataforma`,
-          timestamp: user.created_at,
+          message: `${user.nombre || 'Usuario'} se registró en la plataforma`,
+          timestamp: user.fechaCreacion,
           read: false,
           link: `/admin/accounts`
         })
