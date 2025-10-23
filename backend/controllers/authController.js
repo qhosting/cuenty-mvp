@@ -89,7 +89,7 @@ exports.registrarAdmin = async (req, res) => {
     }
 
     // Verificar si ya existe un admin con ese username usando Prisma
-    const adminExistente = await prisma.admin.findUnique({
+    const adminExistente = await prisma.admins.findUnique({
       where: { username: username.toLowerCase().trim() }
     });
 
@@ -102,7 +102,7 @@ exports.registrarAdmin = async (req, res) => {
 
     // Verificar si ya existe un admin con ese email (si se proporciona)
     if (email) {
-      const adminConEmail = await prisma.admin.findFirst({
+      const adminConEmail = await prisma.admins.findFirst({
         where: { 
           email: email.toLowerCase().trim(),
           NOT: { email: null }
@@ -121,7 +121,7 @@ exports.registrarAdmin = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Crear admin usando Prisma
-    const nuevoAdmin = await prisma.admin.create({
+    const nuevoAdmin = await prisma.admins.create({
       data: {
         username: username.toLowerCase().trim(),
         password: hashedPassword,
@@ -131,7 +131,7 @@ exports.registrarAdmin = async (req, res) => {
         id: true,
         username: true,
         email: true,
-        fechaCreacion: true
+        fecha_creacion: true
       }
     });
 
@@ -191,13 +191,13 @@ exports.loginAdmin = async (req, res) => {
     let admin = null;
     
     // Intentar buscar por username primero
-    admin = await prisma.admin.findUnique({
+    admin = await prisma.admins.findUnique({
       where: { username: loginIdentifier.toLowerCase().trim() }
     });
 
     // Si no se encuentra por username, intentar por email
     if (!admin) {
-      admin = await prisma.admin.findFirst({
+      admin = await prisma.admins.findFirst({
         where: { 
           email: loginIdentifier.toLowerCase().trim()
         }
@@ -266,13 +266,13 @@ exports.loginAdmin = async (req, res) => {
 exports.obtenerPerfil = async (req, res) => {
   try {
     // Buscar admin usando Prisma
-    const admin = await prisma.admin.findUnique({
+    const admin = await prisma.admins.findUnique({
       where: { id: req.user.id },
       select: {
         id: true,
         username: true,
         email: true,
-        fechaCreacion: true
+        fecha_creacion: true
       }
     });
 

@@ -19,7 +19,7 @@ async function initAdmin() {
     console.log(`👤 Username: ${username}`);
 
     // Verificar si ya existe un admin con ese username
-    const adminExistente = await prisma.admin.findUnique({
+    const adminExistente = await prisma.admins.findUnique({
       where: { username }
     });
 
@@ -36,7 +36,7 @@ async function initAdmin() {
         console.log('🔄 Actualizando contraseña del administrador...');
         const hashedPassword = await bcrypt.hash(adminPassword, 10);
         
-        await prisma.admin.update({
+        await prisma.admins.update({
           where: { username },
           data: { 
             password: hashedPassword,
@@ -64,7 +64,7 @@ async function initAdmin() {
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     // Crear admin
-    const nuevoAdmin = await prisma.admin.create({
+    const nuevoAdmin = await prisma.admins.create({
       data: {
         username: username.toLowerCase().trim(),
         password: hashedPassword,
@@ -74,7 +74,7 @@ async function initAdmin() {
         id: true,
         username: true,
         email: true,
-        fechaCreacion: true
+        fecha_creacion: true
       }
     });
 
@@ -82,7 +82,7 @@ async function initAdmin() {
     console.log(`   ID: ${nuevoAdmin.id}`);
     console.log(`   Username: ${nuevoAdmin.username}`);
     console.log(`   Email: ${nuevoAdmin.email}`);
-    console.log(`   Fecha: ${nuevoAdmin.fechaCreacion}`);
+    console.log(`   Fecha: ${nuevoAdmin.fecha_creacion}`);
     console.log('\n🔐 Credenciales de acceso:');
     console.log(`   Email: ${adminEmail}`);
     console.log(`   Password: ${adminPassword}`);
