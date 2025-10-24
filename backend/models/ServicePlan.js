@@ -6,19 +6,33 @@ class ServicePlan {
    * Crear un nuevo plan de servicio
    */
   static async crear(datos) {
-    const { id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion } = datos;
+    const { 
+      id_servicio, 
+      nombre_plan, 
+      tipo_plan = 'INDIVIDUAL',
+      duracion_meses = 1, 
+      duracion_dias = 30,
+      costo, 
+      margen_ganancia = 0,
+      precio_venta,
+      descripcion 
+    } = datos;
+    
     const query = `
       INSERT INTO service_plans 
-      (id_servicio, nombre_plan, duracion_meses, costo, margen_ganancia, descripcion)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      (id_servicio, nombre_plan, tipo_plan, duracion_meses, duracion_dias, costo, margen_ganancia, precio_venta, descripcion)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `;
     const result = await pool.query(query, [
       id_servicio,
       nombre_plan,
+      tipo_plan,
       duracion_meses,
+      duracion_dias,
       costo,
       margen_ganancia,
+      precio_venta,
       descripcion
     ]);
     return result.rows[0];
@@ -124,24 +138,41 @@ class ServicePlan {
    * Actualizar plan
    */
   static async actualizar(id_plan, datos) {
-    const { nombre_plan, duracion_meses, costo, margen_ganancia, descripcion, activo } = datos;
+    const { 
+      nombre_plan, 
+      tipo_plan,
+      duracion_meses, 
+      duracion_dias,
+      costo, 
+      margen_ganancia, 
+      precio_venta,
+      descripcion, 
+      activo 
+    } = datos;
+    
     const query = `
       UPDATE service_plans
       SET nombre_plan = COALESCE($2, nombre_plan),
-          duracion_meses = COALESCE($3, duracion_meses),
-          costo = COALESCE($4, costo),
-          margen_ganancia = COALESCE($5, margen_ganancia),
-          descripcion = COALESCE($6, descripcion),
-          activo = COALESCE($7, activo)
+          tipo_plan = COALESCE($3, tipo_plan),
+          duracion_meses = COALESCE($4, duracion_meses),
+          duracion_dias = COALESCE($5, duracion_dias),
+          costo = COALESCE($6, costo),
+          margen_ganancia = COALESCE($7, margen_ganancia),
+          precio_venta = COALESCE($8, precio_venta),
+          descripcion = COALESCE($9, descripcion),
+          activo = COALESCE($10, activo)
       WHERE id_plan = $1
       RETURNING *
     `;
     const result = await pool.query(query, [
       id_plan,
       nombre_plan,
+      tipo_plan,
       duracion_meses,
+      duracion_dias,
       costo,
       margen_ganancia,
+      precio_venta,
       descripcion,
       activo
     ]);

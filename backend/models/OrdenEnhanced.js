@@ -13,11 +13,12 @@ class OrdenEnhanced {
     try {
       await client.query('BEGIN');
 
-      // Obtener items del carrito
+      // Obtener items del carrito con precio y costo
       const cartQuery = `
         SELECT 
           sc.*,
           sp.precio_venta,
+          sp.costo,
           sp.duracion_dias
         FROM shopping_cart sc
         JOIN service_plans sp ON sc.id_plan = sp.id_plan
@@ -30,8 +31,20 @@ class OrdenEnhanced {
       }
 
       const cartItems = cartResult.rows;
+      
+      // Calcular monto total y utilidad total
       const montoTotal = cartItems.reduce(
         (sum, item) => sum + (parseFloat(item.precio_venta) * item.cantidad), 
+        0
+      );
+      
+      const utilidadTotal = cartItems.reduce(
+        (sum, item) => {
+          const precioVenta = parseFloat(item.precio_venta) || 0;
+          const costo = parseFloat(item.costo) || 0;
+          const utilidadUnitaria = precioVenta - costo;
+          return sum + (utilidadUnitaria * item.cantidad);
+        }, 
         0
       );
 
@@ -43,32 +56,39 @@ class OrdenEnhanced {
       // Crear orden con payment_status en 'pending' (FASE 4.1) y asociar cliente_id si está disponible (FASE 4.2)
       const ordenQuery = `
         INSERT INTO ordenes 
-        (celular_usuario, cliente_id, monto_total, metodo_entrega, estado, payment_status)
-        VALUES ($1, $2, $3, $4, 'pendiente_pago', 'pending')
+        (celular_usuario, cliente_id, monto_total, utilidad_total, metodo_entrega, estado, payment_status)
+        VALUES ($1, $2, $3, $4, $5, 'pendiente_pago', 'pending')
         RETURNING *
       `;
       const ordenResult = await client.query(ordenQuery, [
         celular_usuario,
         cliente_id, // Asociar con cliente si está registrado
         montoTotal,
+        utilidadTotal,
         metodo_entrega
       ]);
       const orden = ordenResult.rows[0];
 
-      // Crear items de la orden
+      // Crear items de la orden con cálculo de utilidades
       for (const item of cartItems) {
         const itemQuery = `
           INSERT INTO order_items 
-          (id_orden, id_plan, cantidad, precio_unitario, subtotal)
-          VALUES ($1, $2, $3, $4, $5)
+          (id_orden, id_plan, cantidad, precio_unitario, costo_unitario, subtotal, utilidad)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
         `;
-        const subtotal = parseFloat(item.precio_venta) * item.cantidad;
+        const precioUnitario = parseFloat(item.precio_venta) || 0;
+        const costoUnitario = parseFloat(item.costo) || 0;
+        const subtotal = precioUnitario * item.cantidad;
+        const utilidad = (precioUnitario - costoUnitario) * item.cantidad;
+        
         await client.query(itemQuery, [
           orden.id_orden,
           item.id_plan,
           item.cantidad,
-          item.precio_venta,
-          subtotal
+          precioUnitario,
+          costoUnitario,
+          subtotal,
+          utilidad
         ]);
       }
 

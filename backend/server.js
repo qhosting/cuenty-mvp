@@ -50,6 +50,10 @@ app.use('/api/client', require('./routes/clientRoutes'));
 // Servicios y Planes (nueva estructura)
 app.use('/api/servicios', require('./routes/servicioRoutes'));
 app.use('/api/planes', require('./routes/servicePlanRoutes'));
+app.use('/api/combos', require('./routes/comboRoutes'));
+
+// Configuración de pago
+app.use('/api/payment-config', require('./routes/paymentConfigRoutes'));
 
 // Carrito de compras
 app.use('/api/cart', require('./routes/cartRoutes'));

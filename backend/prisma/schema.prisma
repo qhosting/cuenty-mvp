@@ -75,6 +75,7 @@ model ordenes {
   id_orden             Int             @id @default(autoincrement())
   celular_usuario      String          @db.VarChar(15)
   monto_total          Decimal         @db.Decimal(10, 2)
+  utilidad_total       Decimal?        @db.Decimal(10, 2)
   estado               EstadoOrden     @default(pendiente_pago)
   metodo_pago          String          @default("transferencia_bancaria") @db.VarChar(50)
   metodo_entrega       String          @default("whatsapp") @db.VarChar(20)
@@ -108,7 +109,9 @@ model order_items {
   id_cuenta_asignada         Int?
   cantidad                   Int                 @default(1)
   precio_unitario            Decimal             @db.Decimal(10, 2)
+  costo_unitario             Decimal?            @db.Decimal(10, 2)
   subtotal                   Decimal             @db.Decimal(10, 2)
+  utilidad                   Decimal?            @db.Decimal(10, 2)
   estado                     EstadoOrderItem     @default(pendiente)
   fecha_vencimiento_servicio DateTime?
   credenciales_entregadas    Boolean             @default(false)
@@ -133,6 +136,33 @@ model payment_instructions {
   fecha_creacion            DateTime @default(now())
 }
 
+model combos {
+  id_combo       Int           @id @default(autoincrement())
+  nombre         String        @db.VarChar(150)
+  descripcion    String?
+  precio_total   Decimal       @db.Decimal(10, 2)
+  costo_total    Decimal       @db.Decimal(10, 2)
+  imagen_url     String?
+  activo         Boolean       @default(true)
+  fecha_creacion DateTime      @default(now())
+  combo_items    combo_items[]
+
+  @@index([activo], map: "idx_combos_activo")
+}
+
+model combo_items {
+  id_combo_item  Int           @id @default(autoincrement())
+  id_combo       Int
+  id_plan        Int
+  cantidad       Int           @default(1)
+  combo          combos        @relation(fields: [id_combo], references: [id_combo], onDelete: Cascade)
+  plan           service_plans @relation(fields: [id_plan], references: [id_plan])
+
+  @@unique([id_combo, id_plan])
+  @@index([id_combo], map: "idx_combo_items_combo")
+  @@index([id_plan], map: "idx_combo_items_plan")
+}
+
 model phone_verifications {
   id             Int      @id @default(autoincrement())
   celular        String   @db.VarChar(15)
@@ -150,8 +180,9 @@ model service_plans {
   id_plan            Int                  @id @default(autoincrement())
   id_servicio        Int
   nombre_plan        String               @db.VarChar(100)
-  duracion_meses     Int
-  duracion_dias      Int?
+  tipo_plan          TipoPlan             @default(INDIVIDUAL)
+  duracion_meses     Int                  @default(1)
+  duracion_dias      Int?                 @default(30)
   costo              Decimal              @db.Decimal(10, 2)
   margen_ganancia    Decimal              @default(0) @db.Decimal(10, 2)
   precio_venta       Decimal?             @db.Decimal(10, 2)
@@ -163,10 +194,12 @@ model service_plans {
   servicios          servicios            @relation(fields: [id_servicio], references: [id_servicio], onDelete: Cascade)
   shopping_cart      shopping_cart[]
   suscripciones      suscripciones[]
+  combo_items        combo_items[]
 
-  @@unique([id_servicio, duracion_meses])
+  @@unique([id_servicio, duracion_meses, tipo_plan])
   @@index([activo], map: "idx_service_plans_activo")
   @@index([id_servicio], map: "idx_service_plans_servicio")
+  @@index([tipo_plan], map: "idx_service_plans_tipo")
 }
 
 model servicios {
@@ -323,4 +356,9 @@ enum TipoNotificacion {
   tres_dias
   un_dia
   vencido
+}
+
+enum TipoPlan {
+  INDIVIDUAL
+  COMPLETA
 }
