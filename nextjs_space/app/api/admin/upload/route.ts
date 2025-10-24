@@ -1,12 +1,39 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadFile } from '@/lib/s3'
+import jwt from 'jsonwebtoken'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+
+// Verificar token de autenticación
+function verifyToken(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = jwt.verify(token, ADMIN_SECRET)
+    return decoded
+  } catch (error) {
+    return null
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
+    // Verificar autenticación
+    const user = verifyToken(request)
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
     const formData = await request.formData()
     const file = formData.get('file') as File
     
@@ -28,9 +55,14 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer())
     const cloudStoragePath = await uploadFile(buffer, file.name)
     
+    // Construir la URL completa del archivo en S3
+    const bucketName = process.env.AWS_BUCKET_NAME || ''
+    const region = process.env.AWS_REGION || 'us-east-1'
+    const fullUrl = `https://${bucketName}.s3.${region}.amazonaws.com/${cloudStoragePath}`
+    
     return NextResponse.json({ 
       success: true, 
-      cloudStoragePath,
+      cloudStoragePath: fullUrl, // Devolver URL completa
       fileName: file.name
     })
   } catch (error) {

@@ -16,6 +16,7 @@ import {
 import { AdminLayout } from '@/components/admin/admin-layout'
 import { adminApiService } from '@/lib/admin-auth'
 import { toast } from 'react-hot-toast'
+import { LogoUploader } from '@/components/admin/logo-uploader'
 
 interface Service {
   id: string
@@ -399,11 +400,11 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-slate-800 rounded-2xl p-6 border border-slate-700 max-w-lg w-full"
+        className="bg-slate-800 rounded-2xl p-6 border border-slate-700 max-w-2xl w-full my-8"
       >
         <h3 className="text-xl font-semibold text-white mb-6">
           {service ? 'Editar Servicio' : 'Nuevo Servicio'}
@@ -459,30 +460,16 @@ function ServiceModal({ service, onClose, onSuccess }: ServiceModalProps) {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
-              URL del Logo
-            </label>
-            <input
-              type="url"
-              value={formData.logo_url}
-              onChange={(e) => {
-                setFormData({ ...formData, logo_url: e.target.value })
-                if (errors.logo_url) {
-                  setErrors({ ...errors, logo_url: '' })
-                }
-              }}
-              className={`w-full px-3 py-2 bg-slate-900 border rounded-lg text-white placeholder-slate-400 focus:outline-none transition-colors ${
-                errors.logo_url 
-                  ? 'border-red-500 focus:border-red-500' 
-                  : 'border-slate-600 focus:border-blue-500'
-              }`}
-              placeholder="https://i.pinimg.com/736x/19/63/c8/1963c80b8983da5f3be640ca7473b098.jpg"
-            />
-            {errors.logo_url && (
-              <p className="mt-1 text-sm text-red-400">{errors.logo_url}</p>
-            )}
-          </div>
+          <LogoUploader
+            value={formData.logo_url}
+            onChange={(url) => {
+              setFormData({ ...formData, logo_url: url })
+              if (errors.logo_url) {
+                setErrors({ ...errors, logo_url: '' })
+              }
+            }}
+            error={errors.logo_url}
+          />
 
           <div className="flex items-center space-x-3">
             <input
