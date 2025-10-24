@@ -119,9 +119,9 @@ export const adminApiService = {
   getDashboard: async () => {
     try {
       const response = await adminApi.get('/api/admin/dashboard')
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener estadísticas'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener estadísticas'
       return { success: false, message }
     }
   },
@@ -130,9 +130,10 @@ export const adminApiService = {
   getServices: async () => {
     try {
       const response = await adminApi.get('/api/admin/services')
-      return { success: true, data: response.data }
+      // La ruta API ya devuelve {success: true, data: [...]}
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener servicios'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener servicios'
       return { success: false, message }
     }
   },
@@ -140,9 +141,9 @@ export const adminApiService = {
   createService: async (data: any) => {
     try {
       const response = await adminApi.post('/api/admin/services', data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al crear servicio'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al crear servicio'
       return { success: false, message }
     }
   },
@@ -150,19 +151,19 @@ export const adminApiService = {
   updateService: async (id: string, data: any) => {
     try {
       const response = await adminApi.put(`/api/admin/services/${id}`, data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al actualizar servicio'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar servicio'
       return { success: false, message }
     }
   },
 
   deleteService: async (id: string) => {
     try {
-      await adminApi.delete(`/api/admin/services/${id}`)
-      return { success: true }
+      const response = await adminApi.delete(`/api/admin/services/${id}`)
+      return response.data.success ? { success: true } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al eliminar servicio'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar servicio'
       return { success: false, message }
     }
   },
@@ -171,9 +172,9 @@ export const adminApiService = {
   getPlans: async () => {
     try {
       const response = await adminApi.get('/api/admin/plans')
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener planes'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener planes'
       return { success: false, message }
     }
   },
@@ -181,9 +182,9 @@ export const adminApiService = {
   createPlan: async (data: any) => {
     try {
       const response = await adminApi.post('/api/admin/plans', data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al crear plan'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al crear plan'
       return { success: false, message }
     }
   },
@@ -191,19 +192,19 @@ export const adminApiService = {
   updatePlan: async (id: string, data: any) => {
     try {
       const response = await adminApi.put(`/api/admin/plans/${id}`, data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al actualizar plan'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar plan'
       return { success: false, message }
     }
   },
 
   deletePlan: async (id: string) => {
     try {
-      await adminApi.delete(`/api/admin/plans/${id}`)
-      return { success: true }
+      const response = await adminApi.delete(`/api/admin/plans/${id}`)
+      return response.data.success ? { success: true } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al eliminar plan'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar plan'
       return { success: false, message }
     }
   },
@@ -212,9 +213,9 @@ export const adminApiService = {
   getOrders: async (filters?: any) => {
     try {
       const response = await adminApi.get('/api/admin/orders', { params: filters })
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener órdenes'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener órdenes'
       return { success: false, message }
     }
   },
@@ -222,9 +223,9 @@ export const adminApiService = {
   getOrder: async (id: string) => {
     try {
       const response = await adminApi.get(`/api/admin/orders/${id}`)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener orden'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener orden'
       return { success: false, message }
     }
   },
@@ -232,9 +233,9 @@ export const adminApiService = {
   updateOrderStatus: async (id: string, status: string) => {
     try {
       const response = await adminApi.put(`/api/admin/orders/${id}/status`, { status })
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al actualizar estado'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar estado'
       return { success: false, message }
     }
   },
@@ -242,9 +243,9 @@ export const adminApiService = {
   confirmPayment: async (id: string) => {
     try {
       const response = await adminApi.post(`/api/admin/orders/${id}/confirm-payment`)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al confirmar pago'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al confirmar pago'
       return { success: false, message }
     }
   },
@@ -253,9 +254,9 @@ export const adminApiService = {
   getAccounts: async (filters?: any) => {
     try {
       const response = await adminApi.get('/api/admin/accounts', { params: filters })
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener cuentas'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener cuentas'
       return { success: false, message }
     }
   },
@@ -263,9 +264,9 @@ export const adminApiService = {
   createAccount: async (data: any) => {
     try {
       const response = await adminApi.post('/api/admin/accounts', data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al crear cuenta'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al crear cuenta'
       return { success: false, message }
     }
   },
@@ -273,19 +274,19 @@ export const adminApiService = {
   updateAccount: async (id: string, data: any) => {
     try {
       const response = await adminApi.put(`/api/admin/accounts/${id}`, data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al actualizar cuenta'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar cuenta'
       return { success: false, message }
     }
   },
 
   deleteAccount: async (id: string) => {
     try {
-      await adminApi.delete(`/api/admin/accounts/${id}`)
-      return { success: true }
+      const response = await adminApi.delete(`/api/admin/accounts/${id}`)
+      return response.data.success ? { success: true } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al eliminar cuenta'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar cuenta'
       return { success: false, message }
     }
   },
@@ -294,9 +295,9 @@ export const adminApiService = {
   getEvolutionConfig: async () => {
     try {
       const response = await adminApi.get('/api/admin/config/evolution')
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener configuración'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener configuración'
       return { success: false, message }
     }
   },
@@ -304,9 +305,9 @@ export const adminApiService = {
   saveEvolutionConfig: async (data: any) => {
     try {
       const response = await adminApi.post('/api/admin/config/evolution', data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al guardar configuración'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al guardar configuración'
       return { success: false, message }
     }
   },
@@ -315,9 +316,9 @@ export const adminApiService = {
   getChatwootConfig: async () => {
     try {
       const response = await adminApi.get('/api/admin/config/chatwoot')
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al obtener configuración de Chatwoot'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener configuración de Chatwoot'
       return { success: false, message }
     }
   },
@@ -325,9 +326,9 @@ export const adminApiService = {
   saveChatwootConfig: async (data: any) => {
     try {
       const response = await adminApi.post('/api/admin/config/chatwoot', data)
-      return { success: true, data: response.data }
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Error al guardar configuración de Chatwoot'
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al guardar configuración de Chatwoot'
       return { success: false, message }
     }
   },

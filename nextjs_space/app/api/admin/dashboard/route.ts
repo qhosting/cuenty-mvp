@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[Admin Dashboard] Error:', error)
     return NextResponse.json(
-      { error: 'Error del servidor' },
+      { success: false, error: 'Error del servidor' },
       { status: 500 }
     )
   }

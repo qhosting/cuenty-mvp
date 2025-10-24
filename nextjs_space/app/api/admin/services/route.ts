@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -50,11 +50,11 @@ export async function GET(request: NextRequest) {
       created_at: servicio.fechaCreacion.toISOString()
     }))
 
-    return NextResponse.json(services)
+    return NextResponse.json({ success: true, data: services })
   } catch (error: any) {
     console.error('[Admin Services GET] Error:', error)
     return NextResponse.json(
-      { error: 'Error al obtener servicios', message: error.message },
+      { success: false, error: 'Error al obtener servicios', message: error.message },
       { status: 500 }
     )
   }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -78,14 +78,14 @@ export async function POST(request: NextRequest) {
     // Validaciones
     if (!nombre || nombre.trim().length < 3) {
       return NextResponse.json(
-        { error: 'El nombre del servicio debe tener al menos 3 caracteres' },
+        { success: false, error: 'El nombre del servicio debe tener al menos 3 caracteres' },
         { status: 400 }
       )
     }
 
     if (!descripcion || descripcion.trim().length === 0) {
       return NextResponse.json(
-        { error: 'La descripción es requerida' },
+        { success: false, error: 'La descripción es requerida' },
         { status: 400 }
       )
     }
@@ -110,11 +110,11 @@ export async function POST(request: NextRequest) {
       created_at: nuevoServicio.fechaCreacion.toISOString()
     }
 
-    return NextResponse.json(service, { status: 201 })
+    return NextResponse.json({ success: true, data: service }, { status: 201 })
   } catch (error: any) {
     console.error('[Admin Services POST] Error:', error)
     return NextResponse.json(
-      { error: 'Error al crear servicio', message: error.message },
+      { success: false, error: 'Error al crear servicio', message: error.message },
       { status: 500 }
     )
   }

@@ -462,7 +462,7 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
   const [formData, setFormData] = useState({
     servicio_id: account?.servicio_id || '',
     email: account?.email || '',
-    password: account?.password || '',
+    password: '', // No cargar password existente para evitar doble encriptación
     perfil: account?.perfil || '',
     slots_totales: account?.slots_totales || 1,
     slots_usados: account?.slots_usados || 0,
@@ -473,8 +473,15 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!formData.servicio_id || !formData.email || !formData.password || !formData.perfil) {
+    // Para crear nueva cuenta, todos los campos son requeridos
+    if (!account && (!formData.servicio_id || !formData.email || !formData.password || !formData.perfil)) {
       toast.error('Por favor completa todos los campos requeridos')
+      return
+    }
+    
+    // Para editar, solo email, perfil y servicio son requeridos
+    if (account && (!formData.servicio_id || !formData.email || !formData.perfil)) {
+      toast.error('Por favor completa los campos requeridos (servicio, email y perfil)')
       return
     }
 
@@ -486,9 +493,17 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
     setLoading(true)
 
     try {
+      // Preparar datos a enviar
+      const dataToSend = { ...formData }
+      
+      // Si estamos editando y el password está vacío, no enviarlo
+      if (account && !formData.password) {
+        delete dataToSend.password
+      }
+      
       const result = account
-        ? await adminApiService.updateAccount(account.id, formData)
-        : await adminApiService.createAccount(formData)
+        ? await adminApiService.updateAccount(account.id, dataToSend)
+        : await adminApiService.createAccount(dataToSend)
       
       if (result.success) {
         toast.success(`Cuenta ${account ? 'actualizada' : 'creada'} correctamente`)
@@ -552,16 +567,21 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
 
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Contraseña *
+                Contraseña {account ? '(Opcional)' : '*'}
               </label>
               <input
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
-                placeholder="••••••••"
-                required
+                placeholder={account ? "Dejar en blanco para no cambiar" : "••••••••"}
+                required={!account}
               />
+              {account && (
+                <p className="mt-1 text-xs text-slate-400">
+                  Deja este campo vacío si no deseas cambiar la contraseña
+                </p>
+              )}
             </div>
           </div>
 

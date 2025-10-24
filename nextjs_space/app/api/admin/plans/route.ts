@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -56,11 +56,11 @@ export async function GET(request: NextRequest) {
       created_at: plan.fechaCreacion.toISOString()
     }))
 
-    return NextResponse.json(plans)
+    return NextResponse.json({ success: true, data: plans })
   } catch (error: any) {
     console.error('[Admin Plans GET] Error:', error)
     return NextResponse.json(
-      { error: 'Error al obtener planes', message: error.message },
+      { success: false, error: 'Error al obtener planes', message: error.message },
       { status: 500 }
     )
   }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -84,28 +84,28 @@ export async function POST(request: NextRequest) {
     // Validaciones
     if (!servicio_id) {
       return NextResponse.json(
-        { error: 'El ID del servicio es requerido' },
+        { success: false, error: 'El ID del servicio es requerido' },
         { status: 400 }
       )
     }
 
     if (!nombre || nombre.trim().length < 3) {
       return NextResponse.json(
-        { error: 'El nombre del plan debe tener al menos 3 caracteres' },
+        { success: false, error: 'El nombre del plan debe tener al menos 3 caracteres' },
         { status: 400 }
       )
     }
 
     if (!duracion_meses || duracion_meses < 1 || duracion_meses > 36) {
       return NextResponse.json(
-        { error: 'La duración debe estar entre 1 y 36 meses' },
+        { success: false, error: 'La duración debe estar entre 1 y 36 meses' },
         { status: 400 }
       )
     }
 
     if (!precio || precio <= 0) {
       return NextResponse.json(
-        { error: 'El precio debe ser mayor a 0' },
+        { success: false, error: 'El precio debe ser mayor a 0' },
         { status: 400 }
       )
     }
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
     const servicioId = parseInt(servicio_id)
     if (isNaN(servicioId)) {
       return NextResponse.json(
-        { error: 'ID de servicio inválido' },
+        { success: false, error: 'ID de servicio inválido' },
         { status: 400 }
       )
     }
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     if (!servicioExistente) {
       return NextResponse.json(
-        { error: 'El servicio no existe' },
+        { success: false, error: 'El servicio no existe' },
         { status: 404 }
       )
     }
@@ -164,20 +164,20 @@ export async function POST(request: NextRequest) {
       created_at: nuevoPlan.fechaCreacion.toISOString()
     }
 
-    return NextResponse.json(plan, { status: 201 })
+    return NextResponse.json({ success: true, data: plan }, { status: 201 })
   } catch (error: any) {
     console.error('[Admin Plans POST] Error:', error)
     
     // Manejar error de unique constraint (servicio + duración)
     if (error.code === 'P2002') {
       return NextResponse.json(
-        { error: 'Ya existe un plan con esta duración para este servicio' },
+        { success: false, error: 'Ya existe un plan con esta duración para este servicio' },
         { status: 400 }
       )
     }
     
     return NextResponse.json(
-      { error: 'Error al crear plan', message: error.message },
+      { success: false, error: 'Error al crear plan', message: error.message },
       { status: 500 }
     )
   }

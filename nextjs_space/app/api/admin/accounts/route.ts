@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -85,11 +85,11 @@ export async function GET(request: NextRequest) {
       created_at: cuenta.fechaAgregado.toISOString()
     }))
 
-    return NextResponse.json(accounts)
+    return NextResponse.json({ success: true, data: accounts })
   } catch (error: any) {
     console.error('[Admin Accounts GET] Error:', error)
     return NextResponse.json(
-      { error: 'Error al obtener cuentas', message: error.message },
+      { success: false, error: 'Error al obtener cuentas', message: error.message },
       { status: 500 }
     )
   }
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -113,28 +113,28 @@ export async function POST(request: NextRequest) {
     // Validaciones
     if (!servicio_id) {
       return NextResponse.json(
-        { error: 'El ID del servicio es requerido' },
+        { success: false, error: 'El ID del servicio es requerido' },
         { status: 400 }
       )
     }
 
     if (!email || !email.trim()) {
       return NextResponse.json(
-        { error: 'El email es requerido' },
+        { success: false, error: 'El email es requerido' },
         { status: 400 }
       )
     }
 
     if (!password || !password.trim()) {
       return NextResponse.json(
-        { error: 'La contraseña es requerida' },
+        { success: false, error: 'La contraseña es requerida' },
         { status: 400 }
       )
     }
 
     if (!perfil || !perfil.trim()) {
       return NextResponse.json(
-        { error: 'El nombre del perfil es requerido' },
+        { success: false, error: 'El nombre del perfil es requerido' },
         { status: 400 }
       )
     }
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
     const servicioId = parseInt(servicio_id)
     if (isNaN(servicioId)) {
       return NextResponse.json(
-        { error: 'ID de servicio inválido' },
+        { success: false, error: 'ID de servicio inválido' },
         { status: 400 }
       )
     }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     if (planes.length === 0) {
       return NextResponse.json(
-        { error: 'El servicio no tiene planes asociados' },
+        { success: false, error: 'El servicio no tiene planes asociados' },
         { status: 400 }
       )
     }
@@ -196,11 +196,11 @@ export async function POST(request: NextRequest) {
       created_at: nuevaCuenta.fechaAgregado.toISOString()
     }
 
-    return NextResponse.json(account, { status: 201 })
+    return NextResponse.json({ success: true, data: account }, { status: 201 })
   } catch (error: any) {
     console.error('[Admin Accounts POST] Error:', error)
     return NextResponse.json(
-      { error: 'Error al crear cuenta', message: error.message },
+      { success: false, error: 'Error al crear cuenta', message: error.message },
       { status: 500 }
     )
   }

@@ -31,7 +31,7 @@ export async function POST(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -40,7 +40,7 @@ export async function POST(
 
     if (isNaN(ordenId)) {
       return NextResponse.json(
-        { error: 'ID de orden inválido' },
+        { success: false, error: 'ID de orden inválido' },
         { status: 400 }
       )
     }
@@ -64,7 +64,7 @@ export async function POST(
 
     if (!ordenExistente) {
       return NextResponse.json(
-        { error: 'Orden no encontrada' },
+        { success: false, error: 'Orden no encontrada' },
         { status: 404 }
       )
     }
@@ -91,15 +91,15 @@ export async function POST(
     })
 
     // Transformar a formato esperado
-    const primerItem = ordenActualizada.items[0]
+    const primerItem = ordenActualizada.items && ordenActualizada.items.length > 0 ? ordenActualizada.items[0] : null
     const order = {
       id: ordenActualizada.idOrden.toString(),
       usuario_celular: ordenActualizada.celularUsuario,
-      usuario_nombre: ordenActualizada.usuario.nombre || '',
-      usuario_email: ordenActualizada.usuario.email || '',
-      servicio_nombre: primerItem ? primerItem.plan.servicio.nombre : 'N/A',
-      plan_nombre: primerItem ? primerItem.plan.nombrePlan : 'N/A',
-      plan_duracion_meses: primerItem ? primerItem.plan.duracionMeses : 0,
+      usuario_nombre: ordenActualizada.usuario?.nombre || '',
+      usuario_email: ordenActualizada.usuario?.email || '',
+      servicio_nombre: primerItem?.plan?.servicio?.nombre || 'N/A',
+      plan_nombre: primerItem?.plan?.nombrePlan || 'N/A',
+      plan_duracion_meses: primerItem?.plan?.duracionMeses || 0,
       total: Number(ordenActualizada.montoTotal),
       estado: ordenActualizada.estado,
       payment_status: 'confirmed', // Confirmado
@@ -109,11 +109,11 @@ export async function POST(
       comprobante_url: null
     }
 
-    return NextResponse.json(order)
+    return NextResponse.json({ success: true, data: order })
   } catch (error: any) {
     console.error('[Admin Orders POST Confirm Payment] Error:', error)
     return NextResponse.json(
-      { error: 'Error al confirmar pago', message: error.message },
+      { success: false, error: 'Error al confirmar pago', message: error.message },
       { status: 500 }
     )
   }

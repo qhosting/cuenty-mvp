@@ -31,7 +31,7 @@ export async function GET(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -40,7 +40,7 @@ export async function GET(
 
     if (isNaN(ordenId)) {
       return NextResponse.json(
-        { error: 'ID de orden inválido' },
+        { success: false, error: 'ID de orden inválido' },
         { status: 400 }
       )
     }
@@ -65,36 +65,46 @@ export async function GET(
 
     if (!orden) {
       return NextResponse.json(
-        { error: 'Orden no encontrada' },
+        { success: false, error: 'Orden no encontrada' },
         { status: 404 }
       )
     }
 
     // Obtener información del primer item
-    const primerItem = orden.items[0]
+    const primerItem = orden.items && orden.items.length > 0 ? orden.items[0] : null
 
     // Transformar a formato esperado
     const order = {
       id: orden.idOrden.toString(),
       usuario_celular: orden.celularUsuario,
-      usuario_nombre: orden.usuario.nombre || '',
-      usuario_email: orden.usuario.email || '',
-      servicio_nombre: primerItem ? primerItem.plan.servicio.nombre : 'N/A',
-      plan_nombre: primerItem ? primerItem.plan.nombrePlan : 'N/A',
-      plan_duracion_meses: primerItem ? primerItem.plan.duracionMeses : 0,
+      usuario_nombre: orden.usuario?.nombre || '',
+      usuario_email: orden.usuario?.email || '',
+      servicio_nombre: primerItem?.plan?.servicio?.nombre || 'N/A',
+      plan_nombre: primerItem?.plan?.nombrePlan || 'N/A',
+      plan_duracion_meses: primerItem?.plan?.duracionMeses || 0,
       total: Number(orden.montoTotal),
       estado: orden.estado,
       payment_status: 'pending',
       created_at: orden.fechaCreacion.toISOString(),
       updated_at: orden.fechaCreacion.toISOString(),
-      comprobante_url: null
+      comprobante_url: null,
+      items: orden.items.map(item => ({
+        id: item.idOrderItem.toString(),
+        plan_nombre: item.plan?.nombrePlan || 'N/A',
+        servicio_nombre: item.plan?.servicio?.nombre || 'N/A',
+        cantidad: item.cantidad,
+        precio_unitario: Number(item.precioUnitario),
+        subtotal: Number(item.subtotal),
+        estado: item.estado,
+        cuenta_email: item.cuentaAsignada ? 'Asignada' : 'Pendiente'
+      }))
     }
 
-    return NextResponse.json(order)
+    return NextResponse.json({ success: true, data: order })
   } catch (error: any) {
     console.error('[Admin Orders GET by ID] Error:', error)
     return NextResponse.json(
-      { error: 'Error al obtener orden', message: error.message },
+      { success: false, error: 'Error al obtener orden', message: error.message },
       { status: 500 }
     )
   }

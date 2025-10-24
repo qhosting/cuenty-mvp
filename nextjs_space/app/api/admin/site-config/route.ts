@@ -19,7 +19,7 @@ export async function GET() {
     return NextResponse.json(config)
   } catch (error) {
     console.error('Error fetching site config:', error)
-    return NextResponse.json({ error: 'Failed to fetch site config' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to fetch site config' }, { status: 500 })
   }
 }
 
@@ -41,6 +41,6 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json(config)
   } catch (error) {
     console.error('Error updating site config:', error)
-    return NextResponse.json({ error: 'Failed to update site config' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to update site config' }, { status: 500 })
   }
 }

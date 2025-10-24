@@ -31,7 +31,7 @@ export async function PUT(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -42,7 +42,7 @@ export async function PUT(
 
     if (isNaN(servicioId)) {
       return NextResponse.json(
-        { error: 'ID de servicio inválido' },
+        { success: false, error: 'ID de servicio inválido' },
         { status: 400 }
       )
     }
@@ -50,7 +50,7 @@ export async function PUT(
     // Validaciones
     if (nombre && nombre.trim().length < 3) {
       return NextResponse.json(
-        { error: 'El nombre del servicio debe tener al menos 3 caracteres' },
+        { success: false, error: 'El nombre del servicio debe tener al menos 3 caracteres' },
         { status: 400 }
       )
     }
@@ -62,7 +62,7 @@ export async function PUT(
 
     if (!servicioExistente) {
       return NextResponse.json(
-        { error: 'Servicio no encontrado' },
+        { success: false, error: 'Servicio no encontrado' },
         { status: 404 }
       )
     }
@@ -88,11 +88,11 @@ export async function PUT(
       created_at: servicioActualizado.fechaCreacion.toISOString()
     }
 
-    return NextResponse.json(service)
+    return NextResponse.json({ success: true, data: service })
   } catch (error: any) {
     console.error('[Admin Services PUT] Error:', error)
     return NextResponse.json(
-      { error: 'Error al actualizar servicio', message: error.message },
+      { success: false, error: 'Error al actualizar servicio', message: error.message },
       { status: 500 }
     )
   }
@@ -108,7 +108,7 @@ export async function DELETE(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -117,7 +117,7 @@ export async function DELETE(
 
     if (isNaN(servicioId)) {
       return NextResponse.json(
-        { error: 'ID de servicio inválido' },
+        { success: false, error: 'ID de servicio inválido' },
         { status: 400 }
       )
     }
@@ -132,7 +132,7 @@ export async function DELETE(
 
     if (!servicioExistente) {
       return NextResponse.json(
-        { error: 'Servicio no encontrado' },
+        { success: false, error: 'Servicio no encontrado' },
         { status: 404 }
       )
     }
@@ -140,7 +140,7 @@ export async function DELETE(
     // Verificar si tiene planes asociados
     if (servicioExistente.planes.length > 0) {
       return NextResponse.json(
-        { error: 'No se puede eliminar el servicio porque tiene planes asociados' },
+        { success: false, error: 'No se puede eliminar el servicio porque tiene planes asociados' },
         { status: 400 }
       )
     }
@@ -154,7 +154,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('[Admin Services DELETE] Error:', error)
     return NextResponse.json(
-      { error: 'Error al eliminar servicio', message: error.message },
+      { success: false, error: 'Error al eliminar servicio', message: error.message },
       { status: 500 }
     )
   }

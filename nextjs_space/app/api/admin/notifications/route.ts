@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     if (!token) {
       console.log('[Admin Notifications API] Token no proporcionado')
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }

@@ -50,7 +50,7 @@ export async function PUT(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -61,7 +61,7 @@ export async function PUT(
 
     if (isNaN(cuentaId)) {
       return NextResponse.json(
-        { error: 'ID de cuenta inválido' },
+        { success: false, error: 'ID de cuenta inválido' },
         { status: 400 }
       )
     }
@@ -80,7 +80,7 @@ export async function PUT(
 
     if (!cuentaExistente) {
       return NextResponse.json(
-        { error: 'Cuenta no encontrada' },
+        { success: false, error: 'Cuenta no encontrada' },
         { status: 404 }
       )
     }
@@ -116,7 +116,7 @@ export async function PUT(
 
       if (planes.length === 0) {
         return NextResponse.json(
-          { error: 'El servicio no tiene planes asociados' },
+          { success: false, error: 'El servicio no tiene planes asociados' },
           { status: 400 }
         )
       }
@@ -151,11 +151,11 @@ export async function PUT(
       created_at: cuentaActualizada.fechaAgregado.toISOString()
     }
 
-    return NextResponse.json(account)
+    return NextResponse.json({ success: true, data: account })
   } catch (error: any) {
     console.error('[Admin Accounts PUT] Error:', error)
     return NextResponse.json(
-      { error: 'Error al actualizar cuenta', message: error.message },
+      { success: false, error: 'Error al actualizar cuenta', message: error.message },
       { status: 500 }
     )
   }
@@ -171,7 +171,7 @@ export async function DELETE(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -180,7 +180,7 @@ export async function DELETE(
 
     if (isNaN(cuentaId)) {
       return NextResponse.json(
-        { error: 'ID de cuenta inválido' },
+        { success: false, error: 'ID de cuenta inválido' },
         { status: 400 }
       )
     }
@@ -195,7 +195,7 @@ export async function DELETE(
 
     if (!cuentaExistente) {
       return NextResponse.json(
-        { error: 'Cuenta no encontrada' },
+        { success: false, error: 'Cuenta no encontrada' },
         { status: 404 }
       )
     }
@@ -203,7 +203,7 @@ export async function DELETE(
     // Verificar si tiene órdenes asignadas
     if (cuentaExistente.orderItems.length > 0) {
       return NextResponse.json(
-        { error: 'No se puede eliminar la cuenta porque tiene órdenes asignadas' },
+        { success: false, error: 'No se puede eliminar la cuenta porque tiene órdenes asignadas' },
         { status: 400 }
       )
     }
@@ -217,7 +217,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('[Admin Accounts DELETE] Error:', error)
     return NextResponse.json(
-      { error: 'Error al eliminar cuenta', message: error.message },
+      { success: false, error: 'Error al eliminar cuenta', message: error.message },
       { status: 500 }
     )
   }

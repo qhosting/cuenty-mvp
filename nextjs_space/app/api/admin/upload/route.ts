@@ -11,18 +11,18 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     
     if (!file) {
-      return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 })
     }
     
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/x-icon']
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Invalid file type. Only images are allowed.' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'Invalid file type. Only images are allowed.' }, { status: 400 })
     }
     
     // Validate file size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'File too large. Maximum size is 5MB.' }, { status: 400 })
     }
     
     const buffer = Buffer.from(await file.arrayBuffer())
@@ -35,6 +35,6 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error uploading file:', error)
-    return NextResponse.json({ error: 'Failed to upload file' }, { status: 500 })
+    return NextResponse.json({ success: false, error: 'Failed to upload file' }, { status: 500 })
   }
 }

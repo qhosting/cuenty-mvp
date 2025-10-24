@@ -31,7 +31,7 @@ export async function PUT(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -42,7 +42,7 @@ export async function PUT(
 
     if (isNaN(planId)) {
       return NextResponse.json(
-        { error: 'ID de plan inválido' },
+        { success: false, error: 'ID de plan inválido' },
         { status: 400 }
       )
     }
@@ -50,21 +50,21 @@ export async function PUT(
     // Validaciones
     if (nombre && nombre.trim().length < 3) {
       return NextResponse.json(
-        { error: 'El nombre del plan debe tener al menos 3 caracteres' },
+        { success: false, error: 'El nombre del plan debe tener al menos 3 caracteres' },
         { status: 400 }
       )
     }
 
     if (duracion_meses && (duracion_meses < 1 || duracion_meses > 36)) {
       return NextResponse.json(
-        { error: 'La duración debe estar entre 1 y 36 meses' },
+        { success: false, error: 'La duración debe estar entre 1 y 36 meses' },
         { status: 400 }
       )
     }
 
     if (precio && precio <= 0) {
       return NextResponse.json(
-        { error: 'El precio debe ser mayor a 0' },
+        { success: false, error: 'El precio debe ser mayor a 0' },
         { status: 400 }
       )
     }
@@ -79,7 +79,7 @@ export async function PUT(
 
     if (!planExistente) {
       return NextResponse.json(
-        { error: 'Plan no encontrado' },
+        { success: false, error: 'Plan no encontrado' },
         { status: 404 }
       )
     }
@@ -92,7 +92,7 @@ export async function PUT(
 
       if (!servicioNuevo) {
         return NextResponse.json(
-          { error: 'El servicio no existe' },
+          { success: false, error: 'El servicio no existe' },
           { status: 404 }
         )
       }
@@ -133,20 +133,20 @@ export async function PUT(
       created_at: planActualizado.fechaCreacion.toISOString()
     }
 
-    return NextResponse.json(plan)
+    return NextResponse.json({ success: true, data: plan })
   } catch (error: any) {
     console.error('[Admin Plans PUT] Error:', error)
     
     // Manejar error de unique constraint
     if (error.code === 'P2002') {
       return NextResponse.json(
-        { error: 'Ya existe un plan con esta duración para este servicio' },
+        { success: false, error: 'Ya existe un plan con esta duración para este servicio' },
         { status: 400 }
       )
     }
     
     return NextResponse.json(
-      { error: 'Error al actualizar plan', message: error.message },
+      { success: false, error: 'Error al actualizar plan', message: error.message },
       { status: 500 }
     )
   }
@@ -162,7 +162,7 @@ export async function DELETE(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -171,7 +171,7 @@ export async function DELETE(
 
     if (isNaN(planId)) {
       return NextResponse.json(
-        { error: 'ID de plan inválido' },
+        { success: false, error: 'ID de plan inválido' },
         { status: 400 }
       )
     }
@@ -187,7 +187,7 @@ export async function DELETE(
 
     if (!planExistente) {
       return NextResponse.json(
-        { error: 'Plan no encontrado' },
+        { success: false, error: 'Plan no encontrado' },
         { status: 404 }
       )
     }
@@ -195,7 +195,7 @@ export async function DELETE(
     // Verificar si tiene cuentas asociadas
     if (planExistente.cuentas.length > 0) {
       return NextResponse.json(
-        { error: 'No se puede eliminar el plan porque tiene cuentas asociadas' },
+        { success: false, error: 'No se puede eliminar el plan porque tiene cuentas asociadas' },
         { status: 400 }
       )
     }
@@ -203,7 +203,7 @@ export async function DELETE(
     // Verificar si tiene órdenes asociadas
     if (planExistente.orderItems.length > 0) {
       return NextResponse.json(
-        { error: 'No se puede eliminar el plan porque tiene órdenes asociadas' },
+        { success: false, error: 'No se puede eliminar el plan porque tiene órdenes asociadas' },
         { status: 400 }
       )
     }
@@ -217,7 +217,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('[Admin Plans DELETE] Error:', error)
     return NextResponse.json(
-      { error: 'Error al eliminar plan', message: error.message },
+      { success: false, error: 'Error al eliminar plan', message: error.message },
       { status: 500 }
     )
   }

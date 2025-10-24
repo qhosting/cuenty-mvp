@@ -32,7 +32,7 @@ export async function PUT(
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -43,7 +43,7 @@ export async function PUT(
 
     if (isNaN(ordenId)) {
       return NextResponse.json(
-        { error: 'ID de orden inválido' },
+        { success: false, error: 'ID de orden inválido' },
         { status: 400 }
       )
     }
@@ -52,7 +52,7 @@ export async function PUT(
     const estadosValidos: EstadoOrden[] = ['pendiente', 'pendiente_pago', 'pagada', 'en_proceso', 'entregada', 'cancelada']
     if (!status || !estadosValidos.includes(status as EstadoOrden)) {
       return NextResponse.json(
-        { error: 'Estado inválido. Estados válidos: ' + estadosValidos.join(', ') },
+        { success: false, error: 'Estado inválido. Estados válidos: ' + estadosValidos.join(', ') },
         { status: 400 }
       )
     }
@@ -64,7 +64,7 @@ export async function PUT(
 
     if (!ordenExistente) {
       return NextResponse.json(
-        { error: 'Orden no encontrada' },
+        { success: false, error: 'Orden no encontrada' },
         { status: 404 }
       )
     }
@@ -96,15 +96,15 @@ export async function PUT(
     })
 
     // Transformar a formato esperado
-    const primerItem = ordenActualizada.items[0]
+    const primerItem = ordenActualizada.items && ordenActualizada.items.length > 0 ? ordenActualizada.items[0] : null
     const order = {
       id: ordenActualizada.idOrden.toString(),
       usuario_celular: ordenActualizada.celularUsuario,
-      usuario_nombre: ordenActualizada.usuario.nombre || '',
-      usuario_email: ordenActualizada.usuario.email || '',
-      servicio_nombre: primerItem ? primerItem.plan.servicio.nombre : 'N/A',
-      plan_nombre: primerItem ? primerItem.plan.nombrePlan : 'N/A',
-      plan_duracion_meses: primerItem ? primerItem.plan.duracionMeses : 0,
+      usuario_nombre: ordenActualizada.usuario?.nombre || '',
+      usuario_email: ordenActualizada.usuario?.email || '',
+      servicio_nombre: primerItem?.plan?.servicio?.nombre || 'N/A',
+      plan_nombre: primerItem?.plan?.nombrePlan || 'N/A',
+      plan_duracion_meses: primerItem?.plan?.duracionMeses || 0,
       total: Number(ordenActualizada.montoTotal),
       estado: ordenActualizada.estado,
       payment_status: 'pending',
@@ -113,11 +113,11 @@ export async function PUT(
       comprobante_url: null
     }
 
-    return NextResponse.json(order)
+    return NextResponse.json({ success: true, data: order })
   } catch (error: any) {
     console.error('[Admin Orders PUT Status] Error:', error)
     return NextResponse.json(
-      { error: 'Error al actualizar estado de orden', message: error.message },
+      { success: false, error: 'Error al actualizar estado de orden', message: error.message },
       { status: 500 }
     )
   }

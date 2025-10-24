@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { error: 'No autorizado' },
+        { success: false, error: 'No autorizado' },
         { status: 401 }
       )
     }
@@ -79,16 +79,16 @@ export async function GET(request: NextRequest) {
     // Transformar a formato esperado por el frontend
     const orders = ordenes.map(orden => {
       // Obtener información del primer item (simplificación)
-      const primerItem = orden.items[0]
+      const primerItem = orden.items && orden.items.length > 0 ? orden.items[0] : null
       
       return {
         id: orden.idOrden.toString(),
         usuario_celular: orden.celularUsuario,
-        usuario_nombre: orden.usuario.nombre || '',
-        usuario_email: orden.usuario.email || '',
-        servicio_nombre: primerItem ? primerItem.plan.servicio.nombre : 'N/A',
-        plan_nombre: primerItem ? primerItem.plan.nombrePlan : 'N/A',
-        plan_duracion_meses: primerItem ? primerItem.plan.duracionMeses : 0,
+        usuario_nombre: orden.usuario?.nombre || '',
+        usuario_email: orden.usuario?.email || '',
+        servicio_nombre: primerItem?.plan?.servicio?.nombre || 'N/A',
+        plan_nombre: primerItem?.plan?.nombrePlan || 'N/A',
+        plan_duracion_meses: primerItem?.plan?.duracionMeses || 0,
         total: Number(orden.montoTotal),
         estado: orden.estado,
         payment_status: 'pending', // Por defecto, ya que el esquema de nextjs no tiene este campo
@@ -98,11 +98,11 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(orders)
+    return NextResponse.json({ success: true, data: orders })
   } catch (error: any) {
     console.error('[Admin Orders GET] Error:', error)
     return NextResponse.json(
-      { error: 'Error al obtener órdenes', message: error.message },
+      { success: false, error: 'Error al obtener órdenes', message: error.message },
       { status: 500 }
     )
   }
