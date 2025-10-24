@@ -33,10 +33,10 @@ export async function GET(request: NextRequest) {
     }
 
     const [totalUsuarios, usuariosActivos, usuariosInactivos, usuariosVerificados] = await Promise.all([
-      prisma.clientes.count(),
-      prisma.clientes.count({ where: { activo: true } }),
-      prisma.clientes.count({ where: { activo: false } }),
-      prisma.clientes.count({ where: { emailVerificado: true } }),
+      prisma.cliente.count(),
+      prisma.cliente.count({ where: { activo: true } }),
+      prisma.cliente.count({ where: { activo: false } }),
+      prisma.cliente.count({ where: { emailVerificado: true } }),
     ])
 
     return NextResponse.json({

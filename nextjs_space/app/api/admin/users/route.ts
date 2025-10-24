@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 
     // Obtener usuarios y total
     const [usuarios, total] = await Promise.all([
-      prisma.clientes.findMany({
+      prisma.cliente.findMany({
         where,
         skip,
         take: limit,
@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
           ultimoAcceso: true,
         },
       }),
-      prisma.clientes.count({ where }),
+      prisma.cliente.count({ where }),
     ])
 
     return NextResponse.json({
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar si el email ya existe
-    const existente = await prisma.clientes.findUnique({
+    const existente = await prisma.cliente.findUnique({
       where: { email: email.trim().toLowerCase() },
     })
 
@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10)
 
     // Crear usuario
-    const nuevoUsuario = await prisma.clientes.create({
+    const nuevoUsuario = await prisma.cliente.create({
       data: {
         email: email.trim().toLowerCase(),
         password: hashedPassword,

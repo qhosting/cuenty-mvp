@@ -44,7 +44,7 @@ export async function GET(
       )
     }
 
-    const usuario = await prisma.clientes.findUnique({
+    const usuario = await prisma.cliente.findUnique({
       where: { id },
       select: {
         id: true,
@@ -124,7 +124,7 @@ export async function PUT(
     } = body
 
     // Verificar que el usuario existe
-    const usuarioExistente = await prisma.clientes.findUnique({
+    const usuarioExistente = await prisma.cliente.findUnique({
       where: { id },
     })
 
@@ -137,7 +137,7 @@ export async function PUT(
 
     // Si se está actualizando el email, verificar que no esté en uso
     if (email && email.toLowerCase() !== usuarioExistente.email.toLowerCase()) {
-      const emailEnUso = await prisma.clientes.findUnique({
+      const emailEnUso = await prisma.cliente.findUnique({
         where: { email: email.trim().toLowerCase() },
       })
 
@@ -214,7 +214,7 @@ export async function PUT(
     }
 
     // Actualizar usuario
-    const usuarioActualizado = await prisma.clientes.update({
+    const usuarioActualizado = await prisma.cliente.update({
       where: { id },
       data: dataToUpdate,
       select: {
@@ -286,7 +286,7 @@ export async function DELETE(
     }
 
     // Verificar que el usuario existe
-    const usuario = await prisma.clientes.findUnique({
+    const usuario = await prisma.cliente.findUnique({
       where: { id },
     })
 
@@ -298,7 +298,7 @@ export async function DELETE(
     }
 
     // Desactivar usuario en lugar de eliminar
-    const usuarioDesactivado = await prisma.clientes.update({
+    const usuarioDesactivado = await prisma.cliente.update({
       where: { id },
       data: {
         activo: false,
