@@ -56,7 +56,7 @@ export async function PUT(
     }
 
     const body = await request.json()
-    const { servicio_id, email, password, perfil, slots_totales, slots_usados, activo } = body
+    const { servicio_id, email, password, pin, perfil, slots_totales, slots_usados, activo } = body
     const cuentaId = parseInt(params.id)
 
     if (isNaN(cuentaId)) {
@@ -94,6 +94,10 @@ export async function PUT(
 
     if (password) {
       updateData.contrasenaEncriptada = encrypt(password.trim())
+    }
+
+    if (pin !== undefined) {
+      updateData.pin = pin && pin.trim() ? pin.trim() : null
     }
 
     if (perfil) {
@@ -144,6 +148,7 @@ export async function PUT(
       servicio_nombre: cuentaActualizada.plan.servicio.nombre,
       email: decrypt(cuentaActualizada.correoEncriptado),
       password: decrypt(cuentaActualizada.contrasenaEncriptada),
+      pin: cuentaActualizada.pin || null,
       perfil: cuentaActualizada.perfil || 'Perfil 1',
       slots_totales: slots_totales || 4,
       slots_usados: slots_usados || 0,

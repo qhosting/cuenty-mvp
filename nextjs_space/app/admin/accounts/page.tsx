@@ -26,6 +26,7 @@ interface Account {
   servicio_nombre?: string
   email: string
   password: string
+  pin?: string | null
   perfil: string
   slots_totales: number
   slots_usados: number
@@ -49,6 +50,7 @@ export default function AdminAccountsPage() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [showPasswords, setShowPasswords] = useState<{ [key: string]: boolean }>({})
+  const [showPins, setShowPins] = useState<{ [key: string]: boolean }>({})
 
   useEffect(() => {
     fetchData()
@@ -153,6 +155,13 @@ export default function AdminAccountsPage() {
 
   const togglePasswordVisibility = (accountId: string) => {
     setShowPasswords(prev => ({
+      ...prev,
+      [accountId]: !prev[accountId]
+    }))
+  }
+
+  const togglePinVisibility = (accountId: string) => {
+    setShowPins(prev => ({
       ...prev,
       [accountId]: !prev[accountId]
     }))
@@ -317,6 +326,28 @@ export default function AdminAccountsPage() {
                             </button>
                           )}
                         </div>
+                        {account.pin && (
+                          <div className="flex items-center space-x-2">
+                            <span className="text-slate-400 text-sm w-12">PIN:</span>
+                            <span className="text-white text-sm font-mono">
+                              {showPins[account.id] ? account.pin : '••••'}
+                            </span>
+                            <button
+                              onClick={() => togglePinVisibility(account.id)}
+                              className="p-1 text-slate-400 hover:text-blue-400 transition-colors"
+                            >
+                              {showPins[account.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            </button>
+                            {showPins[account.id] && (
+                              <button
+                                onClick={() => copyToClipboard(account.pin || '', 'PIN')}
+                                className="p-1 text-slate-400 hover:text-blue-400 transition-colors"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 px-6 text-center">
@@ -463,6 +494,7 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
     servicio_id: account?.servicio_id || '',
     email: account?.email || '',
     password: '', // No cargar password existente para evitar doble encriptación
+    pin: account?.pin || '', // No cargar PIN existente para evitar doble encriptación
     perfil: account?.perfil || '',
     slots_totales: account?.slots_totales || 1,
     slots_usados: account?.slots_usados || 0,
@@ -499,6 +531,12 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
       // Si estamos editando y el password está vacío, no enviarlo
       if (account && !formData.password) {
         const { password, ...rest } = dataToSend
+        dataToSend = rest
+      }
+      
+      // Si estamos editando y el PIN está vacío, no enviarlo
+      if (account && !formData.pin) {
+        const { pin, ...rest } = dataToSend
         dataToSend = rest
       }
       
@@ -584,6 +622,26 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
                 </p>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              PIN/NIP (Opcional)
+            </label>
+            <input
+              type="text"
+              value={formData.pin}
+              onChange={(e) => setFormData({ ...formData, pin: e.target.value })}
+              className="w-full px-3 py-2 bg-slate-900 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500"
+              placeholder={account ? "Dejar en blanco para no cambiar" : "Ejemplo: 1234"}
+              maxLength={10}
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {account 
+                ? 'Deja este campo vacío si no deseas cambiar el PIN' 
+                : 'Solo para servicios que requieren PIN (máximo 10 caracteres)'
+              }
+            </p>
           </div>
 
           <div>

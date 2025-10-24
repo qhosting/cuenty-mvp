@@ -78,6 +78,7 @@ export async function GET(request: NextRequest) {
       servicio_nombre: cuenta.plan.servicio.nombre,
       email: decrypt(cuenta.correoEncriptado),
       password: decrypt(cuenta.contrasenaEncriptada),
+      pin: cuenta.pin || null,
       perfil: cuenta.perfil || 'Perfil 1',
       slots_totales: 4, // Valor por defecto, podría calcularse
       slots_usados: 0, // Valor por defecto, podría calcularse de orderItems
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { servicio_id, email, password, perfil, slots_totales, slots_usados, activo } = body
+    const { servicio_id, email, password, pin, perfil, slots_totales, slots_usados, activo } = body
 
     // Validaciones
     if (!servicio_id) {
@@ -169,7 +170,7 @@ export async function POST(request: NextRequest) {
         correoEncriptado: encrypt(email.trim()),
         contrasenaEncriptada: encrypt(password.trim()),
         perfil: perfil.trim(),
-        pin: null,
+        pin: pin && pin.trim() ? pin.trim() : null,
         notas: null,
         estado: activo ? 'disponible' : 'bloqueada'
       },
@@ -189,6 +190,7 @@ export async function POST(request: NextRequest) {
       servicio_nombre: nuevaCuenta.plan.servicio.nombre,
       email: decrypt(nuevaCuenta.correoEncriptado),
       password: decrypt(nuevaCuenta.contrasenaEncriptada),
+      pin: nuevaCuenta.pin || null,
       perfil: nuevaCuenta.perfil || 'Perfil 1',
       slots_totales: slots_totales || 4,
       slots_usados: slots_usados || 0,
