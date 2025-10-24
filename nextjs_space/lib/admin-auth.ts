@@ -311,6 +311,27 @@ export const adminApiService = {
     }
   },
 
+  // Chatwoot Configuration
+  getChatwootConfig: async () => {
+    try {
+      const response = await adminApi.get('/api/admin/config/chatwoot')
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al obtener configuración de Chatwoot'
+      return { success: false, message }
+    }
+  },
+
+  saveChatwootConfig: async (data: any) => {
+    try {
+      const response = await adminApi.post('/api/admin/config/chatwoot', data)
+      return { success: true, data: response.data }
+    } catch (error: any) {
+      const message = error.response?.data?.message || 'Error al guardar configuración de Chatwoot'
+      return { success: false, message }
+    }
+  },
+
   // Generic methods for custom API calls
   get: async (url: string) => {
     try {
