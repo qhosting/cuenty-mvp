@@ -21,7 +21,9 @@ import {
   Bell,
   Palette,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  Wallet
 } from 'lucide-react'
 import { adminAuth } from '@/lib/admin-auth'
 import { toast } from 'react-hot-toast'
@@ -48,6 +50,11 @@ const navigation = [
     icon: CreditCard
   },
   {
+    name: 'Combos',
+    href: '/admin/combos',
+    icon: Layers
+  },
+  {
     name: 'Pedidos',
     href: '/admin/orders',
     icon: ShoppingBag
@@ -56,6 +63,11 @@ const navigation = [
     name: 'Cuentas',
     href: '/admin/accounts',
     icon: Users
+  },
+  {
+    name: 'Config. Pagos',
+    href: '/admin/payment-config',
+    icon: Wallet
   },
   {
     name: 'Config. Sitio',

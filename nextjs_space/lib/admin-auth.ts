@@ -333,6 +333,118 @@ export const adminApiService = {
     }
   },
 
+  // Combos
+  getCombos: async () => {
+    try {
+      const response = await adminApi.get('/api/admin/combos')
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener combos'
+      return { success: false, message }
+    }
+  },
+
+  getCombo: async (id: string) => {
+    try {
+      const response = await adminApi.get(`/api/admin/combos/${id}`)
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener combo'
+      return { success: false, message }
+    }
+  },
+
+  createCombo: async (data: any) => {
+    try {
+      const response = await adminApi.post('/api/admin/combos', data)
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al crear combo'
+      return { success: false, message }
+    }
+  },
+
+  updateCombo: async (id: string, data: any) => {
+    try {
+      const response = await adminApi.put(`/api/admin/combos/${id}`, data)
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar combo'
+      return { success: false, message }
+    }
+  },
+
+  deleteCombo: async (id: string) => {
+    try {
+      const response = await adminApi.delete(`/api/admin/combos/${id}`)
+      return response.data.success ? { success: true } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar combo'
+      return { success: false, message }
+    }
+  },
+
+  calculateComboTotals: async (planes: any[]) => {
+    try {
+      const response = await adminApi.post('/api/admin/combos/calculate-totals', { planes })
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al calcular totales'
+      return { success: false, message }
+    }
+  },
+
+  // Payment Configurations
+  getPaymentConfigs: async () => {
+    try {
+      const response = await adminApi.get('/api/admin/payment-config')
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener configuraciones de pago'
+      return { success: false, message }
+    }
+  },
+
+  createPaymentConfig: async (data: any) => {
+    try {
+      const response = await adminApi.post('/api/admin/payment-config', data)
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al crear configuración de pago'
+      return { success: false, message }
+    }
+  },
+
+  updatePaymentConfig: async (id: string, data: any) => {
+    try {
+      const response = await adminApi.put(`/api/admin/payment-config/${id}`, data)
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al actualizar configuración'
+      return { success: false, message }
+    }
+  },
+
+  togglePaymentConfig: async (id: string, activo: boolean) => {
+    try {
+      const response = await adminApi.patch(`/api/admin/payment-config/toggle/${id}`, { activo })
+      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al cambiar estado'
+      return { success: false, message }
+    }
+  },
+
+  deletePaymentConfig: async (id: string) => {
+    try {
+      const response = await adminApi.delete(`/api/admin/payment-config/${id}`)
+      return response.data.success ? { success: true } : { success: false, message: response.data.error }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.response?.data?.message || 'Error al eliminar configuración'
+      return { success: false, message }
+    }
+  },
+
   // Generic methods for custom API calls
   get: async (url: string) => {
     try {

@@ -494,11 +494,12 @@ function AccountModal({ account, services, onClose, onSuccess }: AccountModalPro
 
     try {
       // Preparar datos a enviar
-      const dataToSend = { ...formData }
+      let dataToSend: any = { ...formData }
       
       // Si estamos editando y el password está vacío, no enviarlo
       if (account && !formData.password) {
-        delete dataToSend.password
+        const { password, ...rest } = dataToSend
+        dataToSend = rest
       }
       
       const result = account
