@@ -67,26 +67,74 @@ export async function POST(request: NextRequest) {
     const user = verifyToken(request)
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'No autorizado' },
+        { success: false, error: 'No autorizado', message: 'Token de autenticación inválido o expirado' },
         { status: 401 }
       )
     }
 
-    const body = await request.json()
-    const { nombre, descripcion, logo_url, activo } = body
-
-    // Validaciones
-    if (!nombre || nombre.trim().length < 3) {
+    // Parsear el body
+    let body
+    try {
+      body = await request.json()
+    } catch (parseError) {
       return NextResponse.json(
-        { success: false, error: 'El nombre del servicio debe tener al menos 3 caracteres' },
+        { success: false, error: 'JSON inválido', message: 'El cuerpo de la solicitud no es un JSON válido' },
         { status: 400 }
       )
     }
 
-    if (!descripcion || descripcion.trim().length === 0) {
+    const { nombre, descripcion, logo_url, activo } = body
+
+    // Validaciones
+    if (!nombre || typeof nombre !== 'string') {
       return NextResponse.json(
-        { success: false, error: 'La descripción es requerida' },
+        { success: false, error: 'El nombre del servicio es requerido', message: 'Debes proporcionar un nombre válido para el servicio' },
         { status: 400 }
+      )
+    }
+
+    if (nombre.trim().length < 3) {
+      return NextResponse.json(
+        { success: false, error: 'El nombre del servicio debe tener al menos 3 caracteres', message: 'El nombre proporcionado es demasiado corto' },
+        { status: 400 }
+      )
+    }
+
+    if (nombre.trim().length > 100) {
+      return NextResponse.json(
+        { success: false, error: 'El nombre del servicio no puede exceder 100 caracteres', message: 'El nombre proporcionado es demasiado largo' },
+        { status: 400 }
+      )
+    }
+
+    if (!descripcion || typeof descripcion !== 'string') {
+      return NextResponse.json(
+        { success: false, error: 'La descripción es requerida', message: 'Debes proporcionar una descripción válida para el servicio' },
+        { status: 400 }
+      )
+    }
+
+    if (descripcion.trim().length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'La descripción no puede estar vacía', message: 'Debes proporcionar una descripción con contenido' },
+        { status: 400 }
+      )
+    }
+
+    // Validar que no exista un servicio con el mismo nombre
+    const servicioExistente = await prisma.servicio.findFirst({
+      where: {
+        nombre: {
+          equals: nombre.trim(),
+          mode: 'insensitive'
+        }
+      }
+    })
+
+    if (servicioExistente) {
+      return NextResponse.json(
+        { success: false, error: 'Ya existe un servicio con ese nombre', message: `El servicio "${nombre.trim()}" ya está registrado en el sistema` },
+        { status: 409 }
       )
     }
 
@@ -95,8 +143,8 @@ export async function POST(request: NextRequest) {
       data: {
         nombre: nombre.trim(),
         descripcion: descripcion.trim(),
-        logoUrl: logo_url ? logo_url.trim() : null,
-        activo: activo !== undefined ? activo : true
+        logoUrl: logo_url && typeof logo_url === 'string' && logo_url.trim() ? logo_url.trim() : null,
+        activo: activo !== undefined ? Boolean(activo) : true
       }
     })
 
@@ -110,11 +158,36 @@ export async function POST(request: NextRequest) {
       created_at: nuevoServicio.fechaCreacion.toISOString()
     }
 
-    return NextResponse.json({ success: true, data: service }, { status: 201 })
+    console.log('[Admin Services POST] Servicio creado exitosamente:', service.id)
+    return NextResponse.json({ success: true, data: service, message: 'Servicio creado exitosamente' }, { status: 201 })
   } catch (error: any) {
     console.error('[Admin Services POST] Error:', error)
+    
+    // Manejo específico de errores de Prisma
+    if (error.code === 'P2002') {
+      return NextResponse.json(
+        { success: false, error: 'El servicio ya existe', message: 'Ya existe un servicio con esos datos en el sistema' },
+        { status: 409 }
+      )
+    }
+
+    if (error.code === 'P2003') {
+      return NextResponse.json(
+        { success: false, error: 'Error de relación en la base de datos', message: 'Hay un problema con las relaciones de datos' },
+        { status: 400 }
+      )
+    }
+
+    // Error de conexión a la base de datos
+    if (error.message && error.message.includes('connect')) {
+      return NextResponse.json(
+        { success: false, error: 'Error de conexión a la base de datos', message: 'No se pudo conectar con la base de datos. Verifica la configuración.' },
+        { status: 503 }
+      )
+    }
+
     return NextResponse.json(
-      { success: false, error: 'Error al crear servicio', message: error.message },
+      { success: false, error: 'Error al crear servicio', message: error.message || 'Error interno del servidor' },
       { status: 500 }
     )
   }

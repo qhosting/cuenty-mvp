@@ -66,6 +66,7 @@ export function LogoUploader({ value, onChange, error }: LogoUploaderProps) {
   const [selectedTab, setSelectedTab] = useState<'predefined' | 'upload' | 'url'>('predefined')
   const [uploading, setUploading] = useState(false)
   const [customUrl, setCustomUrl] = useState(value)
+  const [s3Available, setS3Available] = useState(true)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileUpload = async (file: File) => {
@@ -103,12 +104,22 @@ export function LogoUploader({ value, onChange, error }: LogoUploaderProps) {
       if (result.success && result.cloudStoragePath) {
         onChange(result.cloudStoragePath)
         toast.success('Logo subido correctamente')
+        setS3Available(true)
       } else {
-        toast.error(result.error || 'Error al subir el logo')
+        // Si hay error de configuración de S3, desactivar esta opción
+        if (result.error && (result.error.includes('S3') || result.error.includes('AWS') || result.error.includes('bucket'))) {
+          setS3Available(false)
+          toast.error('La subida de archivos no está disponible. Por favor usa logos predefinidos o una URL.')
+          setSelectedTab('predefined')
+        } else {
+          toast.error(result.error || 'Error al subir el logo')
+        }
       }
     } catch (error) {
       console.error('Error uploading file:', error)
-      toast.error('Error al subir el archivo')
+      toast.error('Error al subir el archivo. Intenta con una URL o logos predefinidos.')
+      setS3Available(false)
+      setSelectedTab('predefined')
     } finally {
       setUploading(false)
     }
@@ -163,15 +174,24 @@ export function LogoUploader({ value, onChange, error }: LogoUploaderProps) {
         </button>
         <button
           type="button"
-          onClick={() => setSelectedTab('upload')}
+          onClick={() => {
+            if (!s3Available) {
+              toast.error('La subida de archivos no está disponible. Configura AWS S3 primero.')
+              return
+            }
+            setSelectedTab('upload')
+          }}
           className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-            selectedTab === 'upload'
+            !s3Available 
+              ? 'text-slate-600 cursor-not-allowed opacity-50'
+              : selectedTab === 'upload'
               ? 'bg-blue-500 text-white'
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
+          disabled={!s3Available}
         >
           <Upload className="w-4 h-4 inline mr-1" />
-          Subir
+          Subir {!s3Available && '(No disponible)'}
         </button>
         <button
           type="button"
@@ -237,34 +257,47 @@ export function LogoUploader({ value, onChange, error }: LogoUploaderProps) {
         {/* Upload */}
         {selectedTab === 'upload' && (
           <div className="space-y-3">
-            <p className="text-xs text-slate-400">
-              Sube una imagen desde tu computadora (máx. 5MB)
-            </p>
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className="border-2 border-dashed border-slate-600 rounded-lg p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-slate-800/50 transition-all"
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                disabled={uploading}
-              />
-              {uploading ? (
-                <div className="flex flex-col items-center space-y-2">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
-                  <p className="text-sm text-slate-400">Subiendo logo...</p>
+            {s3Available ? (
+              <>
+                <p className="text-xs text-slate-400">
+                  Sube una imagen desde tu computadora (máx. 5MB)
+                </p>
+                <div
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  className={`border-2 border-dashed border-slate-600 rounded-lg p-8 text-center transition-all ${
+                    uploading ? 'cursor-wait' : 'cursor-pointer hover:border-blue-500 hover:bg-slate-800/50'
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    disabled={uploading}
+                  />
+                  {uploading ? (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                      <p className="text-sm text-slate-400">Subiendo logo...</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center space-y-2">
+                      <Upload className="w-8 h-8 text-slate-500" />
+                      <p className="text-sm text-slate-300">Haz clic para seleccionar una imagen</p>
+                      <p className="text-xs text-slate-500">JPG, PNG, GIF o WEBP (máx. 5MB)</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="flex flex-col items-center space-y-2">
-                  <Upload className="w-8 h-8 text-slate-500" />
-                  <p className="text-sm text-slate-300">Haz clic para seleccionar una imagen</p>
-                  <p className="text-xs text-slate-500">JPG, PNG, GIF o WEBP (máx. 5MB)</p>
-                </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <p className="text-sm text-yellow-400 mb-2">⚠️ Subida de archivos no disponible</p>
+                <p className="text-xs text-slate-400">
+                  La configuración de AWS S3 no está disponible. Por favor, usa logos predefinidos o ingresa una URL personalizada.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
