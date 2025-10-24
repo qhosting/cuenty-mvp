@@ -1,0 +1,120 @@
+
+import { NextRequest, NextResponse } from 'next/server'
+import jwt from 'jsonwebtoken'
+import { prisma } from '@/lib/prisma'
+
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+
+// Verificar token de autenticación
+function verifyToken(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null
+    }
+
+    const token = authHeader.substring(7)
+    const decoded = jwt.verify(token, ADMIN_SECRET)
+    return decoded
+  } catch (error) {
+    return null
+  }
+}
+
+// POST - Confirmar pago de la orden
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Verificar autenticación
+    const user = verifyToken(request)
+    if (!user) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      )
+    }
+
+    const ordenId = parseInt(params.id)
+
+    if (isNaN(ordenId)) {
+      return NextResponse.json(
+        { error: 'ID de orden inválido' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar que la orden existe
+    const ordenExistente = await prisma.orden.findUnique({
+      where: { idOrden: ordenId },
+      include: {
+        usuario: true,
+        items: {
+          include: {
+            plan: {
+              include: {
+                servicio: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    if (!ordenExistente) {
+      return NextResponse.json(
+        { error: 'Orden no encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Actualizar orden - marcar como pagada y registrar fecha de pago
+    const ordenActualizada = await prisma.orden.update({
+      where: { idOrden: ordenId },
+      data: {
+        estado: 'pagada',
+        fechaPago: new Date()
+      },
+      include: {
+        usuario: true,
+        items: {
+          include: {
+            plan: {
+              include: {
+                servicio: true
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // Transformar a formato esperado
+    const primerItem = ordenActualizada.items[0]
+    const order = {
+      id: ordenActualizada.idOrden.toString(),
+      usuario_celular: ordenActualizada.celularUsuario,
+      usuario_nombre: ordenActualizada.usuario.nombre || '',
+      usuario_email: ordenActualizada.usuario.email || '',
+      servicio_nombre: primerItem ? primerItem.plan.servicio.nombre : 'N/A',
+      plan_nombre: primerItem ? primerItem.plan.nombrePlan : 'N/A',
+      plan_duracion_meses: primerItem ? primerItem.plan.duracionMeses : 0,
+      total: Number(ordenActualizada.montoTotal),
+      estado: ordenActualizada.estado,
+      payment_status: 'confirmed', // Confirmado
+      payment_confirmed_at: ordenActualizada.fechaPago?.toISOString(),
+      created_at: ordenActualizada.fechaCreacion.toISOString(),
+      updated_at: ordenActualizada.fechaCreacion.toISOString(),
+      comprobante_url: null
+    }
+
+    return NextResponse.json(order)
+  } catch (error: any) {
+    console.error('[Admin Orders POST Confirm Payment] Error:', error)
+    return NextResponse.json(
+      { error: 'Error al confirmar pago', message: error.message },
+      { status: 500 }
+    )
+  }
+}
