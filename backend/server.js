@@ -44,6 +44,9 @@ app.use('/api/auth/user', require('./routes/authEnhancedRoutes')); // User auth 
 // Admin - Panel de administración completo
 app.use('/api/admin', require('./routes/adminRoutes'));
 
+// Admin - Gestión de usuarios
+app.use('/api/admin/users', require('./routes/usersAdminRoutes'));
+
 // Cliente - Panel de clientes
 app.use('/api/client', require('./routes/clientRoutes'));
 

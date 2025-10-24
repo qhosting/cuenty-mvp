@@ -14,6 +14,7 @@ import {
   CreditCard,
   ShoppingBag,
   Users,
+  UserCircle,
   Settings,
   LogOut,
   Menu,
@@ -63,6 +64,11 @@ const navigation = [
     name: 'Cuentas',
     href: '/admin/accounts',
     icon: Users
+  },
+  {
+    name: 'Usuarios',
+    href: '/admin/users',
+    icon: UserCircle
   },
   {
     name: 'Config. Pagos',
