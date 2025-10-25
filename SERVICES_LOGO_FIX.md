@@ -193,40 +193,10 @@ className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center jus
 **Archivo**: `/nextjs_space/app/api/admin/upload/route.ts`
 
 #### a) **Autenticación Agregada**
-```tsx
-import jwt from 'jsonwebtoken'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+Se ha implementado un middleware de autenticación en el endpoint de subida de archivos. Ahora, todas las peticiones a `/api/admin/upload` deben incluir un token JWT de administrador válido en el header `Authorization`.
 
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, ADMIN_SECRET)
-    return decoded
-  } catch (error) {
-    return null
-  }
-}
-
-export async function POST(request: NextRequest) {
-  // Verificar autenticación
-  const user = verifyToken(request)
-  if (!user) {
-    return NextResponse.json(
-      { success: false, error: 'No autorizado' },
-      { status: 401 }
-    )
-  }
-  
-  // ... resto del código
-}
-```
-
-**Beneficio**: 🔒 Solo usuarios autenticados pueden subir archivos
+**Beneficio**: 🔒 Solo los administradores autenticados pueden subir archivos, lo que previene el abuso del endpoint de subida.
 
 #### b) **URL Completa en Respuesta**
 ```tsx

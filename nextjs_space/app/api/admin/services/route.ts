@@ -1,36 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
-
-// Verificar token de autenticación
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, ADMIN_SECRET)
-    return decoded
-  } catch (error) {
-    return null
-  }
-}
+import { requireAdmin } from '@/lib/admin-middleware'
 
 // GET - Obtener todos los servicios
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    // Verificar autenticación y obtener payload del admin
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload // Retorna la respuesta de error si la autenticación falla
     }
 
     // Obtener servicios de la base de datos
@@ -63,13 +42,10 @@ export async function GET(request: NextRequest) {
 // POST - Crear nuevo servicio
 export async function POST(request: NextRequest) {
   try {
-    // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado', message: 'Token de autenticación inválido o expirado' },
-        { status: 401 }
-      )
+    // Verificar autenticación y obtener payload del admin
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload // Retorna la respuesta de error si la autenticación falla
     }
 
     // Parsear el body

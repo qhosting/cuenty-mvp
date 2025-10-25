@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+const ADMIN_SECRET = process.env.ADMIN_SECRET
 
 interface AdminTokenPayload {
   email: string
@@ -15,11 +15,16 @@ interface AdminTokenPayload {
  * Verifica si un token de administrador es válido
  */
 export function verifyAdminToken(token: string): AdminTokenPayload | null {
+  if (!ADMIN_SECRET) {
+    console.error('[verifyAdminToken] FATAL: La variable de entorno ADMIN_SECRET no está configurada.')
+    // Lanza un error para detener la ejecución de forma segura en lugar de retornar null
+    throw new Error('Error de configuración interna del servidor.')
+  }
   try {
     const decoded = jwt.verify(token, ADMIN_SECRET) as AdminTokenPayload
     return decoded
   } catch (error) {
-    console.error('Token verification error:', error)
+    console.error('Error en la verificación del token:', error)
     return null
   }
 }

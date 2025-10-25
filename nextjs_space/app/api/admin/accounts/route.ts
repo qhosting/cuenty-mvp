@@ -1,14 +1,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
-import crypto from 'crypto'
+import { requireAdmin } from '@/lib/admin-middleware'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'cuenty-encryption-key-32-characters-min'
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
 
 // Funciones de encriptación simples (deberían usar una librería más robusta en producción)
 function encrypt(text: string): string {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('La clave de cifrado no está configurada.')
+  }
   try {
     // Usar una encriptación simple de base64 por ahora
     // En producción, usar crypto.createCipheriv con un key apropiado
@@ -20,6 +21,9 @@ function encrypt(text: string): string {
 }
 
 function decrypt(encrypted: string): string {
+  if (!ENCRYPTION_KEY) {
+    throw new Error('La clave de cifrado no está configurada.')
+  }
   try {
     // Desencriptar desde base64
     return Buffer.from(encrypted, 'base64').toString('utf-8')
@@ -29,32 +33,13 @@ function decrypt(encrypted: string): string {
   }
 }
 
-// Verificar token de autenticación
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, ADMIN_SECRET)
-    return decoded
-  } catch (error) {
-    return null
-  }
-}
-
 // GET - Obtener todas las cuentas
 export async function GET(request: NextRequest) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
     }
 
     // Obtener cuentas de la base de datos
@@ -100,12 +85,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
     }
 
     const body = await request.json()

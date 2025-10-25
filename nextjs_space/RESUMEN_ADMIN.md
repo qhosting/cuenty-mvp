@@ -118,10 +118,7 @@ ADMIN_PASSWORD="tu-contraseña-segura"
 ```
 
 ### Credenciales Predeterminadas:
-Si no se configuran variables de entorno, se usan:
-- Email: `admin@cuenty.com`
-- Contraseña: `admin123`
-- Secret: `cuenty-admin-secret-change-in-production`
+Si no se configuran variables de entorno, se usan las credenciales por defecto especificadas en el código. Se recomienda encarecidamente configurar todas las variables de entorno de seguridad en producción.
 
 ---
 
