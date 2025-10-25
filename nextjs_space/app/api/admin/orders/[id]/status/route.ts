@@ -1,18 +1,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/admin-middleware'
 import { EstadoOrden } from '@prisma/client'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
 
 // Verificar token de autenticación
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
 
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, ADMIN_SECRET)
@@ -29,8 +22,10 @@ export async function PUT(
 ) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
+    }
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }

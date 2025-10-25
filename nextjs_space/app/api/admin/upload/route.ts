@@ -1,20 +1,12 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadFile } from '@/lib/s3'
-import jwt from 'jsonwebtoken'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
 
 // Verificar token de autenticación
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
 
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, ADMIN_SECRET)
@@ -27,8 +19,10 @@ function verifyToken(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
+    }
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }

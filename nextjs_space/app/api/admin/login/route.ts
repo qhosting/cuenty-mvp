@@ -1,15 +1,21 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 const prisma = new PrismaClient()
 
 // Secreto para firmar los tokens JWT
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+const ADMIN_SECRET = process.env.ADMIN_SECRET
 
 export async function POST(request: NextRequest) {
+  // Fallo de seguridad si el secreto no está configurado
+  if (!ADMIN_SECRET) {
+    console.error('[Admin Login] FATAL: La variable de entorno ADMIN_SECRET no está configurada.')
+    return NextResponse.json({ message: 'Error de configuración interna del servidor.' }, { status: 500 })
+  }
+
   try {
     console.log('[Admin Login] Recibida solicitud de login')
     

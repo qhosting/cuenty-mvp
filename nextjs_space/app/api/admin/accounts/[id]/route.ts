@@ -1,12 +1,13 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import jwt from 'jsonwebtoken'
 import { prisma } from '@/lib/prisma'
+import { requireAdmin } from '@/lib/admin-middleware'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'cuenty-admin-secret-change-in-production'
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY
 
 // Funciones de encriptación
 function encrypt(text: string): string {
+  if (!ENCRYPTION_KEY) throw new Error('La clave de cifrado no está configurada.')
   try {
     return Buffer.from(text).toString('base64')
   } catch (error) {
@@ -16,27 +17,12 @@ function encrypt(text: string): string {
 }
 
 function decrypt(encrypted: string): string {
+  if (!ENCRYPTION_KEY) throw new Error('La clave de cifrado no está configurada.')
   try {
     return Buffer.from(encrypted, 'base64').toString('utf-8')
   } catch (error) {
     console.error('Error al desencriptar:', error)
     return encrypted
-  }
-}
-
-// Verificar token de autenticación
-function verifyToken(request: NextRequest) {
-  try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return null
-    }
-
-    const token = authHeader.substring(7)
-    const decoded = jwt.verify(token, ADMIN_SECRET)
-    return decoded
-  } catch (error) {
-    return null
   }
 }
 
@@ -47,12 +33,9 @@ export async function PUT(
 ) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
     }
 
     const body = await request.json()
@@ -173,12 +156,9 @@ export async function DELETE(
 ) {
   try {
     // Verificar autenticación
-    const user = verifyToken(request)
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'No autorizado' },
-        { status: 401 }
-      )
+    const adminPayload = await requireAdmin(request)
+    if (adminPayload instanceof NextResponse) {
+      return adminPayload
     }
 
     const cuentaId = parseInt(params.id)

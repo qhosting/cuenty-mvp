@@ -3,6 +3,7 @@
 
 import axios, { AxiosResponse } from 'axios'
 import { toast } from 'react-hot-toast'
+import { Buffer } from 'buffer'
 
 // Use relative URL for API calls to work in all environments
 const API_BASE_URL = typeof window !== 'undefined' ? window.location.origin : ''
@@ -95,11 +96,42 @@ export const adminAuth = {
   },
 
   isAuthenticated: () => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('admin_token')
-      return !!token
+    if (typeof window === 'undefined') {
+      return false
     }
-    return false
+
+    const token = localStorage.getItem('admin_token')
+    if (!token) {
+      return false
+    }
+
+    try {
+      // Decodificar el payload del token (sin verificar la firma)
+      const payloadBase64 = token.split('.')[1]
+      if (!payloadBase64) return false
+
+      const payloadJson = Buffer.from(payloadBase64, 'base64').toString('utf-8')
+      const payload = JSON.parse(payloadJson)
+
+      // Comprobar si el token ha expirado
+      const now = Math.floor(Date.now() / 1000)
+      if (payload.exp && payload.exp < now) {
+        console.warn('Token de admin ha expirado.')
+        localStorage.removeItem('admin_token') // Limpiar token expirado
+        return false
+      }
+
+      // Comprobar si el rol es 'admin'
+      if (payload.role !== 'admin') {
+        console.warn('Token no tiene el rol de administrador.')
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error al decodificar el token de admin:', error)
+      return false
+    }
   },
 
   getProfile: async () => {
