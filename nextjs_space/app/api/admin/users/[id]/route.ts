@@ -86,9 +86,7 @@ export async function PUT(
   try {
     // Verificar autenticación
     const adminPayload = await requireAdmin(request)
-    if (adminPayload instanceof NextResponse) {
-      return adminPayload
-    }
+    if (!adminPayload) {
       return NextResponse.json(
         { success: false, error: 'No autorizado', message: 'Token de autenticación inválido o expirado' },
         { status: 401 }
