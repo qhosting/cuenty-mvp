@@ -15,6 +15,14 @@ async function requireAdmin(request: NextRequest) {
       return null
     }
 
+    const token = authHeader.substring(7)
+    const decoded = jwt.verify(token, ADMIN_SECRET)
+    return decoded
+  } catch (error) {
+    return null
+  }
+}
+
 // POST - Calcular totales de un combo
 export async function POST(request: NextRequest) {
   try {
