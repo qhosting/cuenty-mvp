@@ -79,6 +79,16 @@ app.use('/api/webhooks/n8n', require('./routes/webhookRoutes'));
 // Integración con Chatwoot
 app.use('/api/chatwoot', require('./routes/chatwootRoutes'));
 
+// ============================================
+// AUTOMATIZACIÓN COMPLETA - FASE 4
+// ============================================
+
+// Asignación automática de cuentas
+app.use('/api/auto-assign', require('./routes/autoAssignRoutes'));
+
+// Renovaciones automáticas
+app.use('/api/renewals', require('./routes/renewalRoutes'));
+
 // Alias para compatibilidad con Next.js frontend  
 // Proxy /api/products to Next.js API
 app.use('/api/products', createProxyMiddleware({
@@ -130,7 +140,11 @@ app.get('/api-info', (req, res) => {
       'usuarios': '/api/usuarios',
       'tickets': '/api/tickets',
       'contact': '/api/contact',
-      'webhooks': '/api/webhooks/n8n'
+      'webhooks': '/api/webhooks/n8n',
+      
+      // Automatización Fase 4
+      'auto_assign': '/api/auto-assign',
+      'renewals': '/api/renewals'
     },
     features: {
       user_authentication: 'Autenticación con teléfono y código de verificación',
@@ -140,7 +154,15 @@ app.get('/api-info', (req, res) => {
       order_management: 'Gestión avanzada de órdenes con estados',
       payment_instructions: 'Instrucciones de pago bancario automáticas',
       credential_delivery: 'Entrega de credenciales por WhatsApp, email o web',
-      admin_panel: 'Panel de administración completo'
+      admin_panel: 'Panel de administración completo',
+      
+      // Automatización Fase 4
+      auto_assignment: 'Asignación automática de cuentas a órdenes pagadas',
+      auto_renewals: 'Renovaciones automáticas con cron jobs',
+      chatwoot_integration: 'Envío de mensajes WhatsApp vía Chatwoot',
+      email_automation: 'Emails transaccionales automáticos',
+      smart_notifications: 'Notificaciones inteligentes de vencimiento',
+      bulk_processing: 'Procesamiento masivo de asignaciones'
     },
     documentation: {
       message: 'Documentación completa disponible en /api/docs',
