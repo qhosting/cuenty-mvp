@@ -2,10 +2,18 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
+import jwt from 'jsonwebtoken'
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000'
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'default-secret'
 
-// Verificar token de autenticación
+// Función para verificar token de autenticación admin
+async function requireAdmin(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null
+    }
 
     const token = authHeader.substring(7)
     const decoded = jwt.verify(token, ADMIN_SECRET)
@@ -23,9 +31,7 @@ export async function GET(
   try {
     // Verificar autenticación
     const adminPayload = await requireAdmin(request)
-    if (adminPayload instanceof NextResponse) {
-      return adminPayload
-    }
+    if (!adminPayload) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -53,9 +59,7 @@ export async function PUT(
   try {
     // Verificar autenticación
     const adminPayload = await requireAdmin(request)
-    if (adminPayload instanceof NextResponse) {
-      return adminPayload
-    }
+    if (!adminPayload) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
@@ -90,9 +94,7 @@ export async function DELETE(
   try {
     // Verificar autenticación
     const adminPayload = await requireAdmin(request)
-    if (adminPayload instanceof NextResponse) {
-      return adminPayload
-    }
+    if (!adminPayload) {
       return NextResponse.json(
         { success: false, error: 'No autorizado' },
         { status: 401 }
