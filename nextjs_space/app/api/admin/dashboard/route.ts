@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'default-secret'
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.JWT_SECRET || 'cuenty-admin-secret-key-change-in-production'
 
 async function requireAdmin(request: NextRequest) {
   try {
@@ -189,7 +189,10 @@ export async function GET(request: NextRequest) {
         ordersByStatus
       }
 
-      return NextResponse.json(dashboardData)
+      return NextResponse.json({
+        success: true,
+        data: dashboardData
+      })
       
     } catch (dbError: any) {
       // Si hay error de base de datos, devolver datos de ejemplo con advertencia

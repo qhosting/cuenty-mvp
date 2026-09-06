@@ -229,10 +229,12 @@ exports.loginAdmin = async (req, res) => {
 
     console.log(`[AuthController] Login exitoso para: ${admin.username}`);
 
-    // Generar token JWT
+    // Generar token JWT con rol admin e isAdmin para compatibilidad completa
     const token = generateToken({
       id: admin.id,
       username: admin.username,
+      email: admin.email,
+      role: 'admin',
       isAdmin: true
     });
 

@@ -133,81 +133,18 @@ export default function AdminOrdersPage() {
       
       const result = await adminApiService.getOrders(filters)
       
-      if (result.success) {
-        setOrders(result.data)
+      if (result.success && result.data) {
+        const ordersList = Array.isArray(result.data)
+          ? result.data
+          : (Array.isArray(result.data.ordenes) ? result.data.ordenes : [])
+        setOrders(ordersList)
       } else {
-        // Mock data for demo con payment_status
-        setOrders([
-          {
-            id: '1',
-            usuario_celular: '+56987654321',
-            usuario_nombre: 'Juan Pérez',
-            usuario_email: 'juan@email.com',
-            servicio_nombre: 'Netflix',
-            plan_nombre: 'Plan Premium',
-            plan_duracion_meses: 1,
-            total: 15990,
-            estado: 'entregado',
-            payment_status: 'confirmed',
-            payment_confirmed_at: '2024-01-15T12:30:00Z',
-            payment_confirmed_by: 1,
-            admin_confirmador: {
-              id: 1,
-              username: 'admin',
-              email: 'admin@cuenty.cl'
-            },
-            created_at: '2024-01-15T10:30:00Z',
-            updated_at: '2024-01-15T14:30:00Z',
-            comprobante_url: '/comprobantes/orden-1.jpg'
-          },
-          {
-            id: '2',
-            usuario_celular: '+56912345678',
-            usuario_nombre: 'María González',
-            usuario_email: 'maria@email.com',
-            servicio_nombre: 'Disney+',
-            plan_nombre: 'Plan Familiar',
-            plan_duracion_meses: 3,
-            total: 35990,
-            estado: 'pagado',
-            payment_status: 'pending',
-            created_at: '2024-01-14T09:15:00Z',
-            updated_at: '2024-01-14T11:20:00Z',
-            comprobante_url: '/comprobantes/orden-2.jpg'
-          },
-          {
-            id: '3',
-            usuario_celular: '+56945678901',
-            usuario_nombre: 'Carlos Silva',
-            usuario_email: 'carlos@email.com',
-            servicio_nombre: 'HBO Max',
-            plan_nombre: 'Plan Estándar',
-            plan_duracion_meses: 1,
-            total: 12990,
-            estado: 'pendiente',
-            payment_status: 'pending',
-            created_at: '2024-01-13T14:45:00Z',
-            updated_at: '2024-01-13T14:45:00Z'
-          },
-          {
-            id: '4',
-            usuario_celular: '+56923456789',
-            usuario_nombre: 'Ana Torres',
-            usuario_email: 'ana@email.com',
-            servicio_nombre: 'Spotify',
-            plan_nombre: 'Plan Individual',
-            plan_duracion_meses: 6,
-            total: 29990,
-            estado: 'cancelado',
-            payment_status: 'failed',
-            created_at: '2024-01-12T16:20:00Z',
-            updated_at: '2024-01-12T18:30:00Z'
-          }
-        ])
+        setOrders([])
         toast.error(result.message || 'Error al cargar pedidos')
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      setOrders([])
+      toast.error('Error de conexión al cargar pedidos')
     } finally {
       setLoading(false)
     }

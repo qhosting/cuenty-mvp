@@ -13,12 +13,41 @@
  * considera agregar un campo 'role' al schema de Prisma.
  */
 
-const { PrismaClient } = require('../nextjs_space/node_modules/.prisma/client');
-const bcrypt = require('bcryptjs');
 const path = require('path');
+const { PrismaClient } = require('../nextjs_space/node_modules/.prisma/client');
 
-// Cargar variables de entorno desde el archivo .env en la raíz del proyecto
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+// Intentar cargar bcryptjs robustamente
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+} catch (e) {
+  try {
+    bcrypt = require(path.join(__dirname, '..', 'nextjs_space', 'node_modules', 'bcryptjs'));
+  } catch (err) {
+    try {
+      bcrypt = require(path.join(__dirname, '..', 'backend', 'node_modules', 'bcryptjs'));
+    } catch (err2) {
+      console.error('❌ Error: No se pudo cargar bcryptjs.');
+      process.exit(1);
+    }
+  }
+}
+
+// Intentar cargar dotenv robustamente
+const rootEnvPath = path.join(__dirname, '..', '.env');
+try {
+  require('dotenv').config({ path: rootEnvPath });
+} catch (e) {
+  try {
+    require(path.join(__dirname, '..', 'backend', 'node_modules', 'dotenv')).config({ path: rootEnvPath });
+  } catch (err) {
+    try {
+      require(path.join(__dirname, '..', 'nextjs_space', 'node_modules', 'dotenv')).config({ path: rootEnvPath });
+    } catch (err2) {
+      console.warn('⚠️  No se pudo inicializar dotenv en seed-users.js');
+    }
+  }
+}
 
 const prisma = new PrismaClient();
 

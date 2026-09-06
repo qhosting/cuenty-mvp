@@ -64,73 +64,28 @@ export default function AdminAccountsPage() {
         adminApiService.getServices()
       ])
       
-      if (accountsResult.success) {
-        setAccounts(accountsResult.data)
+      if (accountsResult.success && accountsResult.data) {
+        const accountsList = Array.isArray(accountsResult.data)
+          ? accountsResult.data
+          : (Array.isArray(accountsResult.data.cuentas) ? accountsResult.data.cuentas : [])
+        setAccounts(accountsList)
       } else {
-        // Mock data for demo
-        setAccounts([
-          {
-            id: '1',
-            servicio_id: '1',
-            servicio_nombre: 'Netflix',
-            email: 'netflix.premium@example.com',
-            password: 'NetflixPass123!',
-            perfil: 'Perfil 1',
-            slots_totales: 4,
-            slots_usados: 2,
-            activo: true,
-            created_at: '2024-01-15T10:30:00Z'
-          },
-          {
-            id: '2',
-            servicio_id: '1',
-            servicio_nombre: 'Netflix',
-            email: 'netflix.family@example.com',
-            password: 'FamilyNet456!',
-            perfil: 'Perfil 2',
-            slots_totales: 4,
-            slots_usados: 4,
-            activo: true,
-            created_at: '2024-01-14T09:15:00Z'
-          },
-          {
-            id: '3',
-            servicio_id: '2',
-            servicio_nombre: 'Disney+',
-            email: 'disney.premium@example.com',
-            password: 'DisneyMagic789!',
-            perfil: 'Perfil Principal',
-            slots_totales: 7,
-            slots_usados: 3,
-            activo: true,
-            created_at: '2024-01-13T14:45:00Z'
-          },
-          {
-            id: '4',
-            servicio_id: '3',
-            servicio_nombre: 'HBO Max',
-            email: 'hbo.max@example.com',
-            password: 'HBO2024Pass!',
-            perfil: 'Usuario 1',
-            slots_totales: 3,
-            slots_usados: 1,
-            activo: false,
-            created_at: '2024-01-12T16:20:00Z'
-          }
-        ])
+        setAccounts([])
+        toast.error(accountsResult.message || 'Error al cargar cuentas')
       }
       
-      if (servicesResult.success) {
-        setServices(servicesResult.data)
+      if (servicesResult.success && servicesResult.data) {
+        const servicesList = Array.isArray(servicesResult.data)
+          ? servicesResult.data
+          : (Array.isArray(servicesResult.data.servicios) ? servicesResult.data.servicios : [])
+        setServices(servicesList)
       } else {
-        setServices([
-          { id: '1', nombre: 'Netflix' },
-          { id: '2', nombre: 'Disney+' },
-          { id: '3', nombre: 'HBO Max' }
-        ])
+        setServices([])
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      setAccounts([])
+      setServices([])
+      toast.error('Error de conexión al cargar cuentas')
     } finally {
       setLoading(false)
     }

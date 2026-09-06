@@ -1,38 +1,68 @@
-
 import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 
-// Default site configuration
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
+// Default fallback configuration in case DB is unreachable
 const defaultConfig = {
-  logoUrl: null, // No custom logo by default, will use Isotipo
+  logoUrl: null,
   footerLogoUrl: null,
   logoSize: 'medium' as const,
   siteName: 'CUENTY',
   siteDescription: 'Plataforma de suscripciones compartidas',
+  whatsappNumber: 'message/IOR2WUU66JVMM1'
 }
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Fetch from database when ready
-    // For now, return default configuration
-    return NextResponse.json(defaultConfig)
+    let config = await prisma.siteConfig.findFirst()
+    
+    if (!config) {
+      // Create initial configuration record if none exists
+      config = await prisma.siteConfig.create({
+        data: {}
+      })
+    }
+    
+    return NextResponse.json(config)
   } catch (error) {
-    console.error('[Site Config] Error:', error)
-    return NextResponse.json(defaultConfig) // Always return default config on error
+    console.error('[Site Config] Error fetching from database:', error)
+    return NextResponse.json(defaultConfig)
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Save to database when ready
     const body = await request.json()
     
-    // Validate the configuration
-    const config = {
-      logoUrl: body.logoUrl || null,
-      footerLogoUrl: body.footerLogoUrl || null,
-      logoSize: body.logoSize || 'medium',
-      siteName: body.siteName || 'CUENTY',
-      siteDescription: body.siteDescription || 'Plataforma de suscripciones compartidas',
+    let config = await prisma.siteConfig.findFirst()
+    
+    if (!config) {
+      config = await prisma.siteConfig.create({
+        data: {
+          logoUrl: body.logoUrl || null,
+          footerLogoUrl: body.footerLogoUrl || null,
+          logoSize: body.logoSize || 'medium',
+          ...(body.heroTitle && { heroTitle: body.heroTitle }),
+          ...(body.heroSubtitle && { heroSubtitle: body.heroSubtitle }),
+          ...(body.whatsappNumber && { whatsappNumber: body.whatsappNumber }),
+          ...(body.supportEmail && { supportEmail: body.supportEmail })
+        }
+      })
+    } else {
+      config = await prisma.siteConfig.update({
+        where: { id: config.id },
+        data: {
+          ...(body.logoUrl !== undefined && { logoUrl: body.logoUrl }),
+          ...(body.footerLogoUrl !== undefined && { footerLogoUrl: body.footerLogoUrl }),
+          ...(body.logoSize !== undefined && { logoSize: body.logoSize }),
+          ...(body.heroTitle !== undefined && { heroTitle: body.heroTitle }),
+          ...(body.heroSubtitle !== undefined && { heroSubtitle: body.heroSubtitle }),
+          ...(body.whatsappNumber !== undefined && { whatsappNumber: body.whatsappNumber }),
+          ...(body.supportEmail !== undefined && { supportEmail: body.supportEmail })
+        }
+      })
     }
     
     return NextResponse.json({
@@ -41,7 +71,7 @@ export async function POST(request: NextRequest) {
       data: config
     })
   } catch (error) {
-    console.error('[Site Config] Error saving:', error)
+    console.error('[Site Config] Error saving to database:', error)
     return NextResponse.json(
       { success: false, message: 'Error al guardar configuración' },
       { status: 500 }

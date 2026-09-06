@@ -121,9 +121,9 @@ export const adminAuth = {
         return false
       }
 
-      // Comprobar si el rol es 'admin'
-      if (payload.role !== 'admin') {
-        console.warn('Token no tiene el rol de administrador.')
+      // Comprobar si el rol es 'admin' o tiene flag isAdmin
+      if (payload.role !== 'admin' && !payload.isAdmin) {
+        console.warn('Token no tiene permisos de administrador.')
         return false
       }
 
@@ -245,7 +245,12 @@ export const adminApiService = {
   getOrders: async (filters?: any) => {
     try {
       const response = await adminApi.get('/api/admin/orders', { params: filters })
-      return response.data.success ? { success: true, data: response.data.data } : { success: false, message: response.data.error }
+      if (!response.data.success) {
+        return { success: false, message: response.data.error || response.data.message }
+      }
+      const rawData = response.data.data
+      const orders = Array.isArray(rawData) ? rawData : (Array.isArray(rawData?.ordenes) ? rawData.ordenes : [])
+      return { success: true, data: orders }
     } catch (error: any) {
       const message = error.response?.data?.error || error.response?.data?.message || 'Error al obtener órdenes'
       return { success: false, message }

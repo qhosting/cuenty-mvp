@@ -56,58 +56,28 @@ export default function AdminPlansPage() {
         adminApiService.getServices()
       ])
       
-      if (plansResult.success) {
-        setPlans(plansResult.data)
+      if (plansResult.success && plansResult.data) {
+        const plansList = Array.isArray(plansResult.data)
+          ? plansResult.data
+          : (Array.isArray(plansResult.data.planes) ? plansResult.data.planes : [])
+        setPlans(plansList)
       } else {
-        // Mock data for demo
-        setPlans([
-          {
-            id: '1',
-            servicio_id: '1',
-            servicio_nombre: 'Netflix',
-            nombre: 'Plan Premium',
-            duracion_meses: 1,
-            precio: 15990,
-            slots_disponibles: 4,
-            activo: true,
-            created_at: '2024-01-15T10:30:00Z'
-          },
-          {
-            id: '2',
-            servicio_id: '1',
-            servicio_nombre: 'Netflix',
-            nombre: 'Plan Premium - 3 meses',
-            duracion_meses: 3,
-            precio: 42990,
-            slots_disponibles: 4,
-            activo: true,
-            created_at: '2024-01-14T09:15:00Z'
-          },
-          {
-            id: '3',
-            servicio_id: '2',
-            servicio_nombre: 'Disney+',
-            nombre: 'Plan Familiar',
-            duracion_meses: 1,
-            precio: 12990,
-            slots_disponibles: 7,
-            activo: true,
-            created_at: '2024-01-13T14:45:00Z'
-          }
-        ])
+        setPlans([])
+        toast.error(plansResult.message || 'Error al cargar planes')
       }
       
-      if (servicesResult.success) {
-        setServices(servicesResult.data)
+      if (servicesResult.success && servicesResult.data) {
+        const servicesList = Array.isArray(servicesResult.data)
+          ? servicesResult.data
+          : (Array.isArray(servicesResult.data.servicios) ? servicesResult.data.servicios : [])
+        setServices(servicesList)
       } else {
-        setServices([
-          { id: '1', nombre: 'Netflix' },
-          { id: '2', nombre: 'Disney+' },
-          { id: '3', nombre: 'HBO Max' }
-        ])
+        setServices([])
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      setPlans([])
+      setServices([])
+      toast.error('Error de conexión al cargar datos')
     } finally {
       setLoading(false)
     }

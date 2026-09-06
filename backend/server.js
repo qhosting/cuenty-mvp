@@ -32,12 +32,37 @@ app.use(express.urlencoded({ extended: true }));
 // NO servir index.html automáticamente para evitar conflictos con Next.js
 app.use('/public', express.static('public'));
 
+// Proxy helper para rutas API de Next.js
+const nextjsApiProxy = createProxyMiddleware({
+  target: NEXTJS_URL,
+  changeOrigin: true,
+  ws: true,
+  onProxyReq: (proxyReq, req, res) => {
+    console.log(`🔀 Proxy API: ${req.method} ${req.originalUrl || req.url} -> ${NEXTJS_URL}${req.originalUrl || req.url}`);
+  },
+  onError: (err, req, res) => {
+    console.error('❌ Error en proxy API a Next.js:', err.message);
+    res.status(503).json({ error: 'Servicio frontend no disponible' });
+  }
+});
+
 // Rutas de la API
 
 // Versión de la API (público)
 app.use('/api/version', require('./routes/versionRoutes'));
 
-// Autenticación
+// Proxy para endpoints de NextAuth hacia Next.js
+app.use([
+  '/api/auth/session',
+  '/api/auth/providers',
+  '/api/auth/csrf',
+  '/api/auth/signin',
+  '/api/auth/callback',
+  '/api/auth/signout',
+  '/api/auth/error'
+], nextjsApiProxy);
+
+// Autenticación Backend
 app.use('/api/auth', require('./routes/authRoutes')); // Admin auth (legacy)
 app.use('/api/auth/user', require('./routes/authEnhancedRoutes')); // User auth con teléfono
 
@@ -89,18 +114,11 @@ app.use('/api/auto-assign', require('./routes/autoAssignRoutes'));
 // Renovaciones automáticas
 app.use('/api/renewals', require('./routes/renewalRoutes'));
 
-// Alias para compatibilidad con Next.js frontend  
-// Proxy /api/products to Next.js API
-app.use('/api/products', createProxyMiddleware({
-  target: NEXTJS_URL,
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/products': '/api/products',
-  },
-  onProxyReq: (proxyReq, req, res) => {
-    console.log(`🔀 Proxy API: ${req.method} ${req.path} -> ${NEXTJS_URL}${req.path}`);
-  },
-}));
+// Proxies dedicados para rutas de Next.js API
+app.use('/api/products', nextjsApiProxy);
+app.use('/api/orders', nextjsApiProxy);
+app.use('/api/signup', nextjsApiProxy);
+app.use('/api/site-config', nextjsApiProxy);
 
 // Ruta de salud del servidor
 app.get('/health', (req, res) => {
@@ -174,13 +192,15 @@ app.get('/api-info', (req, res) => {
 
 // Proxy para Next.js Frontend - Debe estar DESPUÉS de todas las rutas de API
 // pero ANTES del manejo de errores 404
-// (NEXTJS_URL defined at top of file)
+// Proxy fallback para cualquier otra ruta de /api no capturada por Express hacia Next.js
+app.use('/api', (req, res, next) => {
+  return nextjsApiProxy(req, res, next);
+});
 
-// Solo hacer proxy si NO es una ruta de API, health check, o recursos estáticos
+// Proxy para Next.js Frontend - Páginas y recursos estáticos
+// Solo evitar proxy si es health check, api-info, o archivos estáticos de Express
 app.use('/', (req, res, next) => {
-  // Si es una ruta de API, health check, o recursos estáticos, pasar al siguiente middleware
-  if (req.path.startsWith('/api') || 
-      req.path.startsWith('/health') || 
+  if (req.path.startsWith('/health') || 
       req.path.startsWith('/api-info') ||
       req.path.startsWith('/public')) {
     return next();
@@ -190,7 +210,7 @@ app.use('/', (req, res, next) => {
   return createProxyMiddleware({
     target: NEXTJS_URL,
     changeOrigin: true,
-    ws: true, // Soporte para WebSockets (útil para hot reload en desarrollo)
+    ws: true, // Soporte para WebSockets
     onProxyReq: (proxyReq, req, res) => {
       console.log(`🔀 Proxy: ${req.method} ${req.path} -> ${NEXTJS_URL}${req.path}`);
     },

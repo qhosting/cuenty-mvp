@@ -2,24 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || 'cuenty-admin-secret-key-change-in-production'
 
 interface AdminTokenPayload {
-  email: string
-  role: string
-  iat: number
-  exp: number
+  email?: string
+  role?: string
+  isAdmin?: boolean
+  iat?: number
+  exp?: number
 }
 
 /**
  * Verifica si un token de administrador es válido
  */
 export function verifyAdminToken(token: string): AdminTokenPayload | null {
-  if (!ADMIN_SECRET) {
-    console.error('[verifyAdminToken] FATAL: La variable de entorno ADMIN_SECRET no está configurada.')
-    // Lanza un error para detener la ejecución de forma segura en lugar de retornar null
-    throw new Error('Error de configuración interna del servidor.')
-  }
   try {
     const decoded = jwt.verify(token, ADMIN_SECRET) as AdminTokenPayload
     return decoded
@@ -53,7 +49,7 @@ export function adminAuthMiddleware(request: NextRequest): NextResponse | null {
     )
   }
 
-  if (payload.role !== 'admin') {
+  if (payload.role !== 'admin' && !payload.isAdmin) {
     return NextResponse.json(
       { message: 'No tienes permisos de administrador' },
       { status: 403 }

@@ -69,55 +69,31 @@ export default function AdminDashboardPage() {
       const result = await adminApiService.getDashboard()
       console.log('[AdminDashboard] Resultado de la API:', result)
       
-      if (result.success) {
+      if (result.success && result.data) {
         console.log('[AdminDashboard] Datos cargados exitosamente')
-        setStats(result.data)
+        setStats({
+          totalOrders: Number(result.data.totalOrders || 0),
+          totalRevenue: Number(result.data.totalRevenue || 0),
+          totalUsers: Number(result.data.totalUsers || 0),
+          activeServices: Number(result.data.activeServices || 0),
+          salesData: Array.isArray(result.data.salesData) ? result.data.salesData : [],
+          topServices: Array.isArray(result.data.topServices) ? result.data.topServices : [],
+          ordersByStatus: Array.isArray(result.data.ordersByStatus) ? result.data.ordersByStatus : []
+        })
       } else {
-        console.warn('[AdminDashboard] API falló, usando datos mock:', result.message)
-        // Set mock data if API fails
-        setStats(getMockStats())
-        toast.error(result.message || 'Error al cargar estadísticas, mostrando datos de ejemplo')
+        console.warn('[AdminDashboard] Error al obtener estadísticas:', result.message)
+        setStats(defaultStats)
+        toast.error(result.message || 'Error al cargar estadísticas')
       }
     } catch (error) {
       console.error('[AdminDashboard] Error al cargar datos:', error)
-      toast.error('Error de conexión, mostrando datos de ejemplo')
-      // Set mock data on error
-      setStats(getMockStats())
+      toast.error('Error de conexión al cargar estadísticas')
+      setStats(defaultStats)
     } finally {
       setLoading(false)
       console.log('[AdminDashboard] Carga completada')
     }
   }
-
-  // Helper function to get mock stats
-  const getMockStats = (): DashboardStats => ({
-    totalOrders: 156,
-    totalRevenue: 45280,
-    totalUsers: 89,
-    activeServices: 12,
-    salesData: [
-      { day: 'Lun', sales: 4200 },
-      { day: 'Mar', sales: 3800 },
-      { day: 'Mie', sales: 5100 },
-      { day: 'Jue', sales: 4600 },
-      { day: 'Vie', sales: 6200 },
-      { day: 'Sab', sales: 7800 },
-      { day: 'Dom', sales: 6400 }
-    ],
-    topServices: [
-      { name: 'Netflix Premium', sales: 45, revenue: 13500 },
-      { name: 'Disney+ Familiar', sales: 32, revenue: 9600 },
-      { name: 'HBO Max', sales: 28, revenue: 8400 },
-      { name: 'Amazon Prime', sales: 24, revenue: 7200 },
-      { name: 'Spotify Premium', sales: 18, revenue: 5400 }
-    ],
-    ordersByStatus: [
-      { status: 'Completadas', count: 89, color: '#22c55e' },
-      { status: 'Pendientes', count: 34, color: '#f59e0b' },
-      { status: 'En Proceso', count: 23, color: '#3b82f6' },
-      { status: 'Canceladas', count: 10, color: '#ef4444' }
-    ]
-  })
 
   const statCards = [
     {

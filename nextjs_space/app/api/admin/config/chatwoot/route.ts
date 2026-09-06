@@ -1,10 +1,9 @@
 
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
-const prisma = new PrismaClient()
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'default-secret'
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.JWT_SECRET || 'cuenty-admin-secret-key-change-in-production'
 
 // Función para verificar token de autenticación admin
 async function requireAdmin(request: NextRequest) {

@@ -4,8 +4,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import axios from 'axios'
 import jwt from 'jsonwebtoken'
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000'
-const ADMIN_SECRET = process.env.ADMIN_SECRET || 'default-secret'
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3000'
+const ADMIN_SECRET = process.env.ADMIN_SECRET || process.env.JWT_SECRET || 'cuenty-admin-secret-key-change-in-production'
 
 // Función para verificar token de autenticación admin
 async function requireAdmin(request: NextRequest) {

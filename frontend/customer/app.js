@@ -146,127 +146,28 @@ async function loadProducts() {
     try {
         showLoading();
         
-        // First try to load from the existing backend API
-        let response;
-        try {
-            response = await fetch('/api/productos');
-        } catch (error) {
-            // Fallback to mock data if backend is not available
-            console.log('Backend not available, using mock data');
-            productos = getMockProducts();
-            displayProducts(productos);
-            return;
-        }
+        let response = await fetch('/api/productos');
 
         if (response.ok) {
             const data = await response.json();
             productos = data.productos || data;
+            displayProducts(productos);
         } else {
-            // Fallback to mock data
-            productos = getMockProducts();
+            console.error('Error del servidor al cargar productos:', response.status);
+            productos = [];
+            const container = document.getElementById('productos-container');
+            if (container) {
+                container.innerHTML = '<div class="text-center text-muted" style="padding: 40px;">No se pudieron cargar los productos en este momento. Por favor intenta más tarde.</div>';
+            }
         }
-        
-        displayProducts(productos);
     } catch (error) {
         console.error('Error loading products:', error);
-        productos = getMockProducts();
-        displayProducts(productos);
-    }
-}
-
-// Mock products data
-function getMockProducts() {
-    return [
-        {
-            id: 1,
-            name: 'Netflix Premium',
-            description: '4K UHD, 4 pantallas simultáneas, sin anuncios',
-            price: 89,
-            duration: 30,
-            category: 'streaming',
-            icon: '🎬',
-            color: 'linear-gradient(135deg, #ef4444, #dc2626)',
-            features: ['4K Ultra HD', '4 Pantallas', 'Sin Publicidad', 'Descargas'],
-            popular: true
-        },
-        {
-            id: 2,
-            name: 'Disney+ Premium',
-            description: 'Contenido Disney, Pixar, Marvel, Star Wars',
-            price: 69,
-            duration: 30,
-            category: 'streaming',
-            icon: '🏰',
-            color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-            features: ['4K HDR', 'Sin Límites', 'Todo Disney', 'Estrenar Primero']
-        },
-        {
-            id: 3,
-            name: 'HBO Max',
-            description: 'Series exclusivas, películas y documentales',
-            price: 79,
-            duration: 30,
-            category: 'streaming',
-            icon: '👑',
-            color: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-            features: ['Contenido Exclusivo', 'Sin Anuncios', 'Máxima Calidad', 'Estrenos']
-        },
-        {
-            id: 4,
-            name: 'Prime Video',
-            description: 'Películas, series y envío gratis Amazon',
-            price: 59,
-            duration: 30,
-            category: 'streaming',
-            icon: '📦',
-            color: 'linear-gradient(135deg, #f97316, #ea580c)',
-            features: ['Prime Shipping', 'Video HD', 'Música Incluida', 'Lectura']
-        },
-        {
-            id: 5,
-            name: 'Spotify Premium',
-            description: 'Música sin límites, sin anuncios, offline',
-            price: 49,
-            duration: 30,
-            category: 'music',
-            icon: '🎵',
-            color: 'linear-gradient(135deg, #10b981, #059669)',
-            features: ['Sin Anuncios', 'Offline', 'Alta Calidad', 'Playlists']
-        },
-        {
-            id: 6,
-            name: 'YouTube Premium',
-            description: 'Sin anuncios, background play, YouTube Music',
-            price: 39,
-            duration: 30,
-            category: 'streaming',
-            icon: '📺',
-            color: 'linear-gradient(135deg, #ef4444, #dc2626)',
-            features: ['Sin Publicidad', 'Background Play', 'YouTube Music', 'Descargas']
-        },
-        {
-            id: 7,
-            name: 'Apple TV+',
-            description: 'Contenido original de Apple en alta calidad',
-            price: 35,
-            duration: 30,
-            category: 'streaming',
-            icon: '🍎',
-            color: 'linear-gradient(135deg, #6b7280, #4b5563)',
-            features: ['Contenido Original', '4K Dolby', 'Sin Anuncios', 'Familia']
-        },
-        {
-            id: 8,
-            name: 'Crunchyroll',
-            description: 'Anime y manga premium sin restricciones',
-            price: 45,
-            duration: 30,
-            category: 'streaming',
-            icon: '🍜',
-            color: 'linear-gradient(135deg, #f97316, #fbbf24)',
-            features: ['Sin Anuncios', 'Simulcast', 'Manga Premium', 'Offline']
+        productos = [];
+        const container = document.getElementById('productos-container');
+        if (container) {
+            container.innerHTML = '<div class="text-center text-muted" style="padding: 40px;">Error de conexión con el servidor. Por favor intenta más tarde.</div>';
         }
-    ];
+    }
 }
 
 // Show loading state
@@ -587,8 +488,7 @@ async function consultarMisCuentas() {
         }
     } catch (error) {
         console.error('Error consulting accounts:', error);
-        // Show mock data for demonstration
-        displayMockCuentas();
+        resultadoContainer.innerHTML = '<div class="text-center text-danger" style="padding: 20px;">Error al consultar cuentas. Por favor intenta más tarde.</div>';
     }
 }
 
@@ -615,26 +515,6 @@ function displayCuentas(cuentas) {
             </div>
         </div>
     `).join('');
-}
-
-// Display mock cuentas for demo
-function displayMockCuentas() {
-    const mockCuentas = [
-        {
-            servicio: 'Netflix Premium',
-            usuario: 'user@example.com',
-            activo: true,
-            fecha_vencimiento: '2025-11-15'
-        },
-        {
-            servicio: 'Disney+ Premium',
-            usuario: 'disney@example.com',
-            activo: true,
-            fecha_vencimiento: '2025-10-28'
-        }
-    ];
-    
-    displayCuentas(mockCuentas);
 }
 
 // Send contact form

@@ -44,48 +44,18 @@ export default function AdminServicesPage() {
       setLoading(true)
       const result = await adminApiService.getServices()
       
-      if (result.success) {
-        setServices(result.data)
+      if (result.success && result.data) {
+        const servicesList = Array.isArray(result.data)
+          ? result.data
+          : (Array.isArray(result.data.servicios) ? result.data.servicios : [])
+        setServices(servicesList)
       } else {
-        // Mock data for demo
-        setServices([
-          {
-            id: '1',
-            nombre: 'Netflix',
-            descripcion: 'Plataforma de streaming de películas y series',
-            logo_url: '/images/netflix-logo.png',
-            activo: true,
-            created_at: '2024-01-15T10:30:00Z'
-          },
-          {
-            id: '2',
-            nombre: 'Disney+',
-            descripcion: 'Contenido familiar y de Disney',
-            logo_url: '/images/disney-logo.png',
-            activo: true,
-            created_at: '2024-01-14T09:15:00Z'
-          },
-          {
-            id: '3',
-            nombre: 'HBO Max',
-            descripcion: 'Series y películas premium',
-            logo_url: '/images/hbo-logo.png',
-            activo: true,
-            created_at: '2024-01-13T14:45:00Z'
-          },
-          {
-            id: '4',
-            nombre: 'Spotify',
-            descripcion: 'Música en streaming',
-            logo_url: '/images/spotify-logo.png',
-            activo: false,
-            created_at: '2024-01-12T16:20:00Z'
-          }
-        ])
+        setServices([])
         toast.error(result.message || 'Error al cargar servicios')
       }
     } catch (error) {
-      toast.error('Error de conexión')
+      setServices([])
+      toast.error('Error de conexión al cargar servicios')
     } finally {
       setLoading(false)
     }

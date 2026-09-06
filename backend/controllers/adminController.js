@@ -1485,15 +1485,59 @@ exports.obtenerDashboard = async (req, res) => {
     `;
     const topServiciosResult = await pool.query(topServiciosQuery);
     
+    const ordenesRow = ordenesResult.rows[0] || {};
+    const ventasRow = ventasResult.rows[0] || {};
+    const usuariosRow = usuariosResult.rows[0] || {};
+    const serviciosRow = serviciosResult.rows[0] || {};
+
+    const dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+    const salesData = (ventasPorDiaResult.rows || []).slice(0, 7).reverse().map(v => {
+      const d = new Date(v.fecha);
+      return {
+        day: dayNames[d.getDay()] || 'Día',
+        sales: Math.round(parseFloat(v.total || 0))
+      };
+    });
+
+    const topServices = (topServiciosResult.rows || []).map(s => ({
+      name: s.servicio || 'Servicio',
+      sales: parseInt(s.cantidad_vendida || 0),
+      revenue: Math.round(parseFloat(s.total_ventas || 0))
+    }));
+
+    const statusColors = {
+      'Completadas': '#22c55e',
+      'Pendientes': '#f59e0b',
+      'En Proceso': '#3b82f6',
+      'Canceladas': '#ef4444'
+    };
+
+    const ordersByStatus = [
+      { status: 'Completadas', count: parseInt(ordenesRow.ordenes_entregadas || 0), color: statusColors['Completadas'] },
+      { status: 'Pendientes', count: parseInt(ordenesRow.ordenes_pendientes || 0), color: statusColors['Pendientes'] },
+      { status: 'En Proceso', count: parseInt(ordenesRow.ordenes_pagadas || 0), color: statusColors['En Proceso'] },
+      { status: 'Canceladas', count: 0, color: statusColors['Canceladas'] }
+    ];
+
     res.json({
       success: true,
       data: {
-        ordenes: ordenesResult.rows[0],
-        ventas: ventasResult.rows[0],
-        usuarios: usuariosResult.rows[0],
-        servicios: serviciosResult.rows[0],
-        planes: planesResult.rows[0],
-        cuentas: cuentasResult.rows[0],
+        // Formato para Next.js Admin Dashboard
+        totalOrders: parseInt(ordenesRow.total_ordenes || 0),
+        totalRevenue: Math.round(parseFloat(ventasRow.ventas_confirmadas || ventasRow.ventas_totales || 0)),
+        totalUsers: parseInt(usuariosRow.total_usuarios || 0),
+        activeServices: parseInt(serviciosRow.servicios_activos || 0),
+        salesData,
+        topServices,
+        ordersByStatus,
+
+        // Compatibilidad con consultas legacy
+        ordenes: ordenesRow,
+        ventas: ventasRow,
+        usuarios: usuariosRow,
+        servicios: serviciosRow,
+        planes: planesResult.rows[0] || {},
+        cuentas: cuentasResult.rows[0] || {},
         ventas_por_dia: ventasPorDiaResult.rows,
         top_servicios: topServiciosResult.rows
       }
